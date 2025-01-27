@@ -1,0 +1,1 @@
+from proteus import MyEpicClass
