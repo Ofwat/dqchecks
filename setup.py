@@ -8,7 +8,6 @@ setup(
         "pandas",
         "openpyxl",
         "datetime",
-        "re",
         "numpy"
     ],
 )
