@@ -1,6 +1,7 @@
 pandas
 pytest
 openpyxl
+xlsxwriter
 numpy
 pytest-cov
 ruff
