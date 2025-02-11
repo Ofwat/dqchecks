@@ -2,3 +2,6 @@ pandas
 pytest
 openpyxl
 numpy
+pytest-cov
+ruff
+coverage-badge
