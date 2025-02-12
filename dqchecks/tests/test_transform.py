@@ -169,6 +169,53 @@ def test_output_data_types(valid_excel_data):
     # Ensure all columns are of type string as per the function's behavior
     assert all(result_df[column].dtype == 'object' for column in result_df.columns)
 
+# Test case 8: Missing submission_period_cd
+def test_missing_submission_period_cd(valid_excel_data):
+    xlfile = create_excel_file(valid_excel_data)
+    org_cd = "ORG123"
+    process_cd = "P01"
+    template_version = "V1"
+    last_modified = datetime.datetime(2025, 2, 11)
+
+    with pytest.raises(ValueError):
+        process_fout_sheets(
+            xlfile, org_cd, "", process_cd, template_version, last_modified)
+
+# Test case 9: Missing process_cd
+def test_missing_submission_process_cd(valid_excel_data):
+    xlfile = create_excel_file(valid_excel_data)
+    org_cd = "ORG123"
+    submission_period_cd = "2025Q1"
+    template_version = "V1"
+    last_modified = datetime.datetime(2025, 2, 11)
+
+    with pytest.raises(ValueError):
+        process_fout_sheets(
+            xlfile, org_cd, submission_period_cd, "", template_version, last_modified)
+
+# Test case 10: Missing template_version
+def test_missing_submission_template_version(valid_excel_data):
+    xlfile = create_excel_file(valid_excel_data)
+    org_cd = "ORG123"
+    submission_period_cd = "2025Q1"
+    process_cd = "P01"
+    last_modified = datetime.datetime(2025, 2, 11)
+
+    with pytest.raises(ValueError):
+        process_fout_sheets(
+            xlfile, org_cd, submission_period_cd, process_cd, "", last_modified)
+        
+# Test case 11: Missing last_modified
+def test_missing_submission_last_modified(valid_excel_data):
+    xlfile = create_excel_file(valid_excel_data)
+    org_cd = "ORG123"
+    submission_period_cd = "2025Q1"
+    process_cd = "P01"
+    template_version = "V1"
+
+    with pytest.raises(ValueError):
+        process_fout_sheets(
+            xlfile, org_cd, submission_period_cd, process_cd, template_version, None)
 
 if __name__ == '__main__':
     pytest.main()
