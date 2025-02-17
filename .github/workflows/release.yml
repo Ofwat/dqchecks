@@ -1,0 +1,33 @@
+name: Python Package Release
+
+on:
+  release:
+    types: [created]  # Trigger only when a release is created
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+    
+    - name: Build wheel and source tarball
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Upload distribution files to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*
