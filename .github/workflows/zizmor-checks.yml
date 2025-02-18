@@ -5,7 +5,7 @@ on:
     branches:
       - '*'  # Trigger on all branches
     paths:
-      - '**/*.py'  # You can specify paths or files to optimize for Python code changes (optional)
+      - '.github/workflows/*.yml'  # Only trigger on changes to GitHub Action workflows
 
 jobs:
   zizmor-check:
@@ -27,12 +27,15 @@ jobs:
 
     - name: Install Zizmor
       run: |
-        pip install zizmor  # Install Zizmor for performing checks
+        pip install zizmor  # Install Zizmor
 
-    - name: Run Zizmor check
+    - name: Run Zizmor audit
       run: |
-        zizmor check  # Run Zizmor to check for issues like excessive permissions, etc.
+        zizmor .github/workflows/  # Run Zizmor on the workflow directory
 
-    - name: Fail if Zizmor check fails
+    - name: Fail if Zizmor finds issues
       run: |
-        zizmor check || exit 1  # If Zizmor finds an issue, fail the job
+        if [ $? -ne 0 ]; then
+          echo "Zizmor found issues! Failing the job."
+          exit 1  # Exit with error if Zizmor finds issues
+        fi
