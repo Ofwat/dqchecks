@@ -2,6 +2,7 @@ name: Publish Python 🐍 distribution 📦 to PyPI and TestPyPI
 
 on: push
 
+# Remove the empty top-level permissions; we define specific permissions at the job level
 permissions: {}
 
 jobs:
@@ -17,13 +18,9 @@ jobs:
       uses: actions/setup-python@v5
       with:
         python-version: "3.x"
-
     - name: Install pypa/build
       run: >-
-        python3 -m
-        pip install
-        build
-        --user
+        python3 -m pip install build --user
     - name: Build a binary wheel and a source tarball
       run: python3 -m build
     - name: Store the distribution packages
@@ -32,15 +29,28 @@ jobs:
         name: python-package-distributions
         path: dist/
 
-# publish-to-pypi:
-#     name: >-
-#       Publish Python 🐍 distribution 📦 to PyPI
-#     if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
-#     needs:
-#     - build
-#     runs-on: ubuntu-latest
-#     environment:
-#       name: pypi
-#       url: https://pypi.org/p/ofwat-dqchecks
-#     permissions:
-#       id-token: write
+  publish-to-pypi:
+    name: Publish Python 🐍 distribution 📦 to PyPI
+    if: startsWith(github.ref, 'refs/tags/')  # Only publish to PyPI on tag pushes
+    needs: 
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/ofwat-dqchecks
+    permissions:
+      id-token: write  # This is required for publishing to PyPI
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+    - name: Install Twine
+      run: pip install twine
+    - name: Publish to PyPI
+      run: twine upload dist/* --repository pypi
