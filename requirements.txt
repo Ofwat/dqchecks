@@ -6,3 +6,4 @@ numpy
 pytest-cov
 coverage-badge
 pyspark
+pylint
