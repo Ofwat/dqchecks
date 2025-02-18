@@ -26,8 +26,10 @@ def simple_hdfs_ls(path: str) -> list:
             print(f"File: {file['name']}, Last Modified: {file['last_modified']}")
     """
     spark = SparkSession.builder.appName("spark_entry_job").getOrCreate()
+    # pylint: disable=W0212
     jvm = spark.sparkContext._jvm
     fs_root = jvm.java.net.URI.create("")
+    # pylint: disable=W0212
     conf = spark.sparkContext._jsc.hadoopConfiguration()
     fs = jvm.org.apache.hadoop.fs.FileSystem.get(fs_root, conf)
 

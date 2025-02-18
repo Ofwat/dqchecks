@@ -27,6 +27,7 @@ def mock_spark():
         mock_builder.appName.return_value.getOrCreate.return_value = mock_session
         yield mock_session
 
+# pylint: disable=W0621
 def test_simple_hdfs_ls(mock_spark):
     """
     Test for simple_hdfs_ls function with mocked HDFS interaction.
@@ -44,6 +45,7 @@ def test_simple_hdfs_ls(mock_spark):
     status_mock = mock.Mock()
 
     # Set the mocks for the file system and paths
+    # pylint: disable=W0212
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
     fs_mock.globStatus.return_value = [status_mock, status_mock]  # Two files in the directory
@@ -77,6 +79,7 @@ def test_empty_directory(mock_spark):
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()
 
+    # pylint: disable=W0212
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
     fs_mock.globStatus.return_value = []  # No files in the directory
@@ -99,6 +102,7 @@ def test_invalid_path(mock_spark):
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()
 
+    # pylint: disable=W0212
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
 
@@ -123,6 +127,7 @@ def test_incorrect_timestamp_format(mock_spark):
     fs_mock = mock.Mock()
     status_mock = mock.Mock()
 
+    # pylint: disable=W0212
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
     fs_mock.globStatus.return_value = [status_mock]
