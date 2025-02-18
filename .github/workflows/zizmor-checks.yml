@@ -1,0 +1,38 @@
+name: Zizmor Check
+
+on:
+  push:
+    branches:
+      - '*'  # Trigger on all branches
+    paths:
+      - '**/*.py'  # You can specify paths or files to optimize for Python code changes (optional)
+
+jobs:
+  zizmor-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+
+    - name: Install Zizmor
+      run: |
+        pip install zizmor  # Install Zizmor for performing checks
+
+    - name: Run Zizmor check
+      run: |
+        zizmor check  # Run Zizmor to check for issues like excessive permissions, etc.
+
+    - name: Fail if Zizmor check fails
+      run: |
+        zizmor check || exit 1  # If Zizmor finds an issue, fail the job

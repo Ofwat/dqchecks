@@ -1,27 +1,40 @@
-name: Run Unit Test via Pytest
+name: Python Package Release
 
-on: [push]
+on:
+  release:
+    types: [created]  # Trigger only when a release is created
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.12"]
 
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Test with pytest
-        run: |
-          coverage run -m pytest  -v -s
-      - name: Generate Coverage Report
-        run: |
-          coverage report -m
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.12"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install setuptools wheel twine
+
+    - name: Build wheel and source tarball
+      run: |
+        python setup.py sdist bdist_wheel
+
+    - name: Set file permissions for distribution files
+      run: |
+        chmod 644 dist/*.whl dist/*.tar.gz  # Restrict permissions to be more secure
+
+    - name: Upload distribution files to release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/dqchecks-*.whl
+          dist/dqchecks-*.tar.gz
