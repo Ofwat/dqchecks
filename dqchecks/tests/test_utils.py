@@ -1,25 +1,47 @@
-import pytest
-from unittest import mock
-from pyspark.sql import SparkSession
+"""
+Testing utils.py file
+"""
+
 from datetime import datetime
+from unittest import mock
+import pytest
+from pyspark.sql import SparkSession
 
 from dqchecks.utils import simple_hdfs_ls
 
 # Mocking the SparkSession and HDFS interaction
 @pytest.fixture
 def mock_spark():
+    """
+    Fixture to mock the SparkSession for testing HDFS interaction.
+
+    This fixture mocks the SparkSession's builder and its `getOrCreate` method
+    to return a mocked session. It is used in the tests to simulate SparkSession 
+    functionality without actually starting a real session.
+    
+    Yields:
+        mock.Mock: A mock Spark session object.
+    """
     with mock.patch.object(SparkSession, 'builder') as mock_builder:
         mock_session = mock.Mock()
         mock_builder.appName.return_value.getOrCreate.return_value = mock_session
         yield mock_session
 
 def test_simple_hdfs_ls(mock_spark):
+    """
+    Test for simple_hdfs_ls function with mocked HDFS interaction.
+
+    This test simulates the case where the HDFS directory contains files. 
+    It checks whether the function returns the expected file information, 
+    including file paths and modification timestamps.
+
+    Args:
+        mock_spark (mock.Mock): A mocked Spark session, injected by pytest fixture.
+    """
     # Mock the JVM and HDFS file system
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()
-    path_mock = mock.Mock()
     status_mock = mock.Mock()
-    file_info_mock = mock.Mock()
 
     # Set the mocks for the file system and paths
     mock_spark.sparkContext._jvm = jvm_mock
@@ -32,7 +54,8 @@ def test_simple_hdfs_ls(mock_spark):
 
     # Expected file info
     expected_result = [
-        {"name": "hdfs://example/path/to/file1", "last_modified": datetime.fromtimestamp(1637170140)}
+        {"name": "hdfs://example/path/to/file1",
+         "last_modified": datetime.fromtimestamp(1637170140)}
     ]
 
     # Call the function and check the result
@@ -40,11 +63,19 @@ def test_simple_hdfs_ls(mock_spark):
     assert result == expected_result
 
 def test_empty_directory(mock_spark):
+    """
+    Test for simple_hdfs_ls function when the directory is empty.
+
+    This test simulates the case where the HDFS directory is empty. 
+    It ensures that the function returns an empty list when no files 
+    are present in the directory.
+
+    Args:
+        mock_spark (mock.Mock): A mocked Spark session, injected by pytest fixture.
+    """
     # Mock an empty directory
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()
-    path_mock = mock.Mock()
-    status_mock = mock.Mock()
 
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
@@ -52,13 +83,22 @@ def test_empty_directory(mock_spark):
 
     # Call the function and check the result
     result = simple_hdfs_ls("hdfs://example/empty/path/")
-    assert result == []
+    assert not result
 
 def test_invalid_path(mock_spark):
+    """
+    Test for simple_hdfs_ls function when an invalid path is provided.
+
+    This test simulates a situation where an invalid HDFS path is provided.
+    It ensures that the function raises an exception when it encounters an invalid path.
+
+    Args:
+        mock_spark (mock.Mock): A mocked Spark session, injected by pytest fixture.
+    """
     # Mock the file system to raise an exception for invalid path
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()
-    
+
     mock_spark.sparkContext._jvm = jvm_mock
     jvm_mock.org.apache.hadoop.fs.FileSystem.get.return_value = fs_mock
 
@@ -69,6 +109,15 @@ def test_invalid_path(mock_spark):
         simple_hdfs_ls("hdfs://invalid/path/")
 
 def test_incorrect_timestamp_format(mock_spark):
+    """
+    Test for simple_hdfs_ls function with incorrect timestamp format.
+
+    This test simulates a situation where the file's modification timestamp is in 
+    an incorrect format. It ensures that the function can handle invalid timestamps gracefully.
+
+    Args:
+        mock_spark (mock.Mock): A mocked Spark session, injected by pytest fixture.
+    """
     # Mock a case where the timestamp might be in an incorrect format
     jvm_mock = mock.Mock()
     fs_mock = mock.Mock()

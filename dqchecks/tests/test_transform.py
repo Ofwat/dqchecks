@@ -1,12 +1,24 @@
-import pytest
-import pandas as pd
+"""
+Tests for the transforms.py file
+"""
 import datetime
 from io import BytesIO
+import pytest
+import pandas as pd
 
-from dqchecks.transforms import process_fout_sheets
+from dqchecks.transforms import process_fout_sheets, ProcessingContext
 
-# A helper function to simulate loading an Excel file with Pandas
+
 def create_excel_file(sheet_data):
+    """
+    A helper function to simulate loading an Excel file with Pandas.
+
+    Args:
+        sheet_data (dict): A dictionary where keys are sheet names and values are DataFrames.
+
+    Returns:
+        pd.ExcelFile: A pandas ExcelFile object containing the sheets in the provided data.
+    """
     excel_buffer = BytesIO()
     with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
         for sheet_name, data in sheet_data.items():
@@ -15,10 +27,13 @@ def create_excel_file(sheet_data):
     return pd.ExcelFile(excel_buffer)
 
 
-# Sample data for testing
-@pytest.fixture
 def valid_excel_data():
-    # Create a sample DataFrame
+    """
+    Fixture that creates a sample DataFrame for testing purposes.
+
+    Returns:
+        dict: A dictionary with sheet names as keys and DataFrames as values.
+    """
     data = {
         "1": ["Acronym", "", "a", "b", "c"],
         "2": ["Reference", "", "a", "b", "c"],
@@ -29,8 +44,6 @@ def valid_excel_data():
         "7": ["2021-22", "", "a", "b", "c"],
         "8": ["2022-23", "", "a", "b", "c"],
     }
-
-    # Create the DataFrame
     df = pd.DataFrame(data)
     return {
         'fOut_2023': df,
@@ -38,57 +51,80 @@ def valid_excel_data():
     }
 
 
-# Test case 1: Valid input
-def test_valid_input(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+def test_valid_input():
+    """
+    Test case to check the function's behavior with valid input data.
 
-    result_df = process_fout_sheets(
-        xlfile, org_cd, submission_period_cd, process_cd, template_version, last_modified)
+    The test verifies that the resulting DataFrame contains the expected columns
+    and is not empty.
+    """
+    xlfile = create_excel_file(valid_excel_data())
 
-    # Check if the result DataFrame has the expected columns
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
+
+    result_df = process_fout_sheets(xlfile, context)
+
     expected_columns = [
         'Organisation_Cd', 'Submission_Period_Cd', 'Observation_Period_Cd', 'Process_Cd',
-        'Template_Version', 'Sheet_Cd', 'Measure_Cd', 'Measure_Value', 'Measure_Desc', 'Measure_Unit',
-        'Model_Cd', 'Submission_Date'
+        'Template_Version', 'Sheet_Cd', 'Measure_Cd', 'Measure_Value', 'Measure_Desc',
+        'Measure_Unit', 'Model_Cd', 'Submission_Date'
     ]
 
     assert set(result_df.columns) == set(expected_columns)
     assert not result_df.empty
 
 
-# Test case 2: Invalid xlfile type (not a pd.ExcelFile)
-def test_invalid_xlfile_type(valid_excel_data):
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+def test_invalid_xlfile_type():
+    """
+    Test case to verify that an error is raised when the provided file is not an Excel file.
+
+    This test checks if the function raises a TypeError when the input is not an
+    instance of pd.ExcelFile.
+    """
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(TypeError):
-        process_fout_sheets(
-            "invalid_excel_file", org_cd, submission_period_cd, process_cd, template_version, last_modified)
+        process_fout_sheets("invalid_excel_file", context)
 
 
-# Test case 3: Missing org_cd
-def test_missing_org_cd(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+def test_missing_org_cd():
+    """
+    Test case to check if a ValueError is raised when 'org_cd' is missing or empty.
+
+    The function verifies that a ValueError is raised if the organization code is not provided.
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(ValueError):
-        process_fout_sheets(
-            xlfile, "", submission_period_cd, process_cd, template_version, last_modified)
+        process_fout_sheets(xlfile, context)
 
 
-# Test case 4: No fOut_ sheets
 def test_no_fout_sheets():
+    """
+    Test case to check if the function raises an exception when there are no fOut_* sheets.
+
+    The test verifies that an exception is raised if the Excel file does not contain any sheet
+    with the name starting with 'fOut_'.
+    """
     sheet_data = {
         'OtherSheet': pd.DataFrame({
             "Reference": [1],
@@ -99,17 +135,24 @@ def test_no_fout_sheets():
         })
     }
     xlfile = create_excel_file(sheet_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(Exception, match="No fOut_*"):
-        process_fout_sheets(xlfile, org_cd, submission_period_cd, process_cd, template_version, last_modified)
+        process_fout_sheets(xlfile, context)
 
-# Test case 5: Empty sheet (no data after dropping NaN rows)
+
 def test_empty_sheet():
+    """
+    Test case to verify if the function raises a ValueError when a sheet contains no valid data.
+
+    The function checks if a ValueError is raised when all rows of the sheet are NaN after dropping.
+    """
     sheet_data = {
         'fOut_Empty': pd.DataFrame({
             "Reference": ["Reference", None, None, None],
@@ -119,20 +162,28 @@ def test_empty_sheet():
             "2020-21": ["2020-21", None, None, None],
         })
     }
+
     xlfile = create_excel_file(sheet_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
-    with pytest.raises(Exception, match="An error occurred while processing the Excel sheets: No valid data found after removing rows with NaN values."):
-        process_fout_sheets(xlfile, org_cd, submission_period_cd, process_cd, template_version, last_modified)
+    with pytest.raises(ValueError,
+            match="No valid data found after removing rows with NaN values."):
+        process_fout_sheets(xlfile, context)
 
 
-# Test case 6: Missing observation period columns
-def test_missing_observation_columns(valid_excel_data):
-    # Modify the sample data to not contain any observation period columns (like '2020-21')
+def test_missing_observation_columns():
+    """
+    Test case to check if a ValueError is raised when the observation period columns are missing.
+
+    This function checks that the function raises an error if no columns for observation periods
+    (like '2020-21') are found in the data.
+    """
     data = {
         "Reference": [1, 2, 3],
         "Item description": ["Item 1", "Item 2", "Item 3"],
@@ -144,78 +195,113 @@ def test_missing_observation_columns(valid_excel_data):
         'fOut_2023': df
     }
     xlfile = create_excel_file(sheet_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
-    with pytest.raises(Exception, match="An error occurred while processing the Excel sheets: No observation period columns found in the data."):
-        process_fout_sheets(xlfile, org_cd, submission_period_cd, process_cd, template_version, last_modified)
+    with pytest.raises(ValueError, match="No observation period columns found in the data."):
+        process_fout_sheets(xlfile, context)
 
 
-# Test case 7: Correct data types in output
-def test_output_data_types(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+def test_output_data_types():
+    """
+    Test case to verify if the output DataFrame contains the correct data types.
 
-    result_df = process_fout_sheets(
-        xlfile, org_cd, submission_period_cd, process_cd, template_version, last_modified)
+    This test ensures that all columns in the resulting DataFrame are of type 'object' (string).
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
-    # Ensure all columns are of type string as per the function's behavior
+    result_df = process_fout_sheets(xlfile, context)
+
     assert all(result_df[column].dtype == 'object' for column in result_df.columns)
 
-# Test case 8: Missing submission_period_cd
-def test_missing_submission_period_cd(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    process_cd = "P01"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
+
+def test_missing_submission_period_cd():
+    """
+    Test case to check if a ValueError is raised when 'submission_period_cd' is missing or empty.
+
+    The function verifies that a ValueError is raised if the submission period code is not provided.
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(ValueError):
-        process_fout_sheets(
-            xlfile, org_cd, "", process_cd, template_version, last_modified)
+        process_fout_sheets(xlfile, context)
 
-# Test case 9: Missing process_cd
-def test_missing_submission_process_cd(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    template_version = "V1"
-    last_modified = datetime.datetime(2025, 2, 11)
 
-    with pytest.raises(ValueError):
-        process_fout_sheets(
-            xlfile, org_cd, submission_period_cd, "", template_version, last_modified)
+def test_missing_submission_process_cd():
+    """
+    Test case to check if a ValueError is raised when 'process_cd' is missing or empty.
 
-# Test case 10: Missing template_version
-def test_missing_submission_template_version(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    last_modified = datetime.datetime(2025, 2, 11)
+    The function verifies that a ValueError is raised if the process code is not provided.
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(ValueError):
-        process_fout_sheets(
-            xlfile, org_cd, submission_period_cd, process_cd, "", last_modified)
-        
-# Test case 11: Missing last_modified
-def test_missing_submission_last_modified(valid_excel_data):
-    xlfile = create_excel_file(valid_excel_data)
-    org_cd = "ORG123"
-    submission_period_cd = "2025Q1"
-    process_cd = "P01"
-    template_version = "V1"
+        process_fout_sheets(xlfile, context)
+
+
+def test_missing_submission_template_version():
+    """
+    Test case to check if a ValueError is raised when 'template_version' is missing or empty.
+
+    The function verifies that a ValueError is raised if the template version is not provided.
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
 
     with pytest.raises(ValueError):
-        process_fout_sheets(
-            xlfile, org_cd, submission_period_cd, process_cd, template_version, None)
+        process_fout_sheets(xlfile, context)
+
+
+def test_missing_submission_last_modified():
+    """
+    Test case to check if a ValueError is raised when 'last_modified' is missing or None.
+
+    The function checks that a ValueError is raised if the last modified timestamp isn't provided.
+    """
+    xlfile = create_excel_file(valid_excel_data())
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=None
+    )
+
+    with pytest.raises(ValueError):
+        process_fout_sheets(xlfile, context)
+
 
 if __name__ == '__main__':
     pytest.main()
