@@ -7,8 +7,7 @@ on:
     paths:
       - '.github/workflows/*.yml'  # Only trigger on changes to GitHub Action workflows
 
-permissions:
-  id-token: read
+permissions: {}
 
 jobs:
   zizmor-check:

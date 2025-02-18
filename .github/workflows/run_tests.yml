@@ -2,8 +2,7 @@ name: Run Unit Test via Pytest
 
 on: [push]
 
-permissions:
-  id-token: read
+permissions: {}
 
 jobs:
   build:
