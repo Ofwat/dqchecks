@@ -7,6 +7,9 @@ on:
     paths:
       - '.github/workflows/*.yml'  # Only trigger on changes to GitHub Action workflows
 
+permissions:
+  id-token: read
+
 jobs:
   zizmor-check:
     runs-on: ubuntu-latest
@@ -34,10 +37,3 @@ jobs:
     - name: Run Zizmor audit
       run: |
         zizmor .github/workflows/  # Run Zizmor on the workflow directory
-
-    # - name: Fail if Zizmor finds issues
-    #   run: |
-    #     if [ $? -ne 0 ]; then
-    #       echo "Zizmor found issues! Failing the job."
-    #       exit 1  # Exit with error if Zizmor finds issues
-    #     fi
