@@ -1,3 +1,7 @@
+"""
+Test check_sheet_structure function in panacea
+"""
+
 import pytest
 from openpyxl import Workbook
 
@@ -55,14 +59,14 @@ def empty_sheet():
     sheet.title = 'Sheet1'
     return sheet
 
-
+# pylint: disable=W0621
 def test_check_sheet_structure_equal(sheet1, sheet2):
     """Test that two identical sheets return True with no differences."""
     result, message = check_sheet_structure(sheet1, sheet2)
     assert result is True
     assert "have the same structure" in message
 
-
+# pylint: disable=W0621
 def test_check_sheet_structure_different_columns(sheet1, sheet_with_different_headers):
     """Test that two sheets with different headers return False and provide the right message."""
     result, message = check_sheet_structure(sheet1, sheet_with_different_headers)
@@ -70,6 +74,7 @@ def test_check_sheet_structure_different_columns(sheet1, sheet_with_different_he
     assert "Columns are different" in message
     assert "Column 1: Name != First Name" in message
 
+# pylint: disable=W0621
 def test_check_sheet_structure_empty_sheet1(empty_sheet, sheet2):
     """Test that an empty sheet returns False and provides the correct message."""
     empty_sheet.title = "Sheet1"

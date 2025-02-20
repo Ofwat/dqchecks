@@ -1,9 +1,13 @@
+"""
+Tests for validate_tabs_between_spreadsheets function from panacea
+"""
 import pytest
 from openpyxl import Workbook
 from dqchecks.panacea import validate_tabs_between_spreadsheets
 
 @pytest.fixture
 def workbook1():
+    """Testing workbook with 2 sheets"""
     wb = Workbook()
     wb.create_sheet("Sheet1")
     wb.create_sheet("Sheet2")
@@ -12,6 +16,7 @@ def workbook1():
 
 @pytest.fixture
 def workbook2():
+    """Testing workbook with 2 sheets"""
     wb = Workbook()
     wb.create_sheet("Sheet1")
     wb.create_sheet("Sheet2")
@@ -20,6 +25,7 @@ def workbook2():
 
 @pytest.fixture
 def workbook3():
+    """Testing workbook with 2 sheets"""
     wb = Workbook()
     wb.create_sheet("Sheet1")
     wb.create_sheet("Sheet3")
@@ -28,19 +34,20 @@ def workbook3():
 
 @pytest.fixture
 def empty_workbook():
+    """Return empty openpyxl workbook"""
     return Workbook()
 
-
+# pylint: disable=W0621
 def test_same_tabs(workbook1, workbook2):
     """Test case where both workbooks have the same sheet names."""
     assert validate_tabs_between_spreadsheets(workbook1, workbook2) is True
 
-
+# pylint: disable=W0621
 def test_different_tabs(workbook1, workbook3):
     """Test case where the workbooks have different sheet names."""
     assert validate_tabs_between_spreadsheets(workbook1, workbook3) is False
 
-
+# pylint: disable=W0621
 def test_empty_workbook(workbook1, empty_workbook):
     """Test case where one workbook is empty (no sheets)."""
     assert validate_tabs_between_spreadsheets(workbook1, empty_workbook) is False

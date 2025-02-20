@@ -1,3 +1,6 @@
+"""
+Test the check_formula_errors function in Panacea
+"""
 import pytest
 from openpyxl import Workbook
 
@@ -47,6 +50,7 @@ def workbook_with_non_formula_cells():
     sheet['A3'] = "Hello"
     return sheet
 
+# pylint: disable=W0621
 def test_check_formula_errors_no_errors(workbook_with_no_errors):
     """Test that the function returns 'No formula errors found' when there are no formula errors."""
     sheet = workbook_with_no_errors
@@ -54,6 +58,7 @@ def test_check_formula_errors_no_errors(workbook_with_no_errors):
     assert result is True
     assert message == "No formula errors found."
 
+# pylint: disable=W0621
 def test_check_formula_errors_with_errors(workbook_with_errors):
     """Test that the function correctly identifies formula errors."""
     sheet = workbook_with_errors
@@ -63,6 +68,7 @@ def test_check_formula_errors_with_errors(workbook_with_errors):
     assert "Error in Sheet!A4: #REF!" in message
     assert "Error in Sheet!A5: #NAME?" in message
 
+# pylint: disable=W0621
 def test_check_formula_errors_with_non_formula_cells(workbook_with_non_formula_cells):
     """Test that non-formula cells don't affect the result."""
     sheet = workbook_with_non_formula_cells
@@ -77,7 +83,10 @@ def test_check_formula_errors_invalid_input():
 
 def test_check_formula_errors_invalid_sheet_type():
     """Test that the function raises a ValueError when the input is not a Worksheet object."""
+    # pylint: disable=R0903
     class InvalidSheet:
+        """empty class to pass into the function"""
+        # pylint: disable=W0107
         pass
     with pytest.raises(ValueError):
         check_formula_errors(InvalidSheet())  # Passing a non-worksheet object

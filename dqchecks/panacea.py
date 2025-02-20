@@ -129,7 +129,8 @@ def compare_formulas(sheet1, sheet2):
     Returns:
         tuple: A tuple containing a boolean and a message:
             - The boolean is True if all formulas are equivalent, False otherwise.
-            - The message provides detailed information on which formulas are different, if applicable.
+            - The message provides detailed information on which formulas are different,
+                if applicable.
             - If formulas differ, a list of cell names with sheet names is provided.
     """
     # Validate input types
@@ -141,8 +142,8 @@ def compare_formulas(sheet1, sheet2):
     rows2, cols2 = sheet2.max_row, sheet2.max_column
 
     if (rows1, cols1) != (rows2, cols2):
-        return False, f"Sheets have different dimensions: '{sheet1.title}' has {rows1} rows and {cols1} columns, " \
-                       f"while '{sheet2.title}' has {rows2} rows and {cols2} columns."
+        return False, f"Sheets have different dimensions: '{sheet1.title}' has {rows1} rows & " \
+                       f"{cols1} columns, '{sheet2.title}' has {rows2} rows & {cols2} columns."
 
     # List to hold cells with differing formulas
     differing_cells = []
