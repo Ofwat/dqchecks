@@ -301,7 +301,3 @@ def test_missing_submission_last_modified():
 
     with pytest.raises(ValueError):
         process_fout_sheets(xlfile, context)
-
-
-if __name__ == '__main__':
-    pytest.main()

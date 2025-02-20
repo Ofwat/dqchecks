@@ -3,31 +3,214 @@ Panacea code
 
 Function used to do initial validation of the Excel files
 """
+from openpyxl import Workbook
+from openpyxl.worksheet.worksheet import Worksheet
+from openpyxl.utils import get_column_letter
 
-# import pandas as pd
+def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
+    """
+    Compares the sheet names between two openpyxl workbook objects to check if they are identical.
 
-# Validate that the excel workbook has the correct set of Tabs.
-# compare if all excel sheets are present again comparison against template
-# def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2, verbose = False):
-#     pass
+    This function ensures that both inputs are valid openpyxl workbook objects, then compares 
+    the sheet names in each workbook. It returns True if both workbooks have the same sheet names 
+    (ignoring order), and False otherwise. If an error occurs during validation (such as invalid
+    workbook objects or file loading issues), the function
+    will print an error message and return False.
 
-# # check_structure  compare if all excel tables have the same structure
-# # (number of columns and rows are the same compared to the template)
-# def check_sheet_structure(df1, df2):
-#     # Check if the number of rows and columns are the same
-#     if df1.shape != df2.shape:
-#         return False, "Different number of rows/columns"
+    Args:
+        spreadsheet1 (openpyxl.workbook.workbook.Workbook): The first workbook object to compare.
+        spreadsheet2 (openpyxl.workbook.workbook.Workbook): The second workbook object to compare.
 
-#     # Optionally check if the columns are the same (both name and order)
-#     if not df1.columns.equals(df2.columns):
-#         return False, "Columns are different"
+    Returns:
+        bool: True if both workbooks have the same sheet names, False otherwise.
 
-#     # Optionally check if the data types of columns are the same
-#     if not df1.dtypes.equals(df2.dtypes):
-#         return False, "Different data types for corresponding columns"
+    Raises:
+        ValueError: If either argument is not a valid openpyxl workbook object.
+        InvalidFileException: If there is an issue with loading the workbook.
+        Exception: For any unexpected errors during execution.
+    """
+    # try:
+    if not isinstance(spreadsheet1, Workbook) or not isinstance(spreadsheet2, Workbook):
+        raise ValueError("Both arguments must be valid openpyxl workbook objects.")
 
-#     # If all checks pass, the structure is the same
-#     return True, "Spreadsheets have the same structure"
+    # Get sheet names from both workbooks
+    sheets1 = set(spreadsheet1.sheetnames)
+    sheets2 = set(spreadsheet2.sheetnames)
 
-if __name__ == "__main__":
-    pass
+    # Compare the sheet names
+    return sheets1 == sheets2
+
+def check_sheet_structure(sheet1, sheet2):
+    """
+    Compares the structure of two openpyxl worksheet objects to determine 
+    if they have the same number of rows, columns, and column headers.
+
+    This function validates whether the two worksheet objects are of the 
+    correct type, checks if either sheet is empty, compares the number of 
+    rows and columns, and ensures that the column headers (both name and 
+    order) are the same in both sheets.
+
+    Arguments:
+        sheet1 (openpyxl.worksheet.worksheet.Worksheet): The first worksheet object to compare.
+        sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet object to compare.
+
+    Returns:
+        tuple: A tuple containing a boolean and a message:
+            - The boolean is True if the structures are the same, False otherwise.
+            - The message provides detailed information on what caused the discrepancy, 
+              such as different row/column counts, empty sheets, or mismatched column headers.
+
+    Errors:
+        ValueError: If either input is not a valid openpyxl worksheet object.
+        TypeError: If the provided arguments are not openpyxl worksheet objects.
+
+    Example:
+        sheet1 = workbook1['Sheet1']
+        sheet2 = workbook2['Sheet2']
+        is_same, message = check_sheet_structure(sheet1, sheet2)
+        print(is_same, message)
+
+    Notes:
+        - Empty sheets are those that have no rows or columns.
+        - Column comparison is case-sensitive and checks for exact matches in both name and order.
+    """
+    # Validate input types
+    if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
+        raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
+
+    # Get the sheet names
+    sheet_name1 = sheet1.title
+    sheet_name2 = sheet2.title
+
+    # Check if the sheets are empty
+    if sheet1.max_row == 1 or sheet1.max_column == 1:
+        return False, f"Sheet '{sheet_name1}' is empty."
+    if sheet2.max_row == 1 or sheet2.max_column == 1:
+        return False, f"Sheet '{sheet_name2}' is empty."
+
+    # Check if the number of rows and columns are the same
+    rows1, cols1 = sheet1.max_row, sheet1.max_column
+    rows2, cols2 = sheet2.max_row, sheet2.max_column
+
+    if (rows1, cols1) != (rows2, cols2):
+        return False, (
+            f"Different number of rows/columns: '{sheet_name1}' has "
+            f"{rows1} rows and {cols1} columns, '{sheet_name2}' has "
+            f"{rows2} rows and {cols2} columns."
+        )
+
+    # Check if the column headers are the same (both name and order)
+    header1 = [sheet1.cell(row=1, column=c).value for c in range(1, cols1 + 1)]
+    header2 = [sheet2.cell(row=1, column=c).value for c in range(1, cols2 + 1)]
+
+    if header1 != header2:
+        # Find out which columns are different
+        diff_headers = []
+        for i, (h1, h2) in enumerate(zip(header1, header2)):
+            if h1 != h2:
+                diff_headers.append((i + 1, h1, h2))  # Record column number and the difference
+
+        return False, (
+            f"Columns are different in '{sheet_name1}' and '{sheet_name2}' at "
+            f"positions: {', '.join([f'Column {i}: {h1} != {h2}' for i, h1, h2 in diff_headers])}"
+        )
+
+    # If all checks pass, the structure is the same
+    return True, f"Spreadsheets '{sheet_name1}' and '{sheet_name2}' have the same structure"
+
+def compare_formulas(sheet1, sheet2):
+    """
+    Compares the formulas between two openpyxl worksheet objects.
+
+    Arguments:
+        sheet1 (openpyxl.worksheet.worksheet.Worksheet): The first worksheet to compare.
+        sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet to compare.
+
+    Returns:
+        tuple: A tuple containing a boolean and a message:
+            - The boolean is True if all formulas are equivalent, False otherwise.
+            - The message provides detailed information on which formulas are different, if applicable.
+            - If formulas differ, a list of cell names with sheet names is provided.
+    """
+    # Validate input types
+    if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
+        raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
+
+    # Check if the sheets have the same number of rows and columns
+    rows1, cols1 = sheet1.max_row, sheet1.max_column
+    rows2, cols2 = sheet2.max_row, sheet2.max_column
+
+    if (rows1, cols1) != (rows2, cols2):
+        return False, f"Sheets have different dimensions: '{sheet1.title}' has {rows1} rows and {cols1} columns, " \
+                       f"while '{sheet2.title}' has {rows2} rows and {cols2} columns."
+
+    # List to hold cells with differing formulas
+    differing_cells = []
+
+    # Compare formulas cell by cell
+    for row in range(1, rows1 + 1):
+        for col in range(1, cols1 + 1):
+            cell1 = sheet1.cell(row=row, column=col)
+            cell2 = sheet2.cell(row=row, column=col)
+
+            # Check if both cells contain formulas (we check if cell.value starts with '=')
+            if isinstance(cell1.value, str) and cell1.value.startswith('=') and \
+               isinstance(cell2.value, str) and cell2.value.startswith('='):
+                if cell1.value != cell2.value:
+                    cell_name = f"{sheet1.title}!{get_column_letter(col)}{row}"
+                    differing_cells.append(f"Cell {cell_name} has different formulas: "
+                                           f"'{sheet1.title}' has '{cell1.value}', "
+                                           f"'{sheet2.title}' has '{cell2.value}'.")
+
+    # If there are differences in formulas, return detailed message
+    if differing_cells:
+        return False, "The following cells have different formulas:\n" + "\n".join(differing_cells)
+
+    # If all formulas are equivalent
+    return True, "All formulas are equivalent."
+
+def check_formula_errors(sheet):
+    """
+    Checks for formula errors in a given openpyxl worksheet.
+    
+    Arguments:
+        sheet (openpyxl.worksheet.worksheet.Worksheet): The worksheet to check for formula errors.
+    
+    Returns:
+        tuple: A tuple containing a boolean and a message:
+            - The boolean is True if no formulas resulted in errors, False otherwise.
+            - The message lists the cells with formula errors, including their sheet names.
+    
+    Example:
+        sheet = workbook['Sheet1']
+        are_no_errors, message = check_formula_errors(sheet)
+        print(are_no_errors, message)
+    """
+    # Validate input types
+    if not isinstance(sheet, Worksheet):
+        raise ValueError("Input must be valid openpyxl worksheet object.")
+
+    # Known Excel formula errors
+    excel_error_strings = [
+        "#DIV/0!", "#N/A", "#REF!", "#NAME?", "#CALC",
+        "#VALUE!", "#NUM!", "#NULL!", "#SPILL",
+    ]
+
+    error_messages = []
+
+    # Iterate over all cells in the sheet
+    for row in sheet.iter_rows():
+        for cell in row:
+            # Check if the cell contains an error (identified by an 'e')
+            if cell.data_type == 'e':
+                # If the formula's output is one of the known error strings
+                if isinstance(cell.value, str) and cell.value in excel_error_strings:
+                    cell_name = f"{sheet.title}!{get_column_letter(cell.column)}{cell.row}"
+                    error_messages.append(f"Error in {cell_name}: {cell.value}")
+
+    # If no errors were found, return True and a success message
+    if not error_messages:
+        return True, "No formula errors found."
+
+    # If errors were found, return False and a list of the errors
+    return False, "\n".join(error_messages)
