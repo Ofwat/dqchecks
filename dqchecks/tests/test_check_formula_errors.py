@@ -25,17 +25,20 @@ def workbook_with_errors():
     # Adding valid data
     sheet['A1'] = 10
     sheet['A2'] = 0  # Division by zero will happen in A3
+    sheet["B1"] = "##MISSING" # Non-error with hashtag
 
     # Adding formulas that would cause errors in Excel
     sheet['A3'] = "=A1/A2"  # Division by zero (#DIV/0!)
     sheet['A4'] = "=SUM('InvalidRange')"  # Invalid range (#REF!)
     sheet['A5'] = "=A1 + 'InvalidRange'"  # Unrecognized range (#NAME?)
+    sheet['A6'] = "=B1"
 
     # Manually setting the formulas to simulate errors in Excel
     # Openpyxl itself will not evaluate these, but in Excel they would be errors.
     sheet['A3'].value = '#DIV/0!'  # Manually simulate the error for testing purposes
     sheet['A4'].value = '#REF!'    # Manually simulate the error for testing purposes
     sheet['A5'].value = '#NAME?'   # Manually simulate the error for testing purposes
+    sheet["A6"].value = '##MISSING' # Manually insert text which loooks like Error
 
     return sheet
 
@@ -67,6 +70,7 @@ def test_check_formula_errors_with_errors(workbook_with_errors):
     assert "Error in Sheet!A3: #DIV/0!" in message
     assert "Error in Sheet!A4: #REF!" in message
     assert "Error in Sheet!A5: #NAME?" in message
+    assert "Error in Sheet!A5: ##MISSING" not in message
 
 # pylint: disable=W0621
 def test_check_formula_errors_with_non_formula_cells(workbook_with_non_formula_cells):
