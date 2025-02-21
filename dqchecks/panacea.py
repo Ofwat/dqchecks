@@ -11,25 +11,27 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
     """
     Compares the sheet names between two openpyxl workbook objects to check if they are identical.
 
-    This function ensures that both inputs are valid openpyxl workbook objects, then compares 
-    the sheet names in each workbook. It returns True if both workbooks have the same sheet names 
-    (ignoring order), and False otherwise. If an error occurs during validation (such as invalid
-    workbook objects or file loading issues), the function
-    will print an error message and return False.
+    This function compares sheet names in both workbooks, ensuring that they contain the same tabs
+    (ignoring order). If there are any missing tabs in either workbook,
+        it will return False and provide
+    details on which sheets are missing from each spreadsheet.
 
     Args:
         spreadsheet1 (openpyxl.workbook.workbook.Workbook): The first workbook object to compare.
         spreadsheet2 (openpyxl.workbook.workbook.Workbook): The second workbook object to compare.
 
     Returns:
-        bool: True if both workbooks have the same sheet names, False otherwise.
+        tuple:
+            - bool: True if both workbooks have the same sheet names (ignoring order),
+                False otherwise.
+            - str: Message providing details about missing tabs (if any).
 
     Raises:
         ValueError: If either argument is not a valid openpyxl workbook object.
         InvalidFileException: If there is an issue with loading the workbook.
         Exception: For any unexpected errors during execution.
     """
-    # try:
+    # Validate input types
     if not isinstance(spreadsheet1, Workbook) or not isinstance(spreadsheet2, Workbook):
         raise ValueError("Both arguments must be valid openpyxl workbook objects.")
 
@@ -37,8 +39,26 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
     sheets1 = set(spreadsheet1.sheetnames)
     sheets2 = set(spreadsheet2.sheetnames)
 
-    # Compare the sheet names
-    return sheets1 == sheets2
+    # Check for missing sheets in both spreadsheets
+    missing_in_1 = sheets2 - sheets1
+    missing_in_2 = sheets1 - sheets2
+
+    if not missing_in_1 and not missing_in_2:
+        return True, "Both spreadsheets have the same sheet names."
+
+    # Build detailed message about which sheets are missing from which spreadsheet
+    message = []
+    if missing_in_1:
+        message.append(
+            f"Spreadsheet 1 is missing the following sheets: {', '.join(missing_in_1)}"
+        )
+    if missing_in_2:
+        message.append(
+            f"Spreadsheet 2 is missing the following sheets: {', '.join(missing_in_2)}"
+        )
+
+    return False, "\n".join(message)
+
 
 def check_sheet_structure(sheet1, sheet2):
     """

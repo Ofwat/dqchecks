@@ -1,5 +1,5 @@
 """
-Tests for validate_tabs_between_spreadsheets function from panacea
+Testing validate_tabs_between_spreadsheets function from panacea
 """
 import pytest
 from openpyxl import Workbook
@@ -40,17 +40,24 @@ def empty_workbook():
 # pylint: disable=W0621
 def test_same_tabs(workbook1, workbook2):
     """Test case where both workbooks have the same sheet names."""
-    assert validate_tabs_between_spreadsheets(workbook1, workbook2) is True
+    are_same, message = validate_tabs_between_spreadsheets(workbook1, workbook2)
+    assert are_same is True
+    assert message == "Both spreadsheets have the same sheet names."
 
 # pylint: disable=W0621
 def test_different_tabs(workbook1, workbook3):
     """Test case where the workbooks have different sheet names."""
-    assert validate_tabs_between_spreadsheets(workbook1, workbook3) is False
+    are_same, message = validate_tabs_between_spreadsheets(workbook1, workbook3)
+    assert are_same is False
+    assert "Spreadsheet 1 is missing the following sheets:" in message
+    assert "Spreadsheet 2 is missing the following sheets:" in message
 
 # pylint: disable=W0621
 def test_empty_workbook(workbook1, empty_workbook):
     """Test case where one workbook is empty (no sheets)."""
-    assert validate_tabs_between_spreadsheets(workbook1, empty_workbook) is False
+    are_same, message = validate_tabs_between_spreadsheets(workbook1, empty_workbook)
+    assert are_same is False
+    assert "Spreadsheet 2 is missing the following sheets:" in message
 
 
 def test_invalid_type(workbook2):
