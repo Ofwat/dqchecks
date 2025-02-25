@@ -75,25 +75,25 @@ def check_sheet_structure(sheet1, sheet2):
         sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet object to compare.
 
     Returns:
-        tuple: A tuple containing a boolean and a message:
-            - The boolean is True if the structures are the same, False otherwise.
-            - The message provides detailed information on what caused the discrepancy, 
-              such as different row/column counts, empty sheets, or mismatched column headers.
-
-    Errors:
-        ValueError: If either input is not a valid openpyxl worksheet object.
-        TypeError: If the provided arguments are not openpyxl worksheet objects.
-
+        dict: A dictionary with the structure:
+            - "status": "Error" or "Ok"
+            - "description": The result message (either indicating success
+                    or providing details on discrepancies)
+            - "errors": A dictionary with error details if discrepancies are found.
+              - If no discrepancies are found, errors is an empty dictionary.
+    
     Example:
         sheet1 = workbook1['Sheet1']
         sheet2 = workbook2['Sheet2']
-        is_same, message = check_sheet_structure(sheet1, sheet2)
-        print(is_same, message)
+        result = check_sheet_structure(sheet1, sheet2)
+        print(result)
 
     Notes:
         - Empty sheets are those that have no rows or columns.
         - Column comparison is case-sensitive and checks for exact matches in both name and order.
     """
+    errors = {}
+
     # Validate input types
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
         raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
@@ -104,20 +104,19 @@ def check_sheet_structure(sheet1, sheet2):
 
     # Check if the sheets are empty
     if sheet1.max_row == 1 or sheet1.max_column == 1:
-        return False, f"Sheet '{sheet_name1}' is empty."
+        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet_name1]
     if sheet2.max_row == 1 or sheet2.max_column == 1:
-        return False, f"Sheet '{sheet_name2}' is empty."
+        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet_name2]
 
     # Check if the number of rows and columns are the same
     rows1, cols1 = sheet1.max_row, sheet1.max_column
     rows2, cols2 = sheet2.max_row, sheet2.max_column
 
     if (rows1, cols1) != (rows2, cols2):
-        return False, (
-            f"Different number of rows/columns: '{sheet_name1}' has "
-            f"{rows1} rows and {cols1} columns, '{sheet_name2}' has "
-            f"{rows2} rows and {cols2} columns."
-        )
+        errors["Row/Column Count"] = errors.get("Row/Column Count", []) + [
+            f"'{sheet_name1}' has {rows1} rows and {cols1} columns, "
+            f"'{sheet_name2}' has {rows2} rows and {cols2} columns."
+        ]
 
     # Check if the column headers are the same (both name and order)
     header1 = [sheet1.cell(row=1, column=c).value for c in range(1, cols1 + 1)]
@@ -129,14 +128,25 @@ def check_sheet_structure(sheet1, sheet2):
         for i, (h1, h2) in enumerate(zip(header1, header2)):
             if h1 != h2:
                 diff_headers.append((i + 1, h1, h2))  # Record column number and the difference
+        errors["Header Mismatch"] = errors.get("Header Mismatch", []) + [
+            f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers
+        ]
 
-        return False, (
-            f"Columns are different in '{sheet_name1}' and '{sheet_name2}' at "
-            f"positions: {', '.join([f'Column {i}: {h1} != {h2}' for i, h1, h2 in diff_headers])}"
-        )
+    # If there are errors, return "Error" status with accumulated errors
+    if errors:
+        return {
+            "status": "Error",
+            "description": "The following discrepancies were found in the sheet structure:",
+            "errors": errors
+        }
 
-    # If all checks pass, the structure is the same
-    return True, f"Spreadsheets '{sheet_name1}' and '{sheet_name2}' have the same structure"
+    # If all checks pass, return "Ok" status
+    return {
+        "status": "Ok",
+        "description": f"Spreadsheets '{sheet_name1}' and '{sheet_name2}' have the same structure.",
+        "errors": {}
+    }
+
 
 def compare_formulas(sheet1, sheet2):
     """
@@ -148,12 +158,18 @@ def compare_formulas(sheet1, sheet2):
 
     Returns:
         dict: A dictionary with status, description, and any differences:
-            - If formulas are equivalent: {"status": "Ok", 
-                "description": "All formulas are equivalent", 
-                "errors": {}}
-            - If formulas differ: {"status": "Error",
+            - If formulas are equivalent: {
+                "status": "Ok",
+                "description": "All formulas are equivalent",
+                "errors": {}
+            }
+            - If formulas differ: {
+                "status": "Error",
                 "description": "Found formula differences",
-                "errors": {"Cell_Name": ["Sheet1:A1"]}}
+                "errors": {
+                    "Cell_Name": ["Sheet1:A1"]
+                    }
+                }
     """
     # Validate input types
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
@@ -166,9 +182,9 @@ def compare_formulas(sheet1, sheet2):
     if (rows1, cols1) != (rows2, cols2):
         return {
             "status": "Error",
-            "description": f"Sheets have different dimensions: \
-                '{sheet1.title}' has {rows1} rows & {cols1} columns,\
-                '{sheet2.title}' has {rows2} rows & {cols2} columns.",
+            "description": f"Sheets have different dimensions: '{sheet1.title}' "+\
+                f"has {rows1} rows & {cols1} columns, '{sheet2.title}' has "+\
+                    f"{rows2} rows & {cols2} columns.",
             "errors": {}
         }
 
@@ -189,8 +205,8 @@ def compare_formulas(sheet1, sheet2):
                     # Add the differing cell to the dictionary, grouped by the cell name
                     if cell_name not in differing_cells:
                         differing_cells[cell_name] = []
-                    differing_cells[cell_name].append(f"{sheet1.title}!{cell_name} ({cell1.value}) \
-                        != {sheet2.title}!{cell_name} ({cell2.value})")
+                    differing_cells[cell_name].append(f"{sheet1.title}!{cell_name} "+\
+                        f"({cell1.value}) != {sheet2.title}!{cell_name} ({cell2.value})")
 
     # If there are differences in formulas, return detailed message
     if differing_cells:
@@ -217,7 +233,7 @@ def check_formula_errors(sheet):
     
     Returns:
         dict: A dictionary with status, description, and any found errors in the format:
-            {"status": "Error", "description": "Found errors", "errors": {"DIV/0!": ["Sheet1:A1"]}}
+            {"status": "Error", "description": "Found errors", "errors": {"#DIV/0!": ["Sheet1:A1"]}}
             or {"status": "Ok"} if no errors were found.
     
     Example:

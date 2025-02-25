@@ -123,6 +123,6 @@ def test_compare_formulas_different_dimensions(sheet_with_formulas, sheet_empty)
     sheet2 = sheet_empty
     result = compare_formulas(sheet1, sheet2)
     assert result["status"] == "Error"
-    assert result["description"] == "Sheets have different dimensions: 'Sheet1' has 2 rows\
-        & 3 columns, 'Sheet1' has 1 rows & 1 columns."
+    assert result["description"] == "Sheets have different dimensions: " +\
+        "'Sheet1' has 2 rows & 3 columns, 'Sheet1' has 1 rows & 1 columns."
     assert not result["errors"]

@@ -62,32 +62,33 @@ def empty_sheet():
 # pylint: disable=W0621
 def test_check_sheet_structure_equal(sheet1, sheet2):
     """Test that two identical sheets return True with no differences."""
-    result, message = check_sheet_structure(sheet1, sheet2)
-    assert result is True
-    assert "have the same structure" in message
+    result = check_sheet_structure(sheet1, sheet2)
+    assert result["status"] == "Ok"
+    assert "have the same structure" in result["description"]
+    assert not result["errors"]  # Ensure no errors
 
 # pylint: disable=W0621
 def test_check_sheet_structure_different_columns(sheet1, sheet_with_different_headers):
     """Test that two sheets with different headers return False and provide the right message."""
-    result, message = check_sheet_structure(sheet1, sheet_with_different_headers)
-    assert result is False
-    assert "Columns are different" in message
-    assert "Column 1: Name != First Name" in message
+    result = check_sheet_structure(sheet1, sheet_with_different_headers)
+    assert result["status"] == "Error"
+    assert "The following discrepancies were found in the sheet structure:" in result["description"]
+    assert "Column 1: Name != First Name" in result["errors"]["Header Mismatch"]
 
 # pylint: disable=W0621
 def test_check_sheet_structure_empty_sheet1(empty_sheet, sheet2):
     """Test that an empty sheet returns False and provides the correct message."""
     empty_sheet.title = "Sheet1"
-    result, message = check_sheet_structure(empty_sheet, sheet2)
-    assert result is False
-    assert "Sheet 'Sheet1' is empty." in message
+    result = check_sheet_structure(empty_sheet, sheet2)
+    assert result["status"] == "Error"
+    assert "Sheet1" in result["errors"]["Empty Sheet"]
 
 def test_check_sheet_structure_empty_sheet2(sheet1, empty_sheet):
     """Test that an empty sheet returns False and provides the correct message."""
     empty_sheet.title = "Sheet2"
-    result, message = check_sheet_structure(sheet1, empty_sheet)
-    assert result is False
-    assert "Sheet 'Sheet2' is empty." in message
+    result = check_sheet_structure(sheet1, empty_sheet)
+    assert result["status"] == "Error"
+    assert "Sheet2" in result["errors"]["Empty Sheet"]
 
 def test_check_sheet_structure_different_size(sheet1, sheet_with_different_headers):
     """Test that two sheets with different sizes (number of rows/columns) return False."""
@@ -105,12 +106,13 @@ def test_check_sheet_structure_different_size(sheet1, sheet_with_different_heade
     sheet['C3'] = 'LON'
     sheet_with_different_headers = sheet
 
-    result, message = check_sheet_structure(sheet1, sheet_with_different_headers)
-    assert result is False
-    assert "Different number of rows/columns" in message
-    assert "'Sheet1' has 3 rows and 2 columns" in message
-    assert "'Sheet2' has 3 rows and 3 columns" in message
-
+    result = check_sheet_structure(sheet1, sheet_with_different_headers)
+    assert result["status"] == "Error"
+    assert "The following discrepancies were found in the sheet structure:" in result["description"]
+    assert "'Sheet1' has 3 rows and 2 columns, 'Sheet2' has 3 rows and 3 columns."\
+        in result["errors"]["Row/Column Count"]
+    assert "'Sheet1' has 3 rows and 2 columns, 'Sheet2' has 3 rows and 3 columns."\
+        in result["errors"]["Row/Column Count"]
 
 def test_check_sheet_structure_invalid_input():
     """Test that invalid inputs return the expected error message."""
