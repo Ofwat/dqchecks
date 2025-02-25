@@ -198,26 +198,20 @@ def check_formula_errors(sheet):
         sheet (openpyxl.worksheet.worksheet.Worksheet): The worksheet to check for formula errors.
     
     Returns:
-        tuple: A tuple containing a boolean and a message:
-            - The boolean is True if no formulas resulted in errors, False otherwise.
-            - The message lists the cells with formula errors, including their sheet names.
+        dict: A dictionary with status, description, and any found errors in the format:
+            {"status": "Error", "description": "Found errors", "errors": {"DIV/0!": ["Sheet1:A1"]}}
+            or {"status": "Ok"} if no errors were found.
     
     Example:
         sheet = workbook['Sheet1']
-        are_no_errors, message = check_formula_errors(sheet)
-        print(are_no_errors, message)
+        result = check_formula_errors(sheet)
+        print(result)
     """
     # Validate input types
     if not isinstance(sheet, Worksheet):
         raise ValueError("Input must be valid openpyxl worksheet object.")
 
-    # Known Excel formula errors
-    excel_error_strings = [
-        "#DIV/0!", "#N/A", "#REF!", "#NAME?", "#CALC",
-        "#VALUE!", "#NUM!", "#NULL!", "#SPILL",
-    ]
-
-    error_messages = []
+    error_details = {}
 
     # Iterate over all cells in the sheet
     for row in sheet.iter_rows():
@@ -225,13 +219,20 @@ def check_formula_errors(sheet):
             # Check if the cell contains an error (identified by an 'e')
             if cell.data_type == 'e':
                 # If the formula's output is one of the known error strings
-                if isinstance(cell.value, str) and cell.value in excel_error_strings:
+                if isinstance(cell.value, str):
                     cell_name = f"{sheet.title}!{get_column_letter(cell.column)}{cell.row}"
-                    error_messages.append(f"Error in {cell_name}: {cell.value}")
+                    # Group errors by type
+                    if cell.value not in error_details:
+                        error_details[cell.value] = []
+                    error_details[cell.value].append(cell_name)
 
-    # If no errors were found, return True and a success message
-    if not error_messages:
-        return True, "No formula errors found."
+    # If no errors were found, return the status as "Ok"
+    if not error_details:
+        return {"status": "Ok", "description": "No errors found", "errors": {}}
 
-    # If errors were found, return False and a list of the errors
-    return False, "\n".join(error_messages)
+    # If errors were found, return the status as "Error" with the grouped error details
+    return {
+        "status": "Error",
+        "description": "Found errors",
+        "errors": error_details
+    }

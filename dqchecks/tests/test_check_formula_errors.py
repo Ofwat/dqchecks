@@ -21,6 +21,7 @@ def workbook_with_errors():
     """Fixture for a workbook with formula errors."""
     wb = Workbook()
     sheet = wb.active
+    sheet.title = "Sheet1"
 
     # Adding valid data
     sheet['A1'] = 10
@@ -38,7 +39,7 @@ def workbook_with_errors():
     sheet['A3'].value = '#DIV/0!'  # Manually simulate the error for testing purposes
     sheet['A4'].value = '#REF!'    # Manually simulate the error for testing purposes
     sheet['A5'].value = '#NAME?'   # Manually simulate the error for testing purposes
-    sheet["A6"].value = '##MISSING' # Manually insert text which loooks like Error
+    sheet["A6"].value = '##MISSING' # Manually insert text which looks like an error
 
     return sheet
 
@@ -55,30 +56,32 @@ def workbook_with_non_formula_cells():
 
 # pylint: disable=W0621
 def test_check_formula_errors_no_errors(workbook_with_no_errors):
-    """Test that the function returns 'No formula errors found' when there are no formula errors."""
+    """Test that the function returns 'Ok' status when there are no formula errors."""
     sheet = workbook_with_no_errors
-    result, message = check_formula_errors(sheet)
-    assert result is True
-    assert message == "No formula errors found."
+    result = check_formula_errors(sheet)
+    assert result == {"status": "Ok", "description": "No errors found", "errors": {}}
 
 # pylint: disable=W0621
 def test_check_formula_errors_with_errors(workbook_with_errors):
-    """Test that the function correctly identifies formula errors."""
+    """Test that the function correctly identifies formula errors and groups them."""
     sheet = workbook_with_errors
-    result, message = check_formula_errors(sheet)
-    assert result is False
-    assert "Error in Sheet!A3: #DIV/0!" in message
-    assert "Error in Sheet!A4: #REF!" in message
-    assert "Error in Sheet!A5: #NAME?" in message
-    assert "Error in Sheet!A5: ##MISSING" not in message
+    result = check_formula_errors(sheet)
+    assert result["status"] == "Error"
+    assert result["description"] == "Found errors"
+    assert "#DIV/0!" in result["errors"]
+    assert "#REF!" in result["errors"]
+    assert "#NAME?" in result["errors"]
+    assert result["errors"]["#DIV/0!"] == ["Sheet1!A3"]
+    assert result["errors"]["#REF!"] == ["Sheet1!A4"]
+    assert result["errors"]["#NAME?"] == ["Sheet1!A5"]
+    assert "##MISSING" not in result["errors"]
 
 # pylint: disable=W0621
 def test_check_formula_errors_with_non_formula_cells(workbook_with_non_formula_cells):
     """Test that non-formula cells don't affect the result."""
     sheet = workbook_with_non_formula_cells
-    result, message = check_formula_errors(sheet)
-    assert result is True
-    assert message == "No formula errors found."
+    result = check_formula_errors(sheet)
+    assert result == {"status": "Ok", "description": "No errors found", "errors": {}}
 
 def test_check_formula_errors_invalid_input():
     """Test that the function raises a ValueError for invalid input types."""
