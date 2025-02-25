@@ -147,11 +147,13 @@ def compare_formulas(sheet1, sheet2):
         sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet to compare.
 
     Returns:
-        tuple: A tuple containing a boolean and a message:
-            - The boolean is True if all formulas are equivalent, False otherwise.
-            - The message provides detailed information on which formulas are different,
-                if applicable.
-            - If formulas differ, a list of cell names with sheet names is provided.
+        dict: A dictionary with status, description, and any differences:
+            - If formulas are equivalent: {"status": "Ok", 
+                "description": "All formulas are equivalent", 
+                "errors": {}}
+            - If formulas differ: {"status": "Error",
+                "description": "Found formula differences",
+                "errors": {"Cell_Name": ["Sheet1:A1"]}}
     """
     # Validate input types
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
@@ -162,11 +164,16 @@ def compare_formulas(sheet1, sheet2):
     rows2, cols2 = sheet2.max_row, sheet2.max_column
 
     if (rows1, cols1) != (rows2, cols2):
-        return False, f"Sheets have different dimensions: '{sheet1.title}' has {rows1} rows & " \
-                       f"{cols1} columns, '{sheet2.title}' has {rows2} rows & {cols2} columns."
+        return {
+            "status": "Error",
+            "description": f"Sheets have different dimensions: \
+                '{sheet1.title}' has {rows1} rows & {cols1} columns,\
+                '{sheet2.title}' has {rows2} rows & {cols2} columns.",
+            "errors": {}
+        }
 
-    # List to hold cells with differing formulas
-    differing_cells = []
+    # Dictionary to hold differing cells, grouped by their names
+    differing_cells = {}
 
     # Compare formulas cell by cell
     for row in range(1, rows1 + 1):
@@ -178,17 +185,28 @@ def compare_formulas(sheet1, sheet2):
             if isinstance(cell1.value, str) and cell1.value.startswith('=') and \
                isinstance(cell2.value, str) and cell2.value.startswith('='):
                 if cell1.value != cell2.value:
-                    cell_name = f"{sheet1.title}!{get_column_letter(col)}{row}"
-                    differing_cells.append(f"Cell {cell_name} has different formulas: "
-                                           f"'{sheet1.title}' has '{cell1.value}', "
-                                           f"'{sheet2.title}' has '{cell2.value}'.")
+                    cell_name = f"{get_column_letter(col)}{row}"
+                    # Add the differing cell to the dictionary, grouped by the cell name
+                    if cell_name not in differing_cells:
+                        differing_cells[cell_name] = []
+                    differing_cells[cell_name].append(f"{sheet1.title}!{cell_name} ({cell1.value}) \
+                        != {sheet2.title}!{cell_name} ({cell2.value})")
 
     # If there are differences in formulas, return detailed message
     if differing_cells:
-        return False, "The following cells have different formulas:\n" + "\n".join(differing_cells)
+        return {
+            "status": "Error",
+            "description": "Found formula differences",
+            "errors": differing_cells
+        }
 
     # If all formulas are equivalent
-    return True, "All formulas are equivalent."
+    return {
+        "status": "Ok",
+        "description": "All formulas are equivalent",
+        "errors": {}
+    }
+
 
 def check_formula_errors(sheet):
     """
