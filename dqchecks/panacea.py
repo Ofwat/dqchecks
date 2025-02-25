@@ -167,7 +167,7 @@ def compare_formulas(sheet1, sheet2):
                 "status": "Error",
                 "description": "Found formula differences",
                 "errors": {
-                    "Cell_Name": ["Sheet1:A1"]
+                    "Cell_Name": ["Sheet1!A1"]
                     }
                 }
     """
@@ -233,7 +233,13 @@ def check_formula_errors(sheet):
     
     Returns:
         dict: A dictionary with status, description, and any found errors in the format:
-            {"status": "Error", "description": "Found errors", "errors": {"#DIV/0!": ["Sheet1:A1"]}}
+            {
+                "status": "Error",
+                "description": "Found errors",
+                "errors": {
+                    "#DIV/0!": ["Sheet1!A1"]
+                }
+            }
             or {"status": "Ok"} if no errors were found.
     
     Example:
