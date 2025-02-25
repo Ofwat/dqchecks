@@ -40,25 +40,30 @@ def empty_workbook():
 # pylint: disable=W0621
 def test_same_tabs(workbook1, workbook2):
     """Test case where both workbooks have the same sheet names."""
-    are_same, message = validate_tabs_between_spreadsheets(workbook1, workbook2)
-    assert are_same is True
-    assert message == "Both spreadsheets have the same sheet names."
+    result = validate_tabs_between_spreadsheets(workbook1, workbook2)
+    assert result["status"] == "Ok"
+    assert result["description"] == "Both spreadsheets have the same sheet names."
+    assert not result["errors"]  # Ensure no missing sheets
 
 # pylint: disable=W0621
 def test_different_tabs(workbook1, workbook3):
     """Test case where the workbooks have different sheet names."""
-    are_same, message = validate_tabs_between_spreadsheets(workbook1, workbook3)
-    assert are_same is False
-    assert "Spreadsheet 1 is missing the following sheets:" in message
-    assert "Spreadsheet 2 is missing the following sheets:" in message
+    result = validate_tabs_between_spreadsheets(workbook1, workbook3)
+    assert result["status"] == "Error"
+    assert result["description"] == "Spreadsheets have different sheet names."
+    assert "Missing In Spreadsheet 1" in result["errors"]
+    assert "Missing In Spreadsheet 2" in result["errors"]
+    assert "Sheet2" in result["errors"]["Missing In Spreadsheet 2"]
 
 # pylint: disable=W0621
 def test_empty_workbook(workbook1, empty_workbook):
     """Test case where one workbook is empty (no sheets)."""
-    are_same, message = validate_tabs_between_spreadsheets(workbook1, empty_workbook)
-    assert are_same is False
-    assert "Spreadsheet 2 is missing the following sheets:" in message
-
+    result = validate_tabs_between_spreadsheets(workbook1, empty_workbook)
+    assert result["status"] == "Error"
+    assert result["description"] == "Spreadsheets have different sheet names."
+    assert "Missing In Spreadsheet 2" in result["errors"]
+    assert "Sheet1" in result["errors"]["Missing In Spreadsheet 2"]
+    assert "Sheet2" in result["errors"]["Missing In Spreadsheet 2"]
 
 def test_invalid_type(workbook2):
     """Test case where the argument is not a valid openpyxl workbook."""
@@ -67,7 +72,6 @@ def test_invalid_type(workbook2):
 
     with pytest.raises(ValueError):
         validate_tabs_between_spreadsheets(workbook2, "not_a_workbook")
-
 
 def test_invalid_object(workbook2):
     """Test case where the argument is an invalid object."""

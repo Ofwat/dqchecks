@@ -21,10 +21,11 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
         spreadsheet2 (openpyxl.workbook.workbook.Workbook): The second workbook object to compare.
 
     Returns:
-        tuple:
-            - bool: True if both workbooks have the same sheet names (ignoring order),
-                False otherwise.
-            - str: Message providing details about missing tabs (if any).
+        dict:
+            - "status": "Ok" if both workbooks have the same sheet names, "Error" otherwise.
+            - "description": A general description of the comparison result.
+            - "errors": A dictionary containing detailed error messages about missing tabs.
+              If no errors, this will be an empty dictionary.
 
     Raises:
         ValueError: If either argument is not a valid openpyxl workbook object.
@@ -43,21 +44,23 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
     missing_in_1 = sheets2 - sheets1
     missing_in_2 = sheets1 - sheets2
 
-    if not missing_in_1 and not missing_in_2:
-        return True, "Both spreadsheets have the same sheet names."
+    result = {
+        "status": "Ok",
+        "description": "Both spreadsheets have the same sheet names.",
+        "errors": {}
+    }
 
-    # Build detailed message about which sheets are missing from which spreadsheet
-    message = []
-    if missing_in_1:
-        message.append(
-            f"Spreadsheet 1 is missing the following sheets: {', '.join(missing_in_1)}"
-        )
-    if missing_in_2:
-        message.append(
-            f"Spreadsheet 2 is missing the following sheets: {', '.join(missing_in_2)}"
-        )
+    if missing_in_1 or missing_in_2:
+        result["status"] = "Error"
+        result["description"] = "Spreadsheets have different sheet names."
+        errors = {}
+        if missing_in_1:
+            errors["Missing In Spreadsheet 1"] = list(missing_in_1)
+        if missing_in_2:
+            errors["Missing In Spreadsheet 2"] = list(missing_in_2)
+        result["errors"] = errors
 
-    return False, "\n".join(message)
+    return result
 
 
 def check_sheet_structure(sheet1, sheet2):
