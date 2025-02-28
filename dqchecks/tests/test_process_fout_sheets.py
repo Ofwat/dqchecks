@@ -301,3 +301,60 @@ def test_missing_submission_last_modified():
 
     with pytest.raises(ValueError):
         process_fout_sheets(xlfile, context)
+
+def test_different_observation_periods():
+    """
+    Test case to check if the function handles cases where different 
+        sheets have different observation periods.
+    
+    This test verifies that the function correctly handles sheets with
+        different sets of observation periods,
+    ensuring that each sheet's observation periods are melted properly
+        without causing errors.
+    """
+    # Create data for two sheets, each with different observation periods
+    sheet_data = {
+        'fOut_2023': pd.DataFrame({
+            "Reference": ["Reference", "", "Ref1", "Ref2", "Ref3"],
+            "Item description": ["Item description", "", "Item 1", "Item 2", "Item 3"],
+            "Unit": ["Unit", "", "kg", "g", "lbs"],
+            "Model": ["Model", "", "A", "B", "C"],
+            "2020-21": ["2020-21", "", 10, 20, 30],
+            "2021-22": ["2021-22", "", 15, 25, 35],
+        }),
+        'fOut_2024': pd.DataFrame({
+            "Reference": ["Reference", "", "Ref1", "Ref2", "Ref3"],
+            "Item description": ["Item description", "", "Item 1", "Item 2", "Item 3"],
+            "Unit": ["Unit", "", "kg", "g", "lbs"],
+            "Model": ["Model", "", "A", "B", "C"],
+            "2021-22": ["2021-22", "", 10, 20, 30],
+            "2022-23": ["2022-23", "", 15, 25, 35],
+        }),
+    }
+
+    # Simulate an Excel file with two sheets having different observation periods
+    xlfile = create_excel_file(sheet_data)
+
+    context = ProcessingContext(
+        org_cd="ORG123",
+        submission_period_cd="2025Q1",
+        process_cd="process_1",
+        template_version="v1.0",
+        last_modified=datetime.datetime(2025, 2, 11)
+    )
+
+    # Process the file and get the result DataFrame
+    result_df = process_fout_sheets(xlfile, context)
+
+    # Check that all observation periods from both sheets are present
+    expected_observation_periods = ["2020-21", "2021-22", "2022-23"]
+    assert set(result_df["Observation_Period_Cd"]) == set(expected_observation_periods)
+    assert set(result_df[
+        result_df["Sheet_Cd"] == "fOut_2023"
+        ]["Observation_Period_Cd"]) == {"2020-21", "2021-22"}
+    assert set(result_df[
+        result_df["Sheet_Cd"] == "fOut_2024"
+        ]["Observation_Period_Cd"]) == {"2021-22", "2022-23"}
+
+    # Check that the resulting DataFrame is not empty
+    assert not result_df.empty
