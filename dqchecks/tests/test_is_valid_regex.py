@@ -1,3 +1,6 @@
+"""
+Tests for is_valid_regex from transforms.py file
+"""
 from dqchecks.transforms import is_valid_regex
 
 # Test valid regex patterns
@@ -27,7 +30,7 @@ def test_is_valid_regex_invalid_patterns():
         r'[^',  # Unmatched square bracket
         r'(',  # Unmatched parenthesis
     ]
-    
+
     for pattern in invalid_patterns:
         assert not is_valid_regex(pattern), f"Failed for pattern: {pattern}"
 
