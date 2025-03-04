@@ -1,9 +1,11 @@
-"""
-Collection of functions used for transformation
-"""
 import datetime
+import logging
 from collections import namedtuple
+from openpyxl.workbook.workbook import Workbook
 import pandas as pd
+import re
+
+logging.basicConfig(level=logging.INFO)
 
 # Define namedtuple for context
 ProcessingContext = namedtuple(
@@ -11,28 +13,39 @@ ProcessingContext = namedtuple(
                           'template_version', 'last_modified']
 )
 
-def process_fout_sheets(xlfile, context: ProcessingContext):
+def is_valid_regex(pattern: str) -> bool:
+    try:
+        re.compile(pattern)  # Try to compile the regex pattern
+        return True  # If no exception, it's a valid regex
+    except re.error:  # If an exception is raised, it's not a valid regex
+        return False
+
+def process_fout_sheets(
+        wb: Workbook,
+        context: ProcessingContext,
+        observation_patterns: list[str],
+        ):
     """
-    Processes all sheets in the given Excel file that start with 'fOut_'.
+    Processes all sheets in the given Excel workbook that start with 'fOut_'.
 
     Args:
-        xlfile (pd.ExcelFile): The Excel file object to process.
+        wb (openpyxl.workbook.workbook.Workbook): The openpyxl Workbook object to process.
         context (ProcessingContext): The context object containing organization code,
                                      submission period code, process code, template version,
                                      and last modified timestamp.
 
     Returns:
-        pd.DataFrame: The processed DataFrame after all transformations.
+        pd.DataFrame: A pandas DataFrame containing the processed data from all matching sheets.
 
     Raises:
-        ValueError: If any of the input values are invalid.
-        TypeError: If the provided Excel file is not of the correct type.
+        ValueError: If any of the input values are invalid or if no matching sheets are found.
+        TypeError: If the provided workbook is not of the correct type.
         Exception: For any other unexpected errors.
     """
 
     # Input checks
-    if not isinstance(xlfile, pd.ExcelFile):
-        raise TypeError("The 'xlfile' argument must be a valid pd.ExcelFile object.")
+    if not isinstance(wb, Workbook):
+        raise TypeError("The 'wb' argument must be a valid openpyxl workbook object.")
 
     # Check if context fields are of valid type
     if not isinstance(context.org_cd, str) or not context.org_cd:
@@ -50,20 +63,41 @@ def process_fout_sheets(xlfile, context: ProcessingContext):
     if not isinstance(context.last_modified, datetime.datetime):
         raise ValueError("The 'last_modified' argument must be a datetime object.")
 
+    if (not isinstance(observation_patterns, list)
+            or not all(isinstance(i, str) for i in observation_patterns)
+            or not all(is_valid_regex(i) for i in observation_patterns)
+            ):
+        raise ValueError("The 'observation_patterns' argument needs to be a list of regex strings.")
+
+    # Check if the workbook is in data_only mode
+    if not wb.data_only:
+        logging.warning("Reading in non data_only mode. Some data may not be accessible.")
+        
+    logging.info("Using observation patterns: %s", observation_patterns)
+
     # Filter sheets that start with 'fOut_'
     fout_sheets = [
-        sheet for sheet in xlfile.sheet_names if sheet.startswith("fOut_")
+        sheet for sheet in wb.sheetnames if sheet.startswith("fOut_")
     ]
 
     # If no matching sheets are found, raise an error
     if not fout_sheets:
-        raise ValueError(f"No fOut_* sheets found. Available sheets: {xlfile.sheet_names}")
+        raise ValueError(f"No fOut_* sheets found. Available sheets: {wb.sheetnames}")
 
     # Read matching sheets into DataFrames, skip the first row, and use the second row as header
-    df_list = [
-        xlfile.parse(sheet, header=1).assign(Sheet_Cd=sheet)
-        for sheet in fout_sheets
-    ]
+    df_list = []
+    for sheetname in fout_sheets:
+        data = wb[sheetname].iter_rows(min_row=2, values_only=True)
+        # Get the header from the first row (if the first row contains the column names)
+        try:
+            headers = next(data)
+        except StopIteration as exc:
+            raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
+
+        # Convert the sheet to a pandas DataFrame
+        df = pd.DataFrame(data, columns=headers)
+        df["Sheet_Cd"] = sheetname  # Add the sheet name as a new column 'Sheet_Cd'
+        df_list.append(df)
 
     # Drop rows that are completely NaN (ignoring the 'Sheet_Cd' column)
     df_list = [
@@ -80,10 +114,13 @@ def process_fout_sheets(xlfile, context: ProcessingContext):
 
     # Loop through each DataFrame in df_list and process them
     for df in df_list:
-        # Identify columns related to observation periods (i.e., columns with a yyyy-yy pattern)
-        observation_period_columns = set(
-            df.filter(regex=r'^\s*2[0-9]{3}-[1-9][0-9]\s*$').columns.tolist()
-        )
+        observation_period_columns = []
+        # Identify columns which match observation patterns supplied
+        for observation_pattern in observation_patterns:
+            observation_period_columns += list(
+                    df.filter(regex=observation_pattern).columns.tolist()
+                )
+        observation_period_columns = set(observation_period_columns)
 
         # If no observation period columns are found, raise an error
         if not observation_period_columns:

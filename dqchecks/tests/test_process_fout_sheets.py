@@ -1,316 +1,176 @@
-"""
-Tests for the transforms.py file
-"""
-import datetime
-from io import BytesIO
+# """
+# Tests for the transforms.py file
+# """
 import pytest
+from openpyxl.workbook.workbook import Workbook
+from datetime import datetime
 import pandas as pd
-
 from dqchecks.transforms import process_fout_sheets, ProcessingContext
+from unittest.mock import MagicMock, patch
 
-
-def create_excel_file(sheet_data):
-    """
-    A helper function to simulate loading an Excel file with Pandas.
-
-    Args:
-        sheet_data (dict): A dictionary where keys are sheet names and values are DataFrames.
-
-    Returns:
-        pd.ExcelFile: A pandas ExcelFile object containing the sheets in the provided data.
-    """
-    excel_buffer = BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='xlsxwriter') as writer:
-        for sheet_name, data in sheet_data.items():
-            data.to_excel(writer, sheet_name=sheet_name, index=False)
-    excel_buffer.seek(0)
-    return pd.ExcelFile(excel_buffer)
-
-
-def valid_excel_data():
-    """
-    Fixture that creates a sample DataFrame for testing purposes.
-
-    Returns:
-        dict: A dictionary with sheet names as keys and DataFrames as values.
-    """
-    data = {
-        "1": ["Acronym", "", "a", "b", "c"],
-        "2": ["Reference", "", "a", "b", "c"],
-        "3": ["Item description", "", "a", "b", "c"],
-        "4": ["Unit", "", "a", "b", "c"],
-        "5": ["Model", "", "a", "b", "c"],
-        "6": ["2020-21", "", "a", "b", "c"],
-        "7": ["2021-22", "", "a", "b", "c"],
-        "8": ["2022-23", "", "a", "b", "c"],
-    }
-    df = pd.DataFrame(data)
-    return {
-        'fOut_2023': df,
-        'fOut_2024': df
-    }
-
-
-def test_valid_input():
-    """
-    Test case to check the function's behavior with valid input data.
-
-    The test verifies that the resulting DataFrame contains the expected columns
-    and is not empty.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-
-    context = ProcessingContext(
-        org_cd="ORG123",
+# Fixture for valid ProcessingContext
+@pytest.fixture
+def valid_context():
+    return ProcessingContext(
+        org_cd="ORG001",
         submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
+        process_cd="PROCESS01",
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
     )
 
-    result_df = process_fout_sheets(xlfile, context)
+# Fixture for an empty workbook
+@pytest.fixture
+def empty_workbook_without_fout():
+    wb = Workbook()
+    wb.create_sheet("other")
+    return wb
 
-    expected_columns = [
-        'Organisation_Cd', 'Submission_Period_Cd', 'Observation_Period_Cd', 'Process_Cd',
-        'Template_Version', 'Sheet_Cd', 'Measure_Cd', 'Measure_Value', 'Measure_Desc',
-        'Measure_Unit', 'Model_Cd', 'Submission_Date'
-    ]
+# Fixture for workbook with data in 'fOut_*' sheets
+@pytest.fixture
+def workbook_with_data():
+    wb = Workbook()
+    sheet = wb.create_sheet("fOut_Sheet1")
+    sheet.append(["", "", "", "", "", "", "", ""])
+    sheet.append(["Acronym", "Reference", "Item description", "Unit", "Model", "Description_input", "Constant", "2020-21"])
+    sheet.append(["", "", "", "", "", "", "", ""])
+    sheet.append(["a", "a", "a", "a", "a", "a", "a", "a"])
+    sheet.append(["a", "a", "a", "a", "a", "a", "a", "a"])
+    return wb
 
-    assert set(result_df.columns) == set(expected_columns)
+# Test valid processing of a workbook
+def test_process_fout_sheets_valid(workbook_with_data, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    result_df = process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
+    assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
+    assert "Organisation_Cd" in result_df.columns
+    assert "Observation_Period_Cd" in result_df.columns
+    assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
+    
+    # Patch the logging to capture the warning message
+    with patch("logging.warning") as mock_warning:
+        # Call the function (this will trigger the warning if wb.data_only is False)
+        process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
 
+        # Check that the warning was logged with the expected message
+        mock_warning.assert_called_with("Reading in non data_only mode. Some data may not be accessible.")
 
-def test_invalid_xlfile_type():
-    """
-    Test case to verify that an error is raised when the provided file is not an Excel file.
+# Test invalid workbook type (not an openpyxl Workbook)
+def test_process_fout_sheets_invalid_workbook(valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    with pytest.raises(TypeError, match="The 'wb' argument must be a valid openpyxl workbook object."):
+        process_fout_sheets("invalid", valid_context, observation_patterns)
 
-    This test checks if the function raises a TypeError when the input is not an
-    instance of pd.ExcelFile.
-    """
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
+# Test missing 'fOut_*' sheets in the workbook
+def test_process_fout_sheets_no_fout_sheets(empty_workbook_without_fout, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    with pytest.raises(ValueError, match=r"No fOut_\* sheets found. Available sheets:"):
+        process_fout_sheets(empty_workbook_without_fout, valid_context, observation_patterns)
 
-    with pytest.raises(TypeError):
-        process_fout_sheets("invalid_excel_file", context)
+# Test missing observation period columns (no 'yyyy-yy' pattern columns)
+def test_process_fout_sheets_missing_observation_columns(workbook_with_data, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    sheet = workbook_with_data["fOut_Sheet1"]
+    # Remove the observation period columns to simulate the case
+    sheet.delete_cols(7, 2)
+    
+    with pytest.raises(ValueError, match="No observation period columns found in the data."):
+        process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
 
+# Test that dropping NaN rows works as expected
+def test_process_fout_sheets_drop_nan_rows(workbook_with_data, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    # Create a sheet with NaN rows
+    sheet = workbook_with_data["fOut_Sheet1"]
+    sheet.append([None, None, None, None])  # Add a row with all NaNs
+    
+    result_df = process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
+    assert result_df.shape[0] == 3  # Should have dropped the NaN row
+    assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
 
-def test_missing_org_cd():
-    """
-    Test case to check if a ValueError is raised when 'org_cd' is missing or empty.
-
-    The function verifies that a ValueError is raised if the organization code is not provided.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
+# Test when context has invalid 'org_cd' (empty string)
+def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    invalid_context = ProcessingContext(
         org_cd="",
         submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
+        process_cd="PROCESS01",
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
     )
+    with pytest.raises(ValueError, match="The 'org_cd' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
 
-    with pytest.raises(ValueError):
-        process_fout_sheets(xlfile, context)
+# Test when context has invalid 'submission_period_cd' (None)
+def test_process_fout_sheets_invalid_context_submission_period(workbook_with_data):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd=None,
+        process_cd="PROCESS01",
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
+    )
+    with pytest.raises(ValueError, match="The 'submission_period_cd' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
 
-
-def test_no_fout_sheets():
-    """
-    Test case to check if the function raises an exception when there are no fOut_* sheets.
-
-    The test verifies that an exception is raised if the Excel file does not contain any sheet
-    with the name starting with 'fOut_'.
-    """
-    sheet_data = {
-        'OtherSheet': pd.DataFrame({
-            "Reference": [1],
-            "Item description": ["Item 1"],
-            "Unit": ["kg"],
-            "Model": ["A"],
-            "2020-21": [10],
-        })
-    }
-    xlfile = create_excel_file(sheet_data)
-    context = ProcessingContext(
-        org_cd="ORG123",
+# Test when context has invalid 'last_modified' (wrong type)
+def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
         submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
+        process_cd="PROCESS01",
+        template_version="1.0",
+        last_modified="invalid"  # Should be a datetime object
     )
+    with pytest.raises(ValueError, match="The 'last_modified' argument must be a datetime object."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
 
-    with pytest.raises(Exception, match="No fOut_*"):
-        process_fout_sheets(xlfile, context)
+# Test if the function raises error when no valid rows are available after dropping NaNs
+def test_process_fout_sheets_empty_data(workbook_with_data, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    sheet = workbook_with_data["fOut_Sheet1"]
+    sheet.delete_rows(0, 5)  # Remove all data rows
+    
+    with pytest.raises(ValueError, match="Sheet 'fOut_Sheet1' is empty or has no data."):
+        process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
 
-
-def test_empty_sheet():
+def create_openpyxl_workbook(sheet_data):
     """
-    Test case to verify if the function raises a ValueError when a sheet contains no valid data.
-
-    The function checks if a ValueError is raised when all rows of the sheet are NaN after dropping.
+    Helper function to create an openpyxl Workbook from a dictionary of DataFrames.
+    Each key in the dictionary represents a sheet name and each value is a DataFrame
+    for that sheet.
     """
-    sheet_data = {
-        'fOut_Empty': pd.DataFrame({
-            "Reference": ["Reference", None, None, None],
-            "Item description": ["Item description", None, None, None],
-            "Unit": ["Unit", None, None, None],
-            "Model": ["Model", None, None, None],
-            "2020-21": ["2020-21", None, None, None],
-        })
-    }
+    wb = Workbook()
+    
+    # Remove the default sheet created
+    wb.remove(wb.active)
 
-    xlfile = create_excel_file(sheet_data)
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
+    for sheet_name, df in sheet_data.items():
+        ws = wb.create_sheet(sheet_name)
+        # Write the DataFrame to the sheet
+        for row in dataframe_to_rows(df, index=False, header=True):
+            ws.append(row)
+    
+    return wb
 
-    with pytest.raises(ValueError,
-            match="No valid data found after removing rows with NaN values."):
-        process_fout_sheets(xlfile, context)
-
-
-def test_missing_observation_columns():
+def dataframe_to_rows(df, index=True, header=True):
     """
-    Test case to check if a ValueError is raised when the observation period columns are missing.
-
-    This function checks that the function raises an error if no columns for observation periods
-    (like '2020-21') are found in the data.
+    Helper function to convert a pandas DataFrame to rows for openpyxl.
     """
-    data = {
-        "Reference": [1, 2, 3],
-        "Item description": ["Item 1", "Item 2", "Item 3"],
-        "Unit": ["kg", "g", "lbs"],
-        "Model": ["A", "B", "C"],
-    }
-    df = pd.DataFrame(data)
-    sheet_data = {
-        'fOut_2023': df
-    }
-    xlfile = create_excel_file(sheet_data)
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
-
-    with pytest.raises(ValueError, match="No observation period columns found in the data."):
-        process_fout_sheets(xlfile, context)
-
-
-def test_output_data_types():
-    """
-    Test case to verify if the output DataFrame contains the correct data types.
-
-    This test ensures that all columns in the resulting DataFrame are of type 'object' (string).
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
-
-    result_df = process_fout_sheets(xlfile, context)
-
-    assert all(result_df[column].dtype == 'object' for column in result_df.columns)
-
-
-def test_missing_submission_period_cd():
-    """
-    Test case to check if a ValueError is raised when 'submission_period_cd' is missing or empty.
-
-    The function verifies that a ValueError is raised if the submission period code is not provided.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
-
-    with pytest.raises(ValueError):
-        process_fout_sheets(xlfile, context)
-
-
-def test_missing_submission_process_cd():
-    """
-    Test case to check if a ValueError is raised when 'process_cd' is missing or empty.
-
-    The function verifies that a ValueError is raised if the process code is not provided.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="",
-        template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
-
-    with pytest.raises(ValueError):
-        process_fout_sheets(xlfile, context)
-
-
-def test_missing_submission_template_version():
-    """
-    Test case to check if a ValueError is raised when 'template_version' is missing or empty.
-
-    The function verifies that a ValueError is raised if the template version is not provided.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="",
-        last_modified=datetime.datetime(2025, 2, 11)
-    )
-
-    with pytest.raises(ValueError):
-        process_fout_sheets(xlfile, context)
-
-
-def test_missing_submission_last_modified():
-    """
-    Test case to check if a ValueError is raised when 'last_modified' is missing or None.
-
-    The function checks that a ValueError is raised if the last modified timestamp isn't provided.
-    """
-    xlfile = create_excel_file(valid_excel_data())
-    context = ProcessingContext(
-        org_cd="ORG123",
-        submission_period_cd="2025Q1",
-        process_cd="process_1",
-        template_version="v1.0",
-        last_modified=None
-    )
-
-    with pytest.raises(ValueError):
-        process_fout_sheets(xlfile, context)
+    from openpyxl.utils.dataframe import dataframe_to_rows
+    return dataframe_to_rows(df, index=index, header=header)
 
 def test_different_observation_periods():
     """
     Test case to check if the function handles cases where different 
-        sheets have different observation periods.
+    sheets have different observation periods.
     
     This test verifies that the function correctly handles sheets with
-        different sets of observation periods,
-    ensuring that each sheet's observation periods are melted properly
-        without causing errors.
+    different sets of observation periods, ensuring that each sheet's
+    observation periods are melted properly without causing errors.
     """
     # Create data for two sheets, each with different observation periods
     sheet_data = {
@@ -332,29 +192,143 @@ def test_different_observation_periods():
         }),
     }
 
-    # Simulate an Excel file with two sheets having different observation periods
-    xlfile = create_excel_file(sheet_data)
+    # Create an openpyxl workbook from the sheet data
+    wb = create_openpyxl_workbook(sheet_data)
+    
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
 
     context = ProcessingContext(
         org_cd="ORG123",
         submission_period_cd="2025Q1",
         process_cd="process_1",
         template_version="v1.0",
-        last_modified=datetime.datetime(2025, 2, 11)
+        last_modified=datetime(2025, 2, 11),
     )
 
     # Process the file and get the result DataFrame
-    result_df = process_fout_sheets(xlfile, context)
+    result_df = process_fout_sheets(wb, context, observation_patterns)
 
     # Check that all observation periods from both sheets are present
-    expected_observation_periods = ["2020-21", "2021-22", "2022-23"]
-    assert set(result_df["Observation_Period_Cd"]) == set(expected_observation_periods)
-    assert set(result_df[
-        result_df["Sheet_Cd"] == "fOut_2023"
-        ]["Observation_Period_Cd"]) == {"2020-21", "2021-22"}
-    assert set(result_df[
-        result_df["Sheet_Cd"] == "fOut_2024"
-        ]["Observation_Period_Cd"]) == {"2021-22", "2022-23"}
+    expected_observation_periods = {"2020-21", "2021-22", "2022-23"}
+    assert set(result_df["Observation_Period_Cd"]) == expected_observation_periods
+    
+    # Check observation periods for each sheet
+    assert set(result_df[result_df["Sheet_Cd"] == "fOut_2023"]["Observation_Period_Cd"]) == {"2020-21", "2021-22"}
+    assert set(result_df[result_df["Sheet_Cd"] == "fOut_2024"]["Observation_Period_Cd"]) == {"2021-22", "2022-23"}
 
     # Check that the resulting DataFrame is not empty
     assert not result_df.empty
+
+# Test when context has invalid 'process_cd' (non-string or empty string)
+def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
+    """
+    Test case to check if the function raises an error when the 'process_cd' context is invalid.
+    """
+    # Test case where process_cd is an empty string
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="",  # Invalid: empty string
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
+    )
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    
+    with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
+
+    # Test case where process_cd is not a string (e.g., an integer)
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd=1234,  # Invalid: integer
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
+    )
+    
+    with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
+
+
+# Test when context has invalid 'template_version' (non-string or empty string)
+def test_process_fout_sheets_invalid_context_template_version(workbook_with_data):
+    """
+    Test case to check if the function raises an error when the 'template_version' context is invalid.
+    """
+    # Test case where template_version is an empty string
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="PROCESS01",
+        template_version="",  # Invalid: empty string
+        last_modified=datetime(2025, 3, 3)
+    )
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    
+    with pytest.raises(ValueError, match="The 'template_version' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
+
+    # Test case where template_version is not a string (e.g., a number)
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="PROCESS01",
+        template_version=1.0,  # Invalid: not a string
+        last_modified=datetime(2025, 3, 3)
+    )
+    
+    with pytest.raises(ValueError, match="The 'template_version' argument must be a non-empty string."):
+        process_fout_sheets(workbook_with_data, invalid_context, observation_patterns)
+
+# Test when observation_patterns is not a list
+def test_process_fout_sheets_invalid_observation_patterns_not_list(workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error when 'observation_patterns' is not a list.
+    """
+    invalid_observation_patterns = "invalid_pattern_string"  # Not a list
+
+    with pytest.raises(ValueError, match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(workbook_with_data, valid_context, invalid_observation_patterns)
+        
+# Test when observation_patterns contains elements that are not strings
+def test_process_fout_sheets_invalid_observation_patterns_non_string(workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error when 'observation_patterns' contains elements that are not strings.
+    """
+    invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', 1234]  # List with non-string element (integer)
+
+    with pytest.raises(ValueError, match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(workbook_with_data, valid_context, invalid_observation_patterns)
+
+# Test when observation_patterns contains invalid regex patterns
+def test_process_fout_sheets_invalid_observation_patterns_invalid_regex(workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error when 'observation_patterns' contains invalid regex patterns.
+    """
+    invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', r"[^"] 
+
+    with pytest.raises(ValueError, match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(workbook_with_data, valid_context, invalid_observation_patterns)
+
+# import pytest
+# import pandas as pd
+# from openpyxl.workbook.workbook import Workbook
+# from datetime import datetime
+# from dqchecks.transforms import process_fout_sheets, ProcessingContext
+
+# Fixture for workbook with no valid rows after dropping NaNs
+@pytest.fixture
+def workbook_with_invalid_data():
+    wb = Workbook()
+    sheet = wb.create_sheet("fOut_Sheet1")
+    sheet.append(["", "", "", "", "", "", "", ""])  # Blank row
+    sheet.append([None, None, None, None, None, None, None, None])  # Another row with all NaNs
+    return wb
+
+# Test case to check that an error is raised when no valid rows remain after dropping NaN rows
+def test_process_fout_sheets_no_valid_rows(workbook_with_invalid_data, valid_context):
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    
+    # Process the sheet
+    with pytest.raises(ValueError, match="No valid data found after removing rows with NaN values."):
+        process_fout_sheets(workbook_with_invalid_data, valid_context, observation_patterns)
