@@ -412,11 +412,7 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
     if not isinstance(wb_company, Workbook):
         raise ValueError("The 'wb_company' argument must be a valid openpyxl Workbook.")
 
-    # Validate tabs between the workbooks (placeholder function for now)
-    try:
-        a = validate_tabs_between_spreadsheets(wb_template, wb_company)
-    except Exception as e:
-        raise ValueError(f'Error while comparing sheets between the workbooks: {str(e)}') from e
+    a = validate_tabs_between_spreadsheets(wb_template, wb_company)
 
     # Create the context for missing sheets
     missing_sheet_context = MissingSheetContext(
