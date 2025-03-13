@@ -3,13 +3,12 @@ Panacea code
 
 Function used to do initial validation of the Excel files
 """
+import uuid
+from collections import namedtuple
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
-
 import pandas as pd
-import uuid
-from collections import namedtuple
 
 def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
     """
@@ -308,30 +307,30 @@ def create_missing_sheet_row(sheet, context: MissingSheetContext):
         ValueError: If 'sheet' is not a string or if 'context' does not contain
                     the required fields.
     """
-    
+
     # Input validation
     if not isinstance(sheet, str) or not sheet:
         raise ValueError("The 'sheet' argument must be a non-empty string.")
-    
+
     if not isinstance(context, MissingSheetContext):
         raise ValueError("The 'context' argument must be of type MissingSheetContext.")
-    
+
     # Validate that context fields are not None or empty strings
     if not context.Rule_Cd or not isinstance(context.Rule_Cd, str):
         raise ValueError("Invalid 'Rule_Cd' in context: it must be a non-empty string.")
-    
+
     if not context.Error_Category or not isinstance(context.Error_Category, str):
         raise ValueError("Invalid 'Error_Category' in context: it must be a non-empty string.")
-    
+
     if not context.Error_Severity_Cd or not isinstance(context.Error_Severity_Cd, str):
         raise ValueError("Invalid 'Error_Severity_Cd' in context: it must be a non-empty string.")
 
     # Generate a unique Event_Id using uuid4
-    Event_Id = uuid.uuid4().hex
+    eventid = uuid.uuid4().hex
 
     # Return the dictionary representing the missing sheet row
     return {
-        'Event_Id': Event_Id,
+        'Event_Id': eventid,
         'Sheet_Cd': sheet,
         'Rule_Cd': context.Rule_Cd,
         'Error_Category': context.Error_Category,
@@ -341,41 +340,46 @@ def create_missing_sheet_row(sheet, context: MissingSheetContext):
 
 def create_dataframe_missing_sheets(input_data, context: MissingSheetContext):
     """
-    Creates a pandas DataFrame representing missing sheets based on the provided input data and context.
+    Creates a pandas DataFrame representing missing sheets based on
+        the provided input data and context.
     
     Args:
-        input_data (dict): The input data containing error details, specifically the list of missing sheets.
-        context (MissingSheetContext): The context containing error details such as Rule_Cd, Error_Category, and Error_Severity_Cd.
+        input_data (dict): The input data containing error details, specifically
+            the list of missing sheets.
+        context (MissingSheetContext): The context containing error details such as
+            Rule_Cd, Error_Category, and Error_Severity_Cd.
     
     Returns:
         pd.DataFrame: A DataFrame containing the rows for missing sheets.
     
     Raises:
-        ValueError: If 'input_data' is not a dictionary or does not contain the required 'errors' key.
+        ValueError: If 'input_data' is not a dictionary or does not contain
+            the required 'errors' key.
         ValueError: If 'context' is not a valid MissingSheetContext.
     """
-    
+
     # Input validation for 'input_data'
     if not isinstance(input_data, dict):
         raise ValueError("The 'input_data' argument must be a dictionary.")
-    
+
     # Validate that the 'context' is a valid MissingSheetContext
     if not isinstance(context, MissingSheetContext):
         raise ValueError("The 'context' argument must be of type MissingSheetContext.")
-    
+
     # Extract the missing sheets list from the input_data
     missing_sheets = input_data.get('errors', {}).get('Missing In Spreadsheet 2', [])
-    
+
     # Validate that 'missing_sheets' is a list
     if not isinstance(missing_sheets, list):
         missing_sheets = []  # Fallback to empty list if not a valid list
-    
+
     # Create an empty list to store rows for each missing sheet
     rows = []
 
     # Create a row for each sheet in the missing sheets list
     for sheet in missing_sheets:
         if not isinstance(sheet, str) or not sheet:
+            # pylint: disable=C0301
             raise ValueError(f"Invalid sheet name: '{sheet}'. Each sheet must be a non-empty string.")
         rows.append(create_missing_sheet_row(sheet, context))
 
@@ -400,28 +404,28 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
     Raises:
         ValueError: If either 'wb_template' or 'wb_company' are not valid openpyxl workbooks.
     """
-    
+
     # Input validation for 'wb_template' and 'wb_company'
     if not isinstance(wb_template, Workbook):
         raise ValueError("The 'wb_template' argument must be a valid openpyxl Workbook.")
-    
+
     if not isinstance(wb_company, Workbook):
         raise ValueError("The 'wb_company' argument must be a valid openpyxl Workbook.")
-    
+
     # Validate tabs between the workbooks (placeholder function for now)
     try:
         a = validate_tabs_between_spreadsheets(wb_template, wb_company)
     except Exception as e:
         raise ValueError(f'Error while comparing sheets between the workbooks: {str(e)}') from e
-    
+
     # Create the context for missing sheets
     missing_sheet_context = MissingSheetContext(
         Rule_Cd="?",
         Error_Category="Missing Sheet",
         Error_Severity_Cd="soft",
     )
-    
+
     # Generate the DataFrame for missing sheets
     missing_sheets_df = create_dataframe_missing_sheets(a, missing_sheet_context)
-    
+
     return missing_sheets_df
