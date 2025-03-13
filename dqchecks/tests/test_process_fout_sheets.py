@@ -55,8 +55,25 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
     result_df = process_fout_sheets(workbook_with_data, valid_context, observation_patterns)
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
-    assert "Organisation_Cd" in result_df.columns
-    assert "Observation_Period_Cd" in result_df.columns
+
+    expected_columns = [
+        "Organisation_Cd",
+        "Submission_Period_Cd",
+        "Observation_Period_Cd",
+        "Process_Cd",
+        "Template_Version",
+        "Sheet_Cd",
+        "Measure_Cd",
+        "Measure_Value",
+        "Measure_Unit",
+        "Model_Cd",
+        "Submission_Date",
+        "Section_Cd",
+        "Cell_Cd",
+    ]
+    assert all(i in result_df.columns for i in expected_columns)
+    # assert "Organisation_Cd" in result_df.columns
+    # assert "Observation_Period_Cd" in result_df.columns
     assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
 
     # Patch the logging to capture the warning message
