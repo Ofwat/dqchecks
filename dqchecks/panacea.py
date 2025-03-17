@@ -748,8 +748,6 @@ def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.Da
         # Check for structure discrepancies in the current sheet
         discrepancies = check_sheet_structure(wb_template[sheetname], wb_company[sheetname])
 
-        print(discrepancies)
-
         # If discrepancies are found, create a DataFrame
         df = create_dataframe_structure_discrepancies(discrepancies, context)
         all_shape_error_dfs.append(df)
