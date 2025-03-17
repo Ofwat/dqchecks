@@ -539,3 +539,60 @@ def create_dataframe_formula_errors(input_data: dict, context: FormulaErrorSheet
     df = pd.DataFrame(rows)
 
     return df
+
+def find_formula_errors(wb: Workbook):
+    """
+    Finds formula errors across all sheets in an Excel workbook
+        and returns a consolidated DataFrame.
+
+    Args:
+        wb (Workbook): The openpyxl Workbook object representing the Excel file.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the formula errors from all sheets in the workbook.
+    
+    Raises:
+        ValueError: If the 'wb' argument is not an instance of openpyxl Workbook.
+    
+    This function loops through all sheets in the provided workbook,
+        runs formula checks on each sheet,
+    creates a context for each sheet's errors, and generates
+        a DataFrame of formula errors. The individual 
+    DataFrames are then concatenated to produce one
+        final DataFrame that contains all the formula errors from 
+    all sheets.
+    """
+
+    # Input validation for the 'wb' argument (must be a valid openpyxl Workbook)
+    if not isinstance(wb, Workbook):
+        raise ValueError("The 'wb' argument must be a valid openpyxl Workbook.")
+
+    # Initialize an empty list to store DataFrames for each sheet's formula errors
+    all_formula_error_dfs = []
+
+    # Loop through each sheet in the workbook
+    for sheetname in wb.sheetnames:
+        # Run formula checks for the current sheet and store the results
+        formula_errors = check_formula_errors(wb[sheetname])
+
+        # Create a context object for the current sheet with formula error details
+        formula_error_sheet_context = FormulaErrorSheetContext(
+            Rule_Cd="?",  # Placeholder for rule code (could be customized)
+            Sheet_Cd=sheetname,
+            Error_Category="Formula Error",
+            Error_Severity_Cd="hard",  # Placeholder for error severity
+        )
+
+        # Create a DataFrame for the current sheet's formula errors using the helper function
+        sheet_error_df = create_dataframe_formula_errors(
+            formula_errors,
+            formula_error_sheet_context)
+
+        # Append the DataFrame for the current sheet to the list
+        all_formula_error_dfs.append(sheet_error_df)
+
+    # Concatenate all the DataFrames in the list into one large DataFrame
+    final_formula_error_df = pd.concat(all_formula_error_dfs, ignore_index=True)
+
+    # Return the final concatenated DataFrame containing all formula errors from all sheets
+    return final_formula_error_df

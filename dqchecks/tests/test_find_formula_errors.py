@@ -1,13 +1,16 @@
 """
-Test functions related to create_dataframe_formula_errors
+Test functions related to find_formula_errors
 in panacea.py file
 """
 import pytest
+from openpyxl import Workbook
+import pandas as pd
 from dqchecks.panacea import (
     validate_input_data,
     extract_error_rows,
     create_row_for_error,
     create_dataframe_formula_errors,
+    find_formula_errors,
     FormulaErrorSheetContext)
 
 def test_valid_input_data_and_context():
@@ -416,3 +419,57 @@ def test_create_dataframe_formula_errors_no_errors(context):
 
     # Assert that the DataFrame is empty
     assert df.empty
+
+def test_find_formula_errors_invalid_workbook():
+    """
+    Test that find_formula_errors raises a ValueError when the input is not a valid Workbook.
+    """
+    with pytest.raises(ValueError, match="The 'wb' argument must be a valid openpyxl Workbook."):
+        find_formula_errors("invalid_workbook")  # Pass a string instead of Workbook
+
+@pytest.mark.parametrize("invalid_input", ["string", 123, None, {}, []])
+def test_find_formula_errors_invalid_input(invalid_input):
+    """
+    Test that find_formula_errors raises a ValueError when the input is not a valid Workbook.
+    """
+    with pytest.raises(ValueError, match="The 'wb' argument must be a valid openpyxl Workbook."):
+        find_formula_errors(invalid_input)
+
+# Test that the loop correctly processes multiple sheets in the workbook
+def test_find_formula_errors_with_multiple_sheets():
+    """
+    Test that find_formula_errors processes multiple sheets in the workbook and correctly appends 
+    the DataFrames for each sheet to the final result.
+    """
+
+    # Create a new workbook with two sheets
+    wb = Workbook()
+    sheet1 = wb.create_sheet("Sheet1")
+    sheet2 = wb.create_sheet("Sheet2")
+
+    # Add formula errors to Sheet1 and Sheet2 (dummy formula errors)
+    sheet1['A1'] = '#DIV/0!'
+    sheet1['B1'] = '#VALUE!'
+    sheet2['A1'] = '#NAME?'
+    sheet2['B1'] = '#REF!'
+
+    # Call the function
+    result_df = find_formula_errors(wb)
+
+    # Assertions to ensure that the loop processes both sheets and correctly appends DataFrames
+    assert isinstance(result_df, pd.DataFrame)
+    assert len(result_df) == 4  # 2 errors in Sheet1, 2 errors in Sheet2
+
+    # Check if the sheet names are correctly included in the DataFrame
+    assert 'Sheet1' in result_df['Sheet_Cd'].values
+    assert 'Sheet2' in result_df['Sheet_Cd'].values
+
+    # Check if the errors are correctly included in the DataFrame
+    assert '#DIV/0!' in result_df['Error_Desc'].values
+    assert '#VALUE!' in result_df['Error_Desc'].values
+    assert '#NAME?' in result_df['Error_Desc'].values
+    assert '#REF!' in result_df['Error_Desc'].values
+
+    # Check if the cell references are correctly included
+    assert 'Sheet1!A1' in result_df['Cell_Reference'].values
+    assert 'Sheet2!B1' in result_df['Cell_Reference'].values
