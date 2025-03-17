@@ -1,5 +1,5 @@
 """
-Test functions related to find_formula_errors
+Test functions related to create_dataframe_formula_errors
 in panacea.py file
 """
 import pytest
@@ -7,7 +7,7 @@ from dqchecks.panacea import (
     validate_input_data,
     extract_error_rows,
     create_row_for_error,
-    find_formula_errors,
+    create_dataframe_formula_errors,
     FormulaErrorSheetContext)
 
 def test_valid_input_data_and_context():
@@ -260,7 +260,7 @@ def test_create_row_for_error_uuid_format():
     # Ensure only valid hexadecimal characters
     assert all(c in '0123456789abcdef' for c in row['Event_Id'])
 
-def test_find_formula_errors_invalid_input_data():
+def test_create_dataframe_formula_errors_invalid_input_data():
     """Invalid input data type (not a dictionary)"""
     input_data = ["SyntaxError", "FormulaError"]
     # pylint: disable=W0621
@@ -268,19 +268,19 @@ def test_find_formula_errors_invalid_input_data():
 
     # Expect ValueError to be raised due to invalid input data type
     with pytest.raises(ValueError, match="The 'input_data' argument must be a dictionary."):
-        find_formula_errors(input_data, context)
+        create_dataframe_formula_errors(input_data, context)
 
-def test_find_formula_errors_missing_errors_field():
+def test_create_dataframe_formula_errors_missing_errors_field():
     """Input data without an 'errors' field"""
     input_data = {}
     # pylint: disable=W0621
     context = FormulaErrorSheetContext("Rule3", "Sheet3", "Validation", "Low")
 
     # Expect an empty dataframe since there are no errors to process
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
     assert df.empty
 
-def test_find_formula_errors_invalid_context():
+def test_create_dataframe_formula_errors_invalid_context():
     """Invalid context (missing required fields)"""
     input_data = {
         "errors": {
@@ -293,7 +293,7 @@ def test_find_formula_errors_invalid_context():
     # Expect the function to raise an error due to invalid context (if validation is applied)
     with pytest.raises(ValueError,
             match="The 'context' values cannot be None."):
-        find_formula_errors(input_data, context)
+        create_dataframe_formula_errors(input_data, context)
 
 @pytest.fixture
 def context():
@@ -305,7 +305,7 @@ def context():
         Error_Severity_Cd="High")
 
 # pylint: disable=W0621
-def test_find_formula_errors_single_error_type_multiple_cells(context):
+def test_create_dataframe_formula_errors_single_error_type_multiple_cells(context):
     """
     Test when there is a single error type with multiple cells.
     """
@@ -316,7 +316,7 @@ def test_find_formula_errors_single_error_type_multiple_cells(context):
     }
 
     # Create the DataFrame
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
 
     # Assert the correct number of rows (3 rows for 3 cells in '#DIV/0!')
     assert len(df) == 3
@@ -332,7 +332,7 @@ def test_find_formula_errors_single_error_type_multiple_cells(context):
     assert df['Cell_Reference'].iloc[2] == 'C3'
 
 # pylint: disable=W0621
-def test_find_formula_errors_multiple_error_types(context):
+def test_create_dataframe_formula_errors_multiple_error_types(context):
     """
     Test when there are multiple error types, each with multiple cells.
     """
@@ -344,7 +344,7 @@ def test_find_formula_errors_multiple_error_types(context):
     }
 
     # Create the DataFrame
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
 
     # Assert the correct number of rows (4 rows: 2 for '#DIV/0!' and 2 for '#VALUE!')
     assert len(df) == 4
@@ -364,7 +364,7 @@ def test_find_formula_errors_multiple_error_types(context):
     assert df['Cell_Reference'].iloc[3] == 'D4'
 
 # pylint: disable=W0621
-def test_find_formula_errors_empty_cell_list(context):
+def test_create_dataframe_formula_errors_empty_cell_list(context):
     """
     Test when an error type has an empty list of cells
         (should result in no rows for that error type).
@@ -377,7 +377,7 @@ def test_find_formula_errors_empty_cell_list(context):
     }
 
     # Create the DataFrame
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
 
     # Assert the correct number of rows (2 rows for '#DIV/0!')
     assert len(df) == 2
@@ -386,7 +386,7 @@ def test_find_formula_errors_empty_cell_list(context):
     assert '#VALUE!' not in df['Error_Desc'].values
 
 # pylint: disable=W0621
-def test_find_formula_errors_single_empty_error_type(context):
+def test_create_dataframe_formula_errors_single_empty_error_type(context):
     """
     Test when there is a single error type with an empty list of cells (edge case).
     """
@@ -397,13 +397,13 @@ def test_find_formula_errors_single_empty_error_type(context):
     }
 
     # Create the DataFrame
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
 
     # Assert that the DataFrame is empty
     assert df.empty
 
 # pylint: disable=W0621
-def test_find_formula_errors_no_errors(context):
+def test_create_dataframe_formula_errors_no_errors(context):
     """
     Test when there are no errors (empty dictionary for 'errors').
     """
@@ -412,7 +412,7 @@ def test_find_formula_errors_no_errors(context):
     }
 
     # Create the DataFrame
-    df = find_formula_errors(input_data, context)
+    df = create_dataframe_formula_errors(input_data, context)
 
     # Assert that the DataFrame is empty
     assert df.empty
