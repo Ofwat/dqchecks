@@ -425,3 +425,117 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
     missing_sheets_df = create_dataframe_missing_sheets(a, missing_sheet_context)
 
     return missing_sheets_df
+
+# Define the FormulaErrorSheetContext
+FormulaErrorSheetContext = namedtuple(
+    'FormulaErrorSheetContext', ['Rule_Cd', 'Sheet_Cd', 'Error_Category', 'Error_Severity_Cd']
+)
+
+def validate_input_data(input_data: dict, context: FormulaErrorSheetContext):
+    """
+    Validates the input data and context to ensure they are in the expected format.
+    
+    Args:
+        input_data (dict): The input error data.
+        context (FormulaErrorSheetContext): The context with error details.
+    
+    Raises:
+        ValueError: If either the 'input_data' or 'context' are invalid.
+    """
+    # Input validation for 'input_data' and 'context'
+    if not isinstance(input_data, dict):
+        raise ValueError("The 'input_data' argument must be a dictionary.")
+
+    if not isinstance(context, FormulaErrorSheetContext):
+        raise ValueError("The 'context' argument must be of type FormulaErrorSheetContext.")
+
+    if any(i is None for i in context):
+        raise ValueError("The 'context' values cannot be None.")
+
+def extract_error_rows(input_data: dict):
+    """
+    Extracts error rows from the input data, validating the 'errors' field and its contents.
+    
+    Args:
+        input_data (dict): The input error data.
+    
+    Returns:
+        list: A list of tuples where each tuple contains the error type and a list of cells.
+    """
+    errors = input_data.get('errors', {})
+
+    if not isinstance(errors, dict):
+        raise ValueError("The 'errors' field in input_data must be a dictionary.")
+
+    # Collect all error rows in a list
+    error_rows = []
+    for error_type, cells in errors.items():
+        if not isinstance(cells, list):
+            continue  # Skip if cells are not in list form
+
+        error_rows.append((error_type, cells))
+
+    return error_rows
+
+def create_row_for_error(sheet_cd: str, error_type: str, cell:str,
+                         context: FormulaErrorSheetContext):
+    """
+    Creates a row dictionary for a single formula error.
+    
+    Args:
+        sheet_cd (str): The sheet code.
+        error_type (str): The type of error (e.g., #DIV/0!).
+        cell (str): The cell reference where the error occurred.
+        context (FormulaErrorSheetContext): The context with error details.
+    
+    Returns:
+        dict: A dictionary representing a row for the error.
+    """
+
+    return {
+        'Event_Id': uuid.uuid4().hex,
+        'Sheet_Cd': sheet_cd,
+        'Cell_Reference': cell,
+        'Rule_Cd': context.Rule_Cd,
+        'Error_Category': context.Error_Category,
+        'Error_Severity_Cd': context.Error_Severity_Cd,
+        'Error_Desc': error_type
+    }
+
+def create_dataframe_formula_errors(input_data: dict, context: FormulaErrorSheetContext):
+    """
+    Creates a pandas DataFrame representing formula errors
+        based on the input error data and context.
+    
+    Args:
+        input_data (dict): A dictionary containing error details, where the keys
+            are error types and the values are lists of cell references 
+            affected by the errors.
+        context (FormulaErrorSheetContext): A namedtuple containing error details
+            like Rule_Cd, Sheet_Cd, Error_Category, and Error_Severity_Cd.
+    
+    Returns:
+        pd.DataFrame: A DataFrame containing the rows for formula errors.
+    
+    Raises:
+        ValueError: If 'input_data' is not a dictionary or if 'context' is invalid.
+    """
+
+    # Validate the input data and context
+    validate_input_data(input_data, context)
+
+    # Extract error rows from the input data
+    error_rows = extract_error_rows(input_data)
+
+    # Create the rows for the DataFrame
+    rows = []
+    for error_type, cells in error_rows:
+        for cell in cells:
+            # Create a row for each cell error
+            row = create_row_for_error(context.Sheet_Cd, error_type, cell, context)
+            rows.append(row)
+
+    # Convert the list of rows into a pandas DataFrame
+    df = pd.DataFrame(rows)
+
+    return df
