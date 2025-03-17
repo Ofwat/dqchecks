@@ -502,7 +502,7 @@ def create_row_for_error(sheet_cd: str, error_type: str, cell:str,
         'Error_Desc': error_type
     }
 
-def create_dataframe_formula_errors(input_data: dict, context: FormulaErrorSheetContext):
+def find_formula_errors(input_data: dict, context: FormulaErrorSheetContext):
     """
     Creates a pandas DataFrame representing formula errors
         based on the input error data and context.
