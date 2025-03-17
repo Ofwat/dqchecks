@@ -4,11 +4,17 @@ Panacea code
 Function used to do initial validation of the Excel files
 """
 import uuid
+from typing import Dict, Any, List
+import logging
 from collections import namedtuple
 from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
 import pandas as pd
+
+# Configure logging for the function
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
     """
@@ -596,3 +602,166 @@ def find_formula_errors(wb: Workbook):
 
     # Return the final concatenated DataFrame containing all formula errors from all sheets
     return final_formula_error_df
+
+# Define namedtuple for context
+StructureDiscrepancyContext = namedtuple(
+    'StructureDiscrepancyContext', 
+    [
+        'Rule_Cd',
+        'Sheet_Cd',
+        'Error_Category',
+        'Error_Severity_Cd',
+    ]
+)
+
+def create_dataframe_structure_discrepancies(
+        input_data: Dict[str, Any],
+        context: StructureDiscrepancyContext) -> pd.DataFrame:
+    """
+    Creates a DataFrame representing structure
+        discrepancies between rows and columns in an Excel sheet.
+
+    Args:
+        input_data (dict): A dictionary containing the error
+            data with keys as error types and values as the discrepancies.
+        context (StructureDiscrepancyContext): The context that
+            contains information like Rule Code, Sheet Code, Error Category,
+            and Error Severity.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame that represents
+            the structure discrepancies for further processing.
+    
+    Raises:
+        ValueError: If 'input_data' does not contain the expected
+            structure or if the 'context' is invalid.
+        TypeError: If 'input_data' is not a dictionary or 'context'
+            is not an instance of StructureDiscrepancyContext.
+    
+    This function processes the given input data (discrepancies between row/column counts) 
+    and generates a DataFrame with relevant details including
+        a unique event ID for each discrepancy.
+    """
+
+    # Validate input types
+    if not isinstance(input_data, dict):
+        raise TypeError("The 'input_data' must be a dictionary.")
+
+    if not isinstance(context, StructureDiscrepancyContext):
+        raise TypeError("The 'context' must be an instance of StructureDiscrepancyContext.")
+
+    if 'errors' not in input_data or not isinstance(input_data['errors'], dict):
+        raise ValueError("The 'input_data' must contain an 'errors' field of type dictionary.")
+
+    # Extract context values
+    rule_cd = context.Rule_Cd
+    error_severity_cd = context.Error_Severity_Cd
+    sheet_cd = context.Sheet_Cd
+    error_category = context.Error_Category
+
+    # Validate context values
+    if not all([rule_cd, error_severity_cd, sheet_cd, error_category]):
+        raise ValueError(
+            "The 'context' contains missing values. Ensure all context " +\
+                "attributes are properly set.")
+
+    # Create an empty list to store rows
+    rows = []
+
+    # Extract and process structure discrepancies from the input data
+    for errortype, discrepancy in input_data['errors'].items():
+        # Check that the discrepancy is a list or tuple, and each element is a string
+        if not isinstance(discrepancy, (list, tuple)):
+            raise ValueError(
+                f"The discrepancy for '{errortype}' must be a list or tuple.")
+
+        if not all(isinstance(d, str) for d in discrepancy):
+            raise ValueError(
+                f"Each item in the discrepancy list for '{errortype}' must be a string.")
+
+        # Create a row for each discrepancy (in this case, row/column count differences)
+        row = {
+            # Generate a unique Event ID
+            'Event_Id': uuid.uuid4().hex,
+            # The sheet code for the error
+            'Sheet_Cd': sheet_cd,
+            # Rule code (e.g., validation rule)
+            'Rule_Cd': rule_cd,
+            # The category of the error
+            'Error_Category': error_category,
+            # The severity of the error
+            'Error_Severity_Cd': error_severity_cd,
+            # Join the discrepancy details into a single string
+            'Error_Desc': " -- ".join(discrepancy),
+        }
+        rows.append(row)
+
+    # Convert the list of rows into a pandas DataFrame
+    df = pd.DataFrame(rows)
+
+    # Return the resulting DataFrame
+    return df
+
+def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.DataFrame:
+    """
+    Compares the sheet structures between two workbooks (template and company)
+        and identifies discrepancies.
+    The function checks if the sheet names exist in both workbooks, compares the structures, 
+    and returns a DataFrame that highlights the discrepancies found in the structures.
+
+    Args:
+        wb_template (Workbook): The template workbook to compare against.
+        wb_company (Workbook): The company workbook to compare.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the structure discrepancies found
+            between the two workbooks.
+    
+    Raises:
+        ValueError: If the provided workbooks are not valid or do not contain any sheets.
+        TypeError: If the input workbooks are not instances of `openpyxl.Workbook`.
+        KeyError: If a sheet does not exist in one of the workbooks.
+    """
+
+    # Input validation
+    if not isinstance(wb_template, Workbook) or not isinstance(wb_company, Workbook):
+        raise TypeError("Both inputs must be instances of openpyxl Workbook.")
+
+    # Initialize an empty list to store individual DataFrames for discrepancies
+    all_shape_error_dfs: List[pd.DataFrame] = []
+
+    # Loop through each sheet in both workbooks and find common sheet names
+    common_sheetnames = set(wb_template.sheetnames).intersection(set(wb_company.sheetnames))
+
+    if not common_sheetnames:
+        logger.warning("No common sheets found between the template and company workbooks.")
+
+    for sheetname in common_sheetnames:
+        # Create the context for the current sheet
+        context = StructureDiscrepancyContext(
+            Rule_Cd="?",
+            Sheet_Cd=sheetname,  # Specify the sheet name with the issue
+            Error_Category="Structure Discrepancy",
+            Error_Severity_Cd="hard"
+        )
+
+        # Check for structure discrepancies in the current sheet
+        discrepancies = check_sheet_structure(wb_template[sheetname], wb_company[sheetname])
+
+        print(discrepancies)
+
+        # If discrepancies are found, create a DataFrame
+        df = create_dataframe_structure_discrepancies(discrepancies, context)
+        all_shape_error_dfs.append(df)
+
+    # If no discrepancies were found, return an empty DataFrame
+    if not all_shape_error_dfs:
+        logger.info("No structure discrepancies were found in any sheet.")
+        return pd.DataFrame()  # Return an empty DataFrame if no discrepancies
+
+    # Concatenate all DataFrames in the list to create one big DataFrame
+    final_shape_error_df = pd.concat(all_shape_error_dfs, ignore_index=True)
+
+    # Return the final DataFrame containing all the discrepancies
+    logger.info("Found %s structure discrepancies across sheets.", len(final_shape_error_df))
+    return final_shape_error_df
