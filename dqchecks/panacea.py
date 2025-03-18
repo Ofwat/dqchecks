@@ -763,3 +763,146 @@ def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.Da
     # Return the final DataFrame containing all the discrepancies
     logger.info("Found %s structure discrepancies across sheets.", len(final_shape_error_df))
     return final_shape_error_df
+
+# Define namedtuple for context
+FormulaDifferencesContext = namedtuple(
+    'FormulaDifferencesContext', ['Rule_Cd', 'Sheet_Cd', 'Error_Category', 'Error_Severity_Cd']
+)
+
+def create_dataframe_formula_differences(
+        input_data: dict,
+        context: FormulaDifferencesContext) -> pd.DataFrame:
+    """
+    Creates a DataFrame from input data containing formula discrepancies for a specific sheet.
+
+    This function processes input data containing formula discrepancies
+        (such as errors in formulas or missing references) and converts
+        it into a pandas DataFrame.
+        Each discrepancy will be represented as a row in the DataFrame,
+        along with associated metadata (such as the rule code,
+            sheet code, error category, severity, and error description).
+
+    Args:
+        input_data (dict): A dictionary containing errors (keyed by cell reference)
+                            that occurred in the sheet. The value should be a list of
+                            error descriptions for each cell.
+        context (FormulaDifferencesContext): A namedtuple containing contextual
+                    information about the discrepancy, including Rule_Cd, Sheet_Cd,
+                                              Error_Category, and Error_Severity_Cd.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the formula discrepancies. Each row represents 
+                      a discrepancy with details including the event ID, sheet name, rule code, 
+                      cell reference, error category, severity, and description.
+
+    Raises:
+        ValueError: If the input_data is not a dictionary or if the context is not a
+            valid FormulaDifferencesContext.
+        KeyError: If any expected key is missing in input_data.
+        TypeError: If the values in input_data are not lists or if any item in the
+            list is not iterable.
+    """
+
+    # Input validation
+    if not isinstance(input_data, dict):
+        raise ValueError("input_data must be a dictionary.")
+
+    if not isinstance(context, FormulaDifferencesContext):
+        raise ValueError("context must be an instance of FormulaDifferencesContext.")
+
+    # Extract context values
+    rule_cd = context.Rule_Cd
+    error_category = context.Error_Category
+    error_severity_cd = context.Error_Severity_Cd
+    sheet_cd = context.Sheet_Cd
+
+     # Validate context values
+    if not all([rule_cd, error_severity_cd, sheet_cd, error_category]):
+        raise ValueError(
+            "The 'context' contains missing values. Ensure all context " +\
+                "attributes are properly set.")
+
+    # Create an empty list to store rows
+    rows = []
+
+    errors = input_data.get("errors", {})
+
+    # Extract the formula discrepancies
+    for cellreference, discrepancies in errors.items():
+        # Create a row for each discrepancy (a list of error descriptions)
+        row = {
+            'Event_Id': uuid.uuid4().hex,
+            'Sheet_Cd': sheet_cd,
+            'Rule_Cd': rule_cd,
+            'Cell_Reference': cellreference,
+            'Error_Category': error_category,
+            'Error_Severity_Cd': error_severity_cd,
+            'Error_Desc': " -- ".join(discrepancies),  # Join the error descriptions with " -- "
+        }
+        rows.append(row)
+
+    # Convert the list of rows into a pandas DataFrame
+    df = pd.DataFrame(rows)
+
+    # Return the resulting DataFrame
+    return df
+
+def find_formula_differences(wb_template: Workbook, wb_company: Workbook) -> pd.DataFrame:
+    """
+    Compares the formulas between two workbooks (template and company) and identifies discrepancies.
+
+    This function iterates through the sheets common to both workbooks and compares the formulas 
+    between the sheets of the template and company workbooks. It generates a DataFrame containing 
+    all formula differences (if any), including the sheet name, error category, and severity, and 
+    concatenates these into a single DataFrame.
+
+    Args:
+        wb_template (Workbook): The template workbook to compare against.
+        wb_company (Workbook): The company workbook to compare.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing all the formula differences found
+                        between the two workbooks. 
+                      Each row represents a formula discrepancy with details such as sheet name, 
+                      error category, severity, and formula description.
+
+    Raises:
+        TypeError: If the input workbooks are not instances of `openpyxl.Workbook`.
+        ValueError: If either of the workbooks does not contain any sheets.
+        Exception: If an error occurs during the formula comparison process.
+    """
+
+    # Input validation
+    if not isinstance(wb_template, Workbook) or not isinstance(wb_company, Workbook):
+        raise TypeError("Both inputs must be instances of openpyxl Workbook.")
+
+    # Initialize an empty list to store individual DataFrames
+    all_formula_difference_dfs = []
+
+    # Loop through each sheet in both workbooks and find common sheet names
+    common_sheetnames = set(wb_template.sheetnames).intersection(set(wb_company.sheetnames))
+
+    # Loop through each common sheet to compare formulas
+    for sheetcd in common_sheetnames:
+        # Create the context for the current sheet
+        context = FormulaDifferencesContext(
+            Rule_Cd="?",
+            Sheet_Cd=sheetcd,  # Specify the sheet name with the issue
+            Error_Category="Formula Difference",
+            Error_Severity_Cd="hard"
+        )
+
+        # Compare formulas between the template and company workbooks for the current sheet
+        a = compare_formulas(wb_template[sheetcd], wb_company[sheetcd])
+
+        # Generate the DataFrame for the current sheet's formula differences
+        df = create_dataframe_formula_differences(a, context)
+
+        # Append the DataFrame for this sheet to the list
+        all_formula_difference_dfs.append(df)
+
+    # Concatenate all DataFrames in the list to create one big DataFrame
+    final_formula_difference_df = pd.concat(all_formula_difference_dfs, ignore_index=True)
+
+    # Return the final DataFrame containing all the formula differences
+    return final_formula_difference_df
