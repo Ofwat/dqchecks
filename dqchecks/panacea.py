@@ -167,23 +167,31 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
         raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
 
-    # Check if the sheets are empty
-    if sheet1.max_row == 1 or sheet1.max_column == 1:
-        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet1.title]
-    if sheet2.max_row == 1 or sheet2.max_column == 1:
-        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet2.title]
+    # Check if both sheets are empty (either one row or one column)
+    if sheet1.max_row == sheet1.max_column == sheet2.max_row == sheet2.max_column == 1:
+        # Both sheets are empty, so do nothing
+        pass
+    else:
+        # Add error for sheet1 if it's empty (either 1 row or 1 column)
+        if sheet1.max_row == 1 or sheet1.max_column == 1:
+            errors.setdefault("Empty Sheet", []).append(sheet1.title)
+
+        # Add error for sheet2 if it's empty (either 1 row or 1 column)
+        if sheet2.max_row == 1 or sheet2.max_column == 1:
+            errors.setdefault("Empty Sheet", []).append(sheet2.title)
+
+    # Get used area for both sheets
+    shape1 = get_used_area(sheet1)
+    rows1, cols1 = shape1["last_used_row"], shape1["last_used_column"]
+    shape2 = get_used_area(sheet2)
+    rows2, cols2 = shape2["last_used_row"], shape2["last_used_column"]
 
     # Check if the number of rows and columns are the same
-    shape = get_used_area(sheet1)
-    rows1, cols1 = shape["last_used_row"], shape["last_used_column"]
-    shape = get_used_area(sheet2)
-    rows2, cols2 = shape["last_used_row"], shape["last_used_column"]
-
     if (rows1, cols1) != (rows2, cols2):
-        errors["Row/Column Count"] = errors.get("Row/Column Count", []) + [
+        errors.setdefault("Row/Column Count", []).append(
             f"'{sheet1.title}' has {rows1} rows and {cols1} columns, "
             f"'{sheet2.title}' has {rows2} rows and {cols2} columns."
-        ]
+        )
 
     # Check if the column headers are the same (both name and order)
     header1 = [sheet1.cell(row=1, column=c).value for c in range(1, cols1 + 1)]
@@ -191,13 +199,11 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
 
     if header1 != header2:
         # Find out which columns are different
-        diff_headers = []
-        for i, (h1, h2) in enumerate(zip(header1, header2)):
-            if h1 != h2:
-                diff_headers.append((i + 1, h1, h2))  # Record column number and the difference
-        errors["Header Mismatch"] = errors.get("Header Mismatch", []) + [
-            f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers
-        ]
+        diff_headers = [
+            (i + 1, h1, h2) for i, (h1, h2) in enumerate(zip(header1, header2)) if h1 != h2]
+        errors.setdefault("Header Mismatch", []).extend(
+            [f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers]
+        )
 
     # If there are errors, return "Error" status with accumulated errors
     if errors:
@@ -214,7 +220,6 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
             f"Spreadsheets '{sheet1.title}' and '{sheet2.title}' have the same structure.",
         "errors": {}
     }
-
 
 def compare_formulas(sheet1, sheet2):
     """
