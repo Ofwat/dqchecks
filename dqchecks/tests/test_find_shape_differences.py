@@ -8,6 +8,7 @@ from openpyxl import Workbook
 from dqchecks.panacea import (
     create_dataframe_structure_discrepancies,
     find_shape_differences,
+    get_used_area,
     StructureDiscrepancyContext)
 
 def test_create_dataframe_valid_input():
@@ -223,3 +224,112 @@ def test_find_shape_differences_invalid_workbook_type():
     """Test when invalid workbook types are passed"""
     with pytest.raises(TypeError):
         find_shape_differences("invalid_template", "invalid_company")
+
+def create_worksheet(data):
+    """Helper function to create a worksheet with predefined values"""
+    wb = Workbook()
+    sheet = wb.active
+    for row_idx, row in enumerate(data, 1):
+        for col_idx, value in enumerate(row, 1):
+            sheet.cell(row=row_idx, column=col_idx, value=value)
+    return sheet
+
+def test_get_used_area_with_some_empty_rows_and_columns():
+    """Test case where there are some empty rows and columns."""
+    data = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+        [None, None, None]  # Empty row at the bottom
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 1
+    assert result['empty_columns'] == 0
+    assert result['last_used_row'] == 3
+    assert result['last_used_column'] == 3
+
+def test_get_used_area_with_no_empty_rows_or_columns():
+    """Test case where there are no empty rows or columns"""
+    data = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [7, 8, 9],
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 0
+    assert result['empty_columns'] == 0
+    assert result['last_used_row'] == 3
+    assert result['last_used_column'] == 3
+
+def test_get_used_area_with_only_empty_rows():
+    """Test case with only empty rows at the bottom"""
+    data = [
+        [1, 2, 3],
+        [4, 5, 6],
+        [None, None, None],
+        [None, None, None],  # Empty rows
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 2
+    assert result['empty_columns'] == 0
+    assert result['last_used_row'] == 2
+    assert result['last_used_column'] == 3
+
+def test_get_used_area_with_only_empty_columns():
+    """Test case with only empty columns at the right"""
+    data = [
+        [1, 2, 3, None],
+        [4, 5, 6, None],
+        [7, 8, 9, None],
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 0
+    assert result['empty_columns'] == 1
+    assert result['last_used_row'] == 3
+    assert result['last_used_column'] == 3
+
+def test_get_used_area_with_single_cell():
+    """Test case where only one cell is filled."""
+    data = [
+        [None, None, None],
+        [None, 1, None],
+        [None, None, None],
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 1
+    assert result['empty_columns'] == 1
+    assert result['last_used_row'] == 2
+    assert result['last_used_column'] == 2
+
+def test_get_used_area_with_large_data():
+    """Test case with a large range of data"""
+    data = [
+        [i + j for j in range(100)] for i in range(100)
+    ]
+    sheet = create_worksheet(data)
+    result = get_used_area(sheet)
+
+    assert result['empty_rows'] == 0
+    assert result['empty_columns'] == 0
+    assert result['last_used_row'] == 100
+    assert result['last_used_column'] == 100
+
+def test_get_used_area_with_invalid_input():
+    """Test case where the input is not a valid Worksheet"""
+    with pytest.raises(ValueError,
+            match="The provided input is not a valid openpyxl Worksheet object."):
+        get_used_area("invalid_input")  # Pass a string instead of a worksheet
+
+    with pytest.raises(ValueError,
+            match="The provided input is not a valid openpyxl Worksheet object."):
+        get_used_area(None)  # Pass None as input

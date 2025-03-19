@@ -71,8 +71,65 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
 
     return result
 
+def get_used_area(sheet: Worksheet):
+    """
+    Given an openpyxl worksheet, returns the number of empty rows at the bottom,
+    the number of empty columns on the right, as well as the last used row and column.
 
-def check_sheet_structure(sheet1, sheet2):
+    This function iterates through the rows and columns from the bottom-right corner 
+    and checks for non-empty values, then returns the last used row and column, 
+    excluding the empty ones.
+
+    :param sheet: The openpyxl worksheet object that contains the data.
+    :type sheet: openpyxl.worksheet.worksheet.Worksheet
+    :return: A dictionary containing the number of empty rows and columns at the bottom,
+             and the last used row and column.
+    :rtype: dict
+    :raises ValueError: If the input is not a valid openpyxl worksheet.
+    """
+
+    # Validate that the input is an instance of openpyxl Worksheet
+    if not isinstance(sheet, Worksheet):
+        raise ValueError("The provided input is not a valid openpyxl Worksheet object.")
+
+    # Get the last used row and column in the sheet
+    max_row = sheet.max_row
+    max_column = sheet.max_column
+
+    # Initialize counters for empty rows and columns
+    empty_row_count = 0
+    empty_column_count = 0
+
+    # Count empty rows from the bottom (starting from max_row)
+    for row in range(max_row, 0, -1):
+        row_values = [sheet.cell(row=row, column=col).value for col in range(1, max_column + 1)]
+        if all(cell is None for cell in row_values):  # If the entire row is empty
+            empty_row_count += 1
+        else:
+            break  # Stop once a non-empty row is found
+
+    # Count empty columns from the right (starting from max_column)
+    for col in range(max_column, 0, -1):
+        column_values = [sheet.cell(row=row, column=col).value for row in range(1, max_row + 1)]
+        if all(cell is None for cell in column_values):  # If the entire column is empty
+            empty_column_count += 1
+        else:
+            break  # Stop once a non-empty column is found
+
+    # Calculate the last used row and column (excluding the empty ones)
+    last_used_row = max_row - empty_row_count
+    last_used_column = max_column - empty_column_count
+
+    # Return the results as a dictionary
+    return {
+        "empty_rows": empty_row_count, 
+        "empty_columns": empty_column_count,
+        "last_used_row": last_used_row,
+        "last_used_column": last_used_column,
+    }
+
+
+def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
     """
     Compares the structure of two openpyxl worksheet objects to determine 
     if they have the same number of rows, columns, and column headers.
@@ -110,24 +167,22 @@ def check_sheet_structure(sheet1, sheet2):
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
         raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
 
-    # Get the sheet names
-    sheet_name1 = sheet1.title
-    sheet_name2 = sheet2.title
-
     # Check if the sheets are empty
     if sheet1.max_row == 1 or sheet1.max_column == 1:
-        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet_name1]
+        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet1.title]
     if sheet2.max_row == 1 or sheet2.max_column == 1:
-        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet_name2]
+        errors["Empty Sheet"] = errors.get("Empty Sheet", []) + [sheet2.title]
 
     # Check if the number of rows and columns are the same
-    rows1, cols1 = sheet1.max_row, sheet1.max_column
-    rows2, cols2 = sheet2.max_row, sheet2.max_column
+    shape = get_used_area(sheet1)
+    rows1, cols1 = shape["last_used_row"], shape["last_used_column"]
+    shape = get_used_area(sheet2)
+    rows2, cols2 = shape["last_used_row"], shape["last_used_column"]
 
     if (rows1, cols1) != (rows2, cols2):
         errors["Row/Column Count"] = errors.get("Row/Column Count", []) + [
-            f"'{sheet_name1}' has {rows1} rows and {cols1} columns, "
-            f"'{sheet_name2}' has {rows2} rows and {cols2} columns."
+            f"'{sheet1.title}' has {rows1} rows and {cols1} columns, "
+            f"'{sheet2.title}' has {rows2} rows and {cols2} columns."
         ]
 
     # Check if the column headers are the same (both name and order)
@@ -155,7 +210,8 @@ def check_sheet_structure(sheet1, sheet2):
     # If all checks pass, return "Ok" status
     return {
         "status": "Ok",
-        "description": f"Spreadsheets '{sheet_name1}' and '{sheet_name2}' have the same structure.",
+        "description":
+            f"Spreadsheets '{sheet1.title}' and '{sheet2.title}' have the same structure.",
         "errors": {}
     }
 
