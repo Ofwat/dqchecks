@@ -201,9 +201,10 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
         # Find out which columns are different
         diff_headers = [
             (i + 1, h1, h2) for i, (h1, h2) in enumerate(zip(header1, header2)) if h1 != h2]
-        errors.setdefault("Header Mismatch", []).extend(
-            [f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers]
-        )
+        if diff_headers:
+            errors.setdefault("Header Mismatch", []).extend(
+                [f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers]
+            )
 
     # If there are errors, return "Error" status with accumulated errors
     if errors:
