@@ -109,9 +109,9 @@ def test_check_sheet_structure_different_size(sheet1, sheet_with_different_heade
     result = check_sheet_structure(sheet1, sheet_with_different_headers)
     assert result["status"] == "Error"
     assert "The following discrepancies were found in the sheet structure:" in result["description"]
-    assert "'Sheet1' has 3 rows and 2 columns, 'Sheet2' has 3 rows and 3 columns."\
+    assert "Template file has 3 rows and 2 columns, Company file has 3 rows and 3 columns."\
         in result["errors"]["Row/Column Count"]
-    assert "'Sheet1' has 3 rows and 2 columns, 'Sheet2' has 3 rows and 3 columns."\
+    assert "Template file has 3 rows and 2 columns, Company file has 3 rows and 3 columns."\
         in result["errors"]["Row/Column Count"]
 
 def test_check_sheet_structure_invalid_input():

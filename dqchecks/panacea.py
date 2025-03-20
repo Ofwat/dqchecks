@@ -199,8 +199,8 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_numbe
     # Check if the number of rows and columns are the same
     if (rows1, cols1) != (rows2, cols2):
         errors.setdefault("Row/Column Count", []).append(
-            f"'{sheet1.title}' has {rows1} rows and {cols1} columns, "
-            f"'{sheet2.title}' has {rows2} rows and {cols2} columns."
+            f"Template file has {rows1} rows and {cols1} columns, "
+            f"Company file has {rows2} rows and {cols2} columns."
         )
 
     header1 = []

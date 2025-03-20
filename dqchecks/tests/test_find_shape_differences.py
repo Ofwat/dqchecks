@@ -200,7 +200,7 @@ def test_find_shape_differences_with_discrepancies():
     assert set(result_df['Error_Severity_Cd'].to_list()) == set(
         ["hard", "hard", "hard"])
     assert set(result_df['Error_Desc'].to_list()) == set(
-        ['Sheet1', "'Sheet1' has 2 rows and 1 columns, 'Sheet1' has 2 rows and 2 columns."])
+        ['Sheet1', "Template file has 2 rows and 1 columns, Company file has 2 rows and 2 columns."])
 
 def test_find_shape_differences_no_common_sheets():
     """Test when both workbooks have no common sheets"""
