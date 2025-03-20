@@ -70,7 +70,7 @@ def test_check_sheet_structure_equal(sheet1, sheet2):
 # pylint: disable=W0621
 def test_check_sheet_structure_different_columns(sheet1, sheet_with_different_headers):
     """Test that two sheets with different headers return False and provide the right message."""
-    result = check_sheet_structure(sheet1, sheet_with_different_headers)
+    result = check_sheet_structure(sheet1, sheet_with_different_headers, header_row_number = 1)
     assert result["status"] == "Error"
     assert "The following discrepancies were found in the sheet structure:" in result["description"]
     assert "Column 1: Name != First Name" in result["errors"]["Header Mismatch"]

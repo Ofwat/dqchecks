@@ -129,27 +129,33 @@ def get_used_area(sheet: Worksheet):
     }
 
 
-def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
+def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_number: int = 0):
     """
     Compares the structure of two openpyxl worksheet objects to determine 
     if they have the same number of rows, columns, and column headers.
 
-    This function validates whether the two worksheet objects are of the 
-    correct type, checks if either sheet is empty, compares the number of 
-    rows and columns, and ensures that the column headers (both name and 
-    order) are the same in both sheets.
+    This function validates whether the two worksheet objects are of the correct type, checks for 
+    any empty sheets, compares the number of rows and columns, and ensures that the column headers 
+    (both name and order) are the same in both sheets.
+    It will return a detailed report indicating any discrepancies found
+    between the two sheets' structures.
 
     Arguments:
         sheet1 (openpyxl.worksheet.worksheet.Worksheet): The first worksheet object to compare.
         sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet object to compare.
+        header_row_number (int, optional): The row number (1-based index) containing the
+        column headers to compare. Defaults to 0, which means no header comparison will be made.
 
     Returns:
-        dict: A dictionary with the structure:
-            - "status": "Error" or "Ok"
-            - "description": The result message (either indicating success
-                    or providing details on discrepancies)
-            - "errors": A dictionary with error details if discrepancies are found.
-              - If no discrepancies are found, errors is an empty dictionary.
+        dict: A dictionary containing the following structure:
+            - "status" (str): Either "Error" if discrepancies were found, or "Ok"
+            if the structure is identical.
+            - "description" (str): A message describing the result, either listing
+            discrepancies or confirming the match.
+            - "errors" (dict): A dictionary with error details if discrepancies are found.
+            It contains error categories (e.g., "Row/Column Count", "Empty Sheet",
+            "Header Mismatch") and lists specific issues under each category.
+            If no discrepancies are found, this is an empty dictionary.
     
     Example:
         sheet1 = workbook1['Sheet1']
@@ -158,8 +164,12 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
         print(result)
 
     Notes:
-        - Empty sheets are those that have no rows or columns.
-        - Column comparison is case-sensitive and checks for exact matches in both name and order.
+        - An empty sheet is defined as one that has no rows or columns with data.
+        - Column header comparison is case-sensitive and checks for exact matches
+        in both name and order.
+        - If `header_row_number` is set to 0, the function will skip column header comparison.
+        - The function compares the maximum number of rows and columns
+        (`max_row` and `max_column`) of the sheets.
     """
     errors = {}
 
@@ -193,9 +203,13 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet):
             f"'{sheet2.title}' has {rows2} rows and {cols2} columns."
         )
 
-    # Check if the column headers are the same (both name and order)
-    header1 = [sheet1.cell(row=1, column=c).value for c in range(1, cols1 + 1)]
-    header2 = [sheet2.cell(row=1, column=c).value for c in range(1, cols2 + 1)]
+    header1 = []
+    header2 = []
+
+    if header_row_number > 0:
+        # Check if the column headers are the same (both name and order)
+        header1 = [sheet1.cell(row=header_row_number, column=c).value for c in range(1, cols1 + 1)]
+        header2 = [sheet2.cell(row=header_row_number, column=c).value for c in range(1, cols2 + 1)]
 
     if header1 != header2:
         # Find out which columns are different
@@ -808,8 +822,14 @@ def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.Da
             Error_Severity_Cd="hard"
         )
 
+        # only fOut_ sheets have somewhat consistent headers on row 2
+        header_row_number = 2 if sheetname.startswith("fOut_") else 0
+
         # Check for structure discrepancies in the current sheet
-        discrepancies = check_sheet_structure(wb_template[sheetname], wb_company[sheetname])
+        discrepancies = check_sheet_structure(
+            wb_template[sheetname],
+            wb_company[sheetname],
+            header_row_number)
 
         # If discrepancies are found, create a DataFrame
         df = create_dataframe_structure_discrepancies(discrepancies, context)
