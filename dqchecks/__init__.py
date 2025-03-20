@@ -1,5 +1,4 @@
-"""
-Main entry point into the dqchecks package
+"""Main entry point into the dqchecks package
 """
 from dqchecks import panacea
 from dqchecks import proteus

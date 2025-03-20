@@ -315,7 +315,6 @@ def check_formula_errors(sheet):
                 }
             }
             or {"status": "Ok"} if no errors were found.
-    
     Example:
         sheet = workbook['Sheet1']
         result = check_formula_errors(sheet)
@@ -680,29 +679,27 @@ def create_dataframe_structure_discrepancies(
         input_data: Dict[str, Any],
         context: StructureDiscrepancyContext) -> pd.DataFrame:
     """
-    Creates a DataFrame representing structure
-        discrepancies between rows and columns in an Excel sheet.
+    Creates a DataFrame representing structure discrepancies
+    between rows and columns in an Excel sheet.
 
-    Args:
-        input_data (dict): A dictionary containing the error
-            data with keys as error types and values as the discrepancies.
-        context (StructureDiscrepancyContext): The context that
-            contains information like Rule Code, Sheet Code, Error Category,
-            and Error Severity.
+    :param input_data: A dictionary containing the error data with keys
+    as error types and values as the discrepancies.
+    :type input_data: dict
+    :param context: The context that contains information 
+    like Rule Code, Sheet Code, Error Category, and Error Severity.
+    :type context: StructureDiscrepancyContext
 
-    Returns:
-        pd.DataFrame: A pandas DataFrame that represents
-            the structure discrepancies for further processing.
-    
-    Raises:
-        ValueError: If 'input_data' does not contain the expected
-            structure or if the 'context' is invalid.
-        TypeError: If 'input_data' is not a dictionary or 'context'
-            is not an instance of StructureDiscrepancyContext.
-    
+    :return: A pandas DataFrame that represents the structure discrepancies for further processing.
+    :rtype: pandas.DataFrame
+
+    :raises ValueError: If 'input_data' does not contain the expected structure
+    or if the 'context' is invalid.
+    :raises TypeError: If 'input_data' is not a dictionary or 'context' is
+    not an instance of `StructureDiscrepancyContext`.
+
     This function processes the given input data (discrepancies between row/column counts) 
     and generates a DataFrame with relevant details including
-        a unique event ID for each discrepancy.
+    a unique event ID for each discrepancy.
     """
 
     # Validate input types
@@ -767,22 +764,26 @@ def create_dataframe_structure_discrepancies(
 def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.DataFrame:
     """
     Compares the sheet structures between two workbooks (template and company)
-        and identifies discrepancies.
-    The function checks if the sheet names exist in both workbooks, compares the structures, 
-    and returns a DataFrame that highlights the discrepancies found in the structures.
+    and identifies discrepancies.
 
-    Args:
-        wb_template (Workbook): The template workbook to compare against.
-        wb_company (Workbook): The company workbook to compare.
+    This function checks if the sheet names exist in both workbooks, compares 
+    the structures, and returns a DataFrame that highlights the discrepancies 
+    found in the structures.
 
-    Returns:
-        pd.DataFrame: A DataFrame containing the structure discrepancies found
-            between the two workbooks.
-    
-    Raises:
-        ValueError: If the provided workbooks are not valid or do not contain any sheets.
-        TypeError: If the input workbooks are not instances of `openpyxl.Workbook`.
-        KeyError: If a sheet does not exist in one of the workbooks.
+    :param wb_template: The template workbook to compare against.
+    :type wb_template: openpyxl.Workbook
+    :param wb_company: The company workbook to compare.
+    :type wb_company: openpyxl.Workbook
+
+    :return: A DataFrame containing the structure discrepancies found 
+        between the two workbooks.
+    :rtype: pandas.DataFrame
+
+    :raises ValueError: If the provided workbooks are not valid or do not 
+        contain any sheets.
+    :raises TypeError: If the input workbooks are not instances of 
+        `openpyxl.Workbook`.
+    :raises KeyError: If a sheet does not exist in one of the workbooks.
     """
 
     # Input validation
@@ -838,31 +839,29 @@ def create_dataframe_formula_differences(
     Creates a DataFrame from input data containing formula discrepancies for a specific sheet.
 
     This function processes input data containing formula discrepancies
-        (such as errors in formulas or missing references) and converts
-        it into a pandas DataFrame.
-        Each discrepancy will be represented as a row in the DataFrame,
-        along with associated metadata (such as the rule code,
-            sheet code, error category, severity, and error description).
+    (such as errors in formulas or missing references) and converts
+    it into a pandas DataFrame. Each discrepancy will be represented as a row 
+    in the DataFrame, along with associated metadata (such as the rule code,
+    sheet code, error category, severity, and error description).
 
-    Args:
-        input_data (dict): A dictionary containing errors (keyed by cell reference)
-                            that occurred in the sheet. The value should be a list of
-                            error descriptions for each cell.
-        context (FormulaDifferencesContext): A namedtuple containing contextual
-                    information about the discrepancy, including Rule_Cd, Sheet_Cd,
-                                              Error_Category, and Error_Severity_Cd.
+    :param input_data: A dictionary containing errors (keyed by cell reference)
+        that occurred in the sheet. The value should be a list of error descriptions 
+        for each cell.
+    :type input_data: dict
+    :param context: A namedtuple containing contextual information about the discrepancy, 
+        including Rule_Cd, Sheet_Cd, Error_Category, and Error_Severity_Cd.
+    :type context: FormulaDifferencesContext
 
-    Returns:
-        pd.DataFrame: A pandas DataFrame containing the formula discrepancies. Each row represents 
-                      a discrepancy with details including the event ID, sheet name, rule code, 
-                      cell reference, error category, severity, and description.
+    :return: A pandas DataFrame containing the formula discrepancies. Each row represents 
+        a discrepancy with details including the event ID, sheet name, rule code, 
+        cell reference, error category, severity, and description.
+    :rtype: pandas.DataFrame
 
-    Raises:
-        ValueError: If the input_data is not a dictionary or if the context is not a
-            valid FormulaDifferencesContext.
-        KeyError: If any expected key is missing in input_data.
-        TypeError: If the values in input_data are not lists or if any item in the
-            list is not iterable.
+    :raises ValueError: If the `input_data` is not a dictionary or if the `context` is 
+        not a valid `FormulaDifferencesContext`.
+    :raises KeyError: If any expected key is missing in `input_data`.
+    :raises TypeError: If the values in `input_data` are not lists or if any item in the 
+        list is not iterable.
     """
 
     # Input validation
@@ -918,22 +917,20 @@ def find_formula_differences(wb_template: Workbook, wb_company: Workbook) -> pd.
     all formula differences (if any), including the sheet name, error category, and severity, and 
     concatenates these into a single DataFrame.
 
-    Args:
-        wb_template (Workbook): The template workbook to compare against.
-        wb_company (Workbook): The company workbook to compare.
+    :param wb_template: The template workbook to compare against.
+    :type wb_template: openpyxl.Workbook
+    :param wb_company: The company workbook to compare.
+    :type wb_company: openpyxl.Workbook
 
-    Returns:
-        pd.DataFrame: A DataFrame containing all the formula differences found
-                        between the two workbooks. 
-                      Each row represents a formula discrepancy with details such as sheet name, 
-                      error category, severity, and formula description.
+    :return: A DataFrame containing all the formula differences found between the two workbooks. 
+             Each row represents a formula discrepancy with details such as sheet name, 
+             error category, severity, and formula description.
+    :rtype: pandas.DataFrame
 
-    Raises:
-        TypeError: If the input workbooks are not instances of `openpyxl.Workbook`.
-        ValueError: If either of the workbooks does not contain any sheets.
-        Exception: If an error occurs during the formula comparison process.
+    :raises TypeError: If the input workbooks are not instances of `openpyxl.Workbook`.
+    :raises ValueError: If either of the workbooks does not contain any sheets.
+    :raises Exception: If an error occurs during the formula comparison process.
     """
-
     # Input validation
     if not isinstance(wb_template, Workbook) or not isinstance(wb_company, Workbook):
         raise TypeError("Both inputs must be instances of openpyxl Workbook.")
