@@ -73,7 +73,8 @@ def test_check_sheet_structure_different_columns(sheet1, sheet_with_different_he
     result = check_sheet_structure(sheet1, sheet_with_different_headers, header_row_number = 1)
     assert result["status"] == "Error"
     assert "The following discrepancies were found in the sheet structure:" in result["description"]
-    assert "Column 1: Name != First Name" in result["errors"]["Header Mismatch"]
+    assert "Column 1: Template: [Name] != " \
+        "[First Name] :Company" in result["errors"]["Header Mismatch"]
 
 # pylint: disable=W0621
 def test_check_sheet_structure_empty_sheet1(empty_sheet, sheet2):

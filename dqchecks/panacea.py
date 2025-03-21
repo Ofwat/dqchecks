@@ -217,7 +217,7 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_numbe
             (i + 1, h1, h2) for i, (h1, h2) in enumerate(zip(header1, header2)) if h1 != h2]
         if diff_headers:
             errors.setdefault("Header Mismatch", []).extend(
-                [f"Column {i}: {h1} != {h2}" for i, h1, h2 in diff_headers]
+                [f"Column {i}: Template: [{h1}] != [{h2}] :Company" for i, h1, h2 in diff_headers]
             )
 
     # If there are errors, return "Error" status with accumulated errors
