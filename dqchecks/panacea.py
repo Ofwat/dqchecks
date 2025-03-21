@@ -347,7 +347,7 @@ def check_formula_errors(sheet):
             if cell.data_type == 'e':
                 # If the formula's output is one of the known error strings
                 if isinstance(cell.value, str):
-                    cell_name = f"{sheet.title}!{get_column_letter(cell.column)}{cell.row}"
+                    cell_name = f"{get_column_letter(cell.column)}{cell.row}"
                     # Group errors by type
                     if cell.value not in error_details:
                         error_details[cell.value] = []

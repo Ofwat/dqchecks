@@ -71,9 +71,9 @@ def test_check_formula_errors_with_errors(workbook_with_errors):
     assert "#DIV/0!" in result["errors"]
     assert "#REF!" in result["errors"]
     assert "#NAME?" in result["errors"]
-    assert result["errors"]["#DIV/0!"] == ["Sheet1!A3"]
-    assert result["errors"]["#REF!"] == ["Sheet1!A4"]
-    assert result["errors"]["#NAME?"] == ["Sheet1!A5"]
+    assert result["errors"]["#DIV/0!"] == ["A3"]
+    assert result["errors"]["#REF!"] == ["A4"]
+    assert result["errors"]["#NAME?"] == ["A5"]
     assert "##MISSING" not in result["errors"]
 
 # pylint: disable=W0621

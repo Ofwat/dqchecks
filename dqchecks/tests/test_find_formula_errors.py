@@ -471,5 +471,5 @@ def test_find_formula_errors_with_multiple_sheets():
     assert '#REF!' in result_df['Error_Desc'].values
 
     # Check if the cell references are correctly included
-    assert 'Sheet1!A1' in result_df['Cell_Reference'].values
-    assert 'Sheet2!B1' in result_df['Cell_Reference'].values
+    assert 'A1' in result_df['Cell_Reference'].values
+    assert 'B1' in result_df['Cell_Reference'].values
