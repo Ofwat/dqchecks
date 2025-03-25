@@ -33,6 +33,7 @@ def test_find_missing_sheets_valid_workbooks():
     assert all(i in missing_sheets_df.columns for i in expected_columns)
     assert len(missing_sheets_df) == 1  # One missing sheet: Sheet1
     assert missing_sheets_df['Sheet_Cd'].iloc[0] == 'Sheet1'
+    assert set(missing_sheets_df['Rule_Cd'].to_list()) == {"Rule 3: Missing Sheets"}
 
 def test_find_missing_sheets_invalid_wb_template():
     """Test with an invalid 'wb_template' input (not an openpyxl Workbook)."""

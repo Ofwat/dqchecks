@@ -473,3 +473,4 @@ def test_find_formula_errors_with_multiple_sheets():
     # Check if the cell references are correctly included
     assert 'A1' in result_df['Cell_Reference'].values
     assert 'B1' in result_df['Cell_Reference'].values
+    assert set(result_df["Rule_Cd"].to_list()) == {"Rule 2: Formula Error Check"}

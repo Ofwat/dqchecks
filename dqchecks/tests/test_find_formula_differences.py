@@ -173,6 +173,7 @@ def test_find_formula_differences_with_differences():
     assert not result_df.empty
     assert "Event_Id" in result_df.columns
     assert result_df.shape[0] > 0  # Ensure there is at least one row (discrepancy)
+    assert set(result_df["Rule_Cd"].to_list()) == {"Rule 1: Formula Difference"}
 
 def test_find_formula_differences_no_differences():
     """Valid case with no formula differences"""
