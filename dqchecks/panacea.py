@@ -497,7 +497,7 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
 
     # Create the context for missing sheets
     missing_sheet_context = MissingSheetContext(
-        Rule_Cd="?",
+        Rule_Cd="Rule 3: Missing Sheets",
         Error_Category="Missing Sheet",
         Error_Severity_Cd="soft",
     )
@@ -658,7 +658,7 @@ def find_formula_errors(wb: Workbook):
 
         # Create a context object for the current sheet with formula error details
         formula_error_sheet_context = FormulaErrorSheetContext(
-            Rule_Cd="?",  # Placeholder for rule code (could be customized)
+            Rule_Cd="Rule 2: Formula Error Check",
             Sheet_Cd=sheetname,
             Error_Category="Formula Error",
             Error_Severity_Cd="hard",  # Placeholder for error severity
@@ -816,7 +816,7 @@ def find_shape_differences(wb_template: Workbook, wb_company: Workbook) -> pd.Da
     for sheetname in common_sheetnames:
         # Create the context for the current sheet
         context = StructureDiscrepancyContext(
-            Rule_Cd="?",
+            Rule_Cd="Rule 4: Structural Discrepancy",
             Sheet_Cd=sheetname,  # Specify the sheet name with the issue
             Error_Category="Structure Discrepancy",
             Error_Severity_Cd="hard"
@@ -965,7 +965,7 @@ def find_formula_differences(wb_template: Workbook, wb_company: Workbook) -> pd.
     for sheetcd in common_sheetnames:
         # Create the context for the current sheet
         context = FormulaDifferencesContext(
-            Rule_Cd="?",
+            Rule_Cd="Rule 1: Formula Difference",
             Sheet_Cd=sheetcd,  # Specify the sheet name with the issue
             Error_Category="Formula Difference",
             Error_Severity_Cd="hard"

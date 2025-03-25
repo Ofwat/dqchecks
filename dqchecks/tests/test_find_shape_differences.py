@@ -194,7 +194,10 @@ def test_find_shape_differences_with_discrepancies():
     assert not result_df.empty
     assert len(result_df) > 0  # Ensure there is at least one discrepancy
     assert set(result_df['Sheet_Cd'].to_list()) == set(["Sheet1", "Sheet1", "Sheet1"])
-    assert set(result_df['Rule_Cd'].to_list()) == set(["?", "?", "?"])
+    assert set(result_df['Rule_Cd'].to_list()) == set(
+        ["Rule 4: Structural Discrepancy",
+         "Rule 4: Structural Discrepancy",
+         "Rule 4: Structural Discrepancy"])
     assert set(result_df['Error_Category'].to_list()) == set(
         ['Structure Discrepancy', 'Structure Discrepancy', 'Structure Discrepancy'])
     assert set(result_df['Error_Severity_Cd'].to_list()) == set(
