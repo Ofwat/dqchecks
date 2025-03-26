@@ -1,3 +1,4 @@
+# pylint: disable=C0302
 """
 Panacea code
 
@@ -271,8 +272,8 @@ def compare_formulas(sheet1, sheet2):
         return {
             "status": "Error",
             "description": f"Sheets have different dimensions: '{sheet1.title}' "+\
-                f"in template has {rows1} rows & {cols1} columns, '{sheet2.title}' in company has "+\
-                    f"{rows2} rows & {cols2} columns.",
+                f"in template has {rows1} rows & {cols1} columns, '{sheet2.title}' "+\
+                    f"in company has {rows2} rows & {cols2} columns.",
             "errors": {}
         }
 
@@ -985,3 +986,195 @@ def find_formula_differences(wb_template: Workbook, wb_company: Workbook) -> pd.
 
     # Return the final DataFrame containing all the formula differences
     return final_formula_difference_df
+
+def check_value_in_cell(
+        workbook: Workbook,
+        sheet_name: str,
+        value: Any, cell_name: str = "B5") -> Dict[str, Any]:
+    """
+    Checks if a given value exists in a specific cell
+    within a specified sheet in an openpyxl workbook.
+
+    This function checks whether the value in a given cell of a
+    specified worksheet matches the provided value.
+    It handles cases where the sheet is missing or the value does not match
+    the expected value in the specified cell.
+
+    Args:
+        workbook (openpyxl.Workbook): The workbook to check, which contains multiple sheets.
+        sheet_name (str): The name of the sheet within the workbook where the cell will be checked.
+        value (Any): The value to check for in the specified cell.
+            This can be a string, integer, float, or boolean.
+        cell_name (str, optional): The name of the cell to check, default is "B5".
+
+    Returns:
+        dict: A dictionary containing the result of the check.
+            The dictionary will have the following structure:
+            - If the value is found:
+              {
+                  "status": "Ok",
+                  "description": "Value found in cell",
+                  "errors": {},
+                  "meta": {
+                      "sheet_name": "Sheet1",
+                      "cell_name": "B5"
+                  }
+              }
+            - If the value does not match:
+              {
+                  "status": "Error",
+                  "description": "Value mismatch",
+                  "errors": {
+                      "B5": ["Expected [value] found [cell_value]"]
+                  },
+                  "meta": {
+                      "sheet_name": "Sheet1",
+                      "cell_name": "B5"
+                  }
+              }
+            - If the sheet does not exist:
+              {
+                  "status": "Error",
+                  "description": "Missing sheet",
+                  "errors": ["Sheet 'SheetName' not found in the workbook"],
+                  "meta": {
+                      "sheet_name": "Sheet1",
+                      "cell_name": "B5"
+                  }
+              }
+
+    Raises:
+        ValueError: If 'workbook' is not an openpyxl Workbook, 'sheet_name' is not a string,
+                    'value' is not a valid type, or 'cell_name' is not a valid cell reference.
+        KeyError: If the cell name is invalid or doesn't exist in the specified sheet.
+    
+    Example:
+        # Example usage:
+        result = check_value_in_cell(workbook, "Sheet1", "TestValue", "B2")
+        print(result)
+    """
+
+    # Input validation
+    if not isinstance(workbook, Workbook):
+        raise ValueError("The 'workbook' argument must be a valid openpyxl Workbook object.")
+
+    if not isinstance(sheet_name, str) or not sheet_name:
+        raise ValueError("The 'sheet_name' argument must be a non-empty string.")
+
+    if not isinstance(value, (str, int, float, bool)):
+        raise ValueError("The 'value' argument must be a string, integer, float, or boolean.")
+
+    if not isinstance(cell_name, str) or not cell_name:
+        raise ValueError("The 'cell_name' argument must be a non-empty string (e.g., 'B5').")
+
+    # Check if the sheet exists
+    if sheet_name not in workbook.sheetnames:
+        return {
+            "status": "Error",
+            "description": "Missing sheet",
+            "errors": [f"Sheet '{sheet_name}' not found in the workbook."],
+            "meta": {
+                "sheet_name": sheet_name,
+                "cell_name": cell_name
+            }
+        }
+
+    # Get the sheet by name
+    sheet = workbook[sheet_name]
+
+    # Check if the provided cell name is valid
+    try:
+        cell_value = sheet[cell_name].value
+    except KeyError as e:
+        raise ValueError(f"Invalid cell name '{cell_name}' in sheet '{sheet_name}'.") from e
+
+    # Compare the value of the cell with the provided value
+    errors = []
+    status = "Ok"
+    description = "Value found in cell"
+
+    if cell_value != value:
+        errors.append(f"Expected [{value}] found [{cell_value}]")
+        status = "Error"
+        description = "Value mismatch"
+
+    return {
+        "status": status,
+        "description": description,
+        "errors": errors if errors else [],
+        "meta": {
+            "sheet_name": sheet_name,
+            "cell_name": cell_name
+        }
+    }
+
+def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) -> pd.DataFrame:
+    # pylint: disable=C0301
+    """
+    Creates a pandas DataFrame based on the output of a value check(e.g., 'check_value_in_b2') function.
+    This function processes errors returned from the check and structures them into a DataFrame.
+
+    Args:
+        input_data (dict): The output data from a value check function, which contains:
+            - 'status' (str): A string indicating whether the value matches or not (e.g., "Ok" or "Error").
+            - 'description' (str): A description of the result.
+            - 'errors' (list): A list of error messages (if any) related to value mismatches.
+            - 'meta' (dict): A dictionary containing metadata with the following keys:
+                - 'sheet_name' (str): Name of the sheet where the error occurred.
+                - 'cell_name' (str): The name of the cell where the error occurred.
+
+    Returns:
+        pd.DataFrame: A DataFrame representing the errors, with columns for event ID, sheet name, cell reference, 
+                      error category, error severity, and error description.
+
+    Raises:
+        ValueError: If 'input_data' is not a dictionary or does not contain the required keys.
+        ValueError: If 'errors' is not a list or is empty.
+        KeyError: If expected keys in 'input_data' (such as 'meta', 'sheet_name', or 'cell_name') are missing.
+    """
+
+    # Input validation: Ensure 'input_data' is a dictionary
+    if not isinstance(input_data, dict):
+        raise ValueError("The 'input_data' argument must be a dictionary.")
+
+    # Validate that 'errors' and 'meta' keys exist in input_data
+    if 'errors' not in input_data:
+        raise ValueError("The 'input_data' must contain the 'errors' key.")
+    if 'meta' not in input_data:
+        raise ValueError("The 'input_data' must contain the 'meta' key.")
+
+    # Ensure 'errors' is a list
+    errors = input_data.get('errors', [])
+    print(input_data, errors)
+    if not isinstance(errors, list):
+        raise ValueError("The 'errors' key must be a list.")
+
+    # Ensure 'meta' contains expected keys
+    meta = input_data.get('meta', {})
+    if not isinstance(meta, dict) or 'sheet_name' not in meta or 'cell_name' not in meta:
+        raise ValueError("The 'meta' key must be a dictionary containing 'sheet_name' and 'cell_name'.")
+
+    # If there are no errors, return an empty DataFrame with column headers
+    if not errors:
+        return pd.DataFrame(columns=["Event_Id", "Sheet_Cd", "Cell_Reference", "Rule_Cd", "Error_Category",
+                                     "Error_Severity_Cd", "Error_Desc"])
+
+    # Create a list to store rows for the DataFrame
+    rows = []
+
+    # If there are errors, iterate through the list of errors to create rows
+    for error in errors:
+        rows.append({
+            'Event_Id': uuid.uuid4().hex,  # Generate a unique ID for each event
+            'Sheet_Cd': meta["sheet_name"],  # Extract the sheet name from 'meta'
+            'Cell_Reference': meta["cell_name"],  # Extract the cell reference from 'meta'
+            'Rule_Cd': "Rule 7: Company Name Selected",  # Static rule code for company name selection
+            'Error_Category': "Company name mismatch",  # Static error category
+            'Error_Severity_Cd': "?",  # Placeholder for error severity
+            'Error_Desc': error  # Error description from the 'errors' list
+        })
+
+    # Convert the list of rows into a pandas DataFrame
+    df = pd.DataFrame(rows)
+
+    return df

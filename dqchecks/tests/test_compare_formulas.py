@@ -93,7 +93,7 @@ def test_compare_formulas_different(sheet_with_formulas, sheet_with_different_fo
     assert result["description"] == "Found formula differences"
     # Instead of just checking for "A1", check for the full message
     assert "A1" in result["errors"]
-    assert ("Template: Sheet1!A1 (=B1 + C1) != Sheet1!A1 (=B1 * C1) :Company" 
+    assert ("Template: Sheet1!A1 (=B1 + C1) != Sheet1!A1 (=B1 * C1) :Company"
             in result["errors"]["A1"])
     assert ("Template: Sheet1!A2 (=B2 + C2) != Sheet1!A2 (=B2 * C2) :Company"
             in result["errors"]["A2"])
