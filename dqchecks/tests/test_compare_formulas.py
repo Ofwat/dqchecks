@@ -93,8 +93,10 @@ def test_compare_formulas_different(sheet_with_formulas, sheet_with_different_fo
     assert result["description"] == "Found formula differences"
     # Instead of just checking for "A1", check for the full message
     assert "A1" in result["errors"]
-    assert "Sheet1!A1 (=B1 + C1) != Sheet1!A1 (=B1 * C1)" in result["errors"]["A1"]
-    assert "Sheet1!A2 (=B2 + C2) != Sheet1!A2 (=B2 * C2)" in result["errors"]["A2"]
+    assert ("Template: Sheet1!A1 (=B1 + C1) != Sheet1!A1 (=B1 * C1) :Company" 
+            in result["errors"]["A1"])
+    assert ("Template: Sheet1!A2 (=B2 + C2) != Sheet1!A2 (=B2 * C2) :Company"
+            in result["errors"]["A2"])
 
 # pylint: disable=W0621
 def test_compare_formulas_no_formulas(sheet_no_formulas):
@@ -124,5 +126,5 @@ def test_compare_formulas_different_dimensions(sheet_with_formulas, sheet_empty)
     result = compare_formulas(sheet1, sheet2)
     assert result["status"] == "Error"
     assert result["description"] == "Sheets have different dimensions: " +\
-        "'Sheet1' has 2 rows & 3 columns, 'Sheet1' has 1 rows & 1 columns."
+        "'Sheet1' in template has 2 rows & 3 columns, 'Sheet1' in company has 1 rows & 1 columns."
     assert not result["errors"]

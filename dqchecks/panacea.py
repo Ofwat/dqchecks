@@ -271,7 +271,7 @@ def compare_formulas(sheet1, sheet2):
         return {
             "status": "Error",
             "description": f"Sheets have different dimensions: '{sheet1.title}' "+\
-                f"has {rows1} rows & {cols1} columns, '{sheet2.title}' has "+\
+                f"in template has {rows1} rows & {cols1} columns, '{sheet2.title}' in company has "+\
                     f"{rows2} rows & {cols2} columns.",
             "errors": {}
         }
@@ -293,8 +293,8 @@ def compare_formulas(sheet1, sheet2):
                     # Add the differing cell to the dictionary, grouped by the cell name
                     if cell_name not in differing_cells:
                         differing_cells[cell_name] = []
-                    differing_cells[cell_name].append(f"{sheet1.title}!{cell_name} "+\
-                        f"({cell1.value}) != {sheet2.title}!{cell_name} ({cell2.value})")
+                    differing_cells[cell_name].append(f"Template: {sheet1.title}!{cell_name} "+\
+                        f"({cell1.value}) != {sheet2.title}!{cell_name} ({cell2.value}) :Company")
 
     # If there are differences in formulas, return detailed message
     if differing_cells:
