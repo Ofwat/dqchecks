@@ -251,7 +251,6 @@ def test_find_pk_errors_combined():
     df = find_pk_errors(workbook, sheet_name_pattern=".*", header_column_name="Header")
 
     # Assert that the DataFrame contains both missing value and duplicate errors
-    print(df)
     assert not df.empty
     assert df.shape[0] == 3  # Should have 3 error rows (1 for missing, 2 for duplicates)
     assert df['Error_Category'].iloc[0] == "Missing Values"
