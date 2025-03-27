@@ -1181,7 +1181,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
     return df
 
 def check_for_nulls_and_duplicates(
-    worksheet, column_index, skip_rows, skip_row_after_header):
+    worksheet, column_index, skip_rows, skip_row_after_header, working_area):
     # pylint: disable=C0301
     """
     Check for null values and duplicate values in a specific column of the worksheet.
@@ -1202,7 +1202,7 @@ def check_for_nulls_and_duplicates(
     seen_values = {}
 
     # Iterate through all rows in the identified column (skip the first `skip_rows` rows)
-    for row in range(skip_rows + 2, worksheet.max_row + 1):
+    for row in range(skip_rows + 2, working_area["last_used_row"] + 1):
         cell_value = worksheet.cell(row=row, column=column_index).value
 
         # If the cell is None (null value), record the row
@@ -1292,7 +1292,7 @@ def check_pk_for_nulls_and_duplicates(
 
         # Iterate through all rows in the identified column (skip the first `skip_rows` rows)
         null_rows, duplicate_rows = check_for_nulls_and_duplicates(
-            worksheet, column_index, skip_rows, skip_row_after_header
+            worksheet, column_index, skip_rows, skip_row_after_header, working_area
         )
 
         # Store results in the checks dictionary
