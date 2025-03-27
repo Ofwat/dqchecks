@@ -1181,8 +1181,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
     return df
 
 def check_for_nulls_and_duplicates(
-    worksheet, column_index, skip_rows, skip_row_after_header
-) -> (List[int], Dict[str, List[int]]):
+    worksheet, column_index, skip_rows, skip_row_after_header):
     # pylint: disable=C0301
     """
     Check for null values and duplicate values in a specific column of the worksheet.
