@@ -71,7 +71,7 @@ def test_check_value_in_cell_invalid_cell_name(sample_workbook: Workbook):
     with pytest.raises(ValueError) as exc_info:
         check_value_in_cell(sample_workbook, "Sheet1", "TestValue", "InvalidCell")
 
-    assert str(exc_info.value) == "InvalidCell is not a valid coordinate or range"
+    assert str(exc_info.value) == "Invalid cell name 'InvalidCell' in sheet 'Sheet1'."
 
 
 def test_check_value_in_cell_invalid_workbook_type():
@@ -314,3 +314,5 @@ def test_create_dataframe_with_uuid():
     assert isinstance(df["Event_Id"].iloc[0], str)
     # UUID length should be 32 characters (without hyphens)
     assert len(df["Event_Id"].iloc[0]) == 32
+    # UUID is lowercase alphanumeric
+    assert all(i in 'abcdefghijklmopqrstuvwxyz0123456789' for i in df["Event_Id"].iloc[0])

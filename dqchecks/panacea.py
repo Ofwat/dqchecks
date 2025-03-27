@@ -5,6 +5,7 @@ Panacea code
 Function used to do initial validation of the Excel files
 """
 import uuid
+import re
 from typing import Dict, Any, List
 import logging
 from collections import namedtuple
@@ -1085,7 +1086,7 @@ def check_value_in_cell(
     # Check if the provided cell name is valid
     try:
         cell_value = sheet[cell_name].value
-    except KeyError as e:
+    except Exception as e:
         raise ValueError(f"Invalid cell name '{cell_name}' in sheet '{sheet_name}'.") from e
 
     # Compare the value of the cell with the provided value
@@ -1145,7 +1146,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
 
     # Ensure 'errors' is a list
     errors = input_data.get('errors', [])
-    print(input_data, errors)
+
     if not isinstance(errors, list):
         raise ValueError("The 'errors' key must be a list.")
 
@@ -1175,6 +1176,219 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
         })
 
     # Convert the list of rows into a pandas DataFrame
+    df = pd.DataFrame(rows)
+
+    return df
+
+def check_for_nulls_and_duplicates(
+    worksheet, column_index, skip_rows, skip_row_after_header
+) -> (List[int], Dict[str, List[int]]):
+    # pylint: disable=C0301
+    """
+    Check for null values and duplicate values in a specific column of the worksheet.
+    
+    Args:
+        worksheet (openpyxl.worksheet.worksheet.Worksheet): The worksheet to check.
+        column_index (int): The index of the column to check for null and duplicate values.
+        skip_rows (int): The number of rows to skip at the beginning.
+        skip_row_after_header (int): The row to skip immediately after the header.
+    
+    Returns:
+        tuple: A tuple containing:
+            - A list of rows where null values were found.
+            - A dictionary where keys are duplicate values and values are lists of rows containing those duplicates.
+    """
+    null_rows = []
+    duplicate_rows = {}
+    seen_values = {}
+
+    # Iterate through all rows in the identified column (skip the first `skip_rows` rows)
+    for row in range(skip_rows + 2, worksheet.max_row + 1):
+        cell_value = worksheet.cell(row=row, column=column_index).value
+
+        # If the cell is None (null value), record the row
+        if cell_value is None:
+            if row == skip_row_after_header:
+                continue
+            null_rows.append(row)
+
+        # Check for duplicate values
+        elif cell_value in seen_values:
+            if cell_value in duplicate_rows:
+                duplicate_rows[cell_value].append(row)
+            else:
+                duplicate_rows[cell_value] = [seen_values[cell_value], row]
+        else:
+            seen_values[cell_value] = row
+
+    return null_rows, duplicate_rows
+
+
+def check_pk_for_nulls_and_duplicates(
+        workbook: Workbook,
+        sheet_name_pattern: str,
+        header_column_name: str,
+        skip_rows: int = 0,
+        skip_row_after_header: int = 3) -> Dict[str, any]:
+    # pylint: disable=C0301
+    """
+    Checks each worksheet in the provided workbook for null (None) values and duplicates in the specified column.
+    This function examines all sheets matching a given regex pattern, checks for null values in the specified column,
+    and identifies duplicate values in that column. It then compiles and returns the results.
+
+    Args:
+        workbook (openpyxl.Workbook): The workbook to check, containing multiple sheets.
+        sheet_name_pattern (str): A regular expression pattern to filter sheet names. Only sheets whose names match
+                                  this pattern will be checked.
+        header_column_name (str): The name of the header in the second row that indicates the column to check for nulls
+                                  and duplicates.
+        skip_rows (int, optional): The number of rows to skip at the beginning of each sheet before checking the data.
+                                    Default is 0 (no rows skipped).
+        skip_row_after_header (int, optional): The row after the header that should be skipped when checking for null values.
+                                               Default is 3.
+
+    Returns:
+        dict: A dictionary containing the following keys:
+            - "status" (str): "Ok" if no issues are found, "Error" if issues with null values or duplicates exist.
+            - "description" (str): A general description, either "No issues with keys." or "Issues in primary keys."
+            - "errors" (dict): A dictionary containing detailed errors for each sheet, including:
+                - "null_rows" (list): A list of rows where null values were found in the specified column.
+                - "duplicate_rows" (dict): A dictionary where keys are duplicate values and values are lists of rows
+                  containing the duplicate value.
+            - "meta" (dict): A dictionary containing metadata, such as the header column name.
+                - "header_column_name" (str): The name of the header column being checked.
+
+    Example:
+        result = check_pk_for_nulls_and_duplicates(workbook, sheet_name_pattern="Sheet*", header_column_name="ID")
+        print(result)
+        # Returns a dictionary with 'status', 'description', 'errors' (nulls and duplicates), and 'meta'.
+    """
+    checks = {}
+
+    # Compare sheet names between the workbooks
+    status = "Ok"
+
+    # Compile the regex pattern for matching sheet names
+    pattern = re.compile(sheet_name_pattern)
+
+    for sheet in workbook.sheetnames:
+        # Check if the sheet name matches the given regex pattern
+        if not pattern.match(sheet):
+            continue  # Skip sheets that do not match the regex
+
+        working_area = get_used_area(workbook[sheet])
+        worksheet = workbook[sheet]
+        null_rows = []
+        duplicate_rows = {}
+
+        # Find the column index based on the header in the 2nd row
+        column_index = None
+        for col in range(1, working_area["last_used_column"] + 1):
+            if worksheet.cell(row=2, column=col).value == header_column_name:
+                column_index = col
+                break
+
+        if column_index is None:
+            continue  # Skip if the column with the specified header is not found
+
+        # Iterate through all rows in the identified column (skip the first `skip_rows` rows)
+        null_rows, duplicate_rows = check_for_nulls_and_duplicates(
+            worksheet, column_index, skip_rows, skip_row_after_header
+        )
+
+        # Store results in the checks dictionary
+        if null_rows or duplicate_rows:
+            status = "Error"
+            checks[sheet] = {"null_rows": null_rows, "duplicate_rows": duplicate_rows}
+
+    return {
+        "status": status,
+        "description": "No issues with keys." if status == "Ok" else "Issues in primary keys.",
+        "errors": checks,
+        "meta": {
+            "header_column_name": header_column_name
+        }
+    }
+
+def find_pk_errors(
+        workbook: Workbook,
+        sheet_name_pattern: str,
+        header_column_name: str,
+        skip_rows: int = 0,
+        skip_row_after_header: int = 3) -> pd.DataFrame:
+    # pylint: disable=C0301
+    """
+    Constructs a pandas DataFrame from the 'errors' object of the check_pk_for_nulls_and_duplicates function.
+    This function calls the check_pk_for_nulls_and_duplicates function to gather error information about missing 
+    values (nulls) and duplicates in the specified column across multiple sheets, and organizes this information
+    into a structured pandas DataFrame.
+
+    Args:
+        workbook (openpyxl.Workbook): The workbook to check, containing multiple sheets.
+        sheet_name_pattern (str): A regular expression pattern to filter the sheet names to be checked.
+                                  Only sheets whose names match this pattern will be included in the check.
+        header_column_name (str): The name of the header in the second row that identifies the column to check for nulls
+                                  and duplicates.
+        skip_rows (int, optional): The number of rows to skip at the beginning of each sheet before starting to check the data.
+                                   Default is 0 (no rows skipped).
+        skip_row_after_header (int, optional): The row after the header that should be skipped when checking for null values.
+                                               Default is 3.
+
+    Returns:
+        pd.DataFrame: A pandas DataFrame containing the detailed error information about the rows with missing or duplicate
+                      values. Each row in the DataFrame corresponds to an error found and includes the following columns:
+                      - 'Event_Id': A unique identifier for each error (UUID).
+                      - 'Sheet_Cd': The name of the sheet where the error was found.
+                      - 'Rule_Cd': A code representing the rule for the error (e.g., "Rule 5: Boncode Repetition").
+                      - 'Error_Category': The type of error, such as "Missing Values" or "Duplicate Value".
+                      - 'Error_Severity_Cd': A placeholder value for error severity (currently "?").
+                      - 'Error_Desc': A description of the error, including the rows with the missing or duplicate value.
+
+    Example:
+        result = find_pk_errors(workbook, sheet_name_pattern="Sheet*", header_column_name="ID")
+        print(result)
+        # Returns a pandas DataFrame with rows containing details of missing or duplicate values in the 'ID' column for sheets
+        # whose names match the "Sheet*" pattern.
+
+    Notes:
+        - The function relies on the check_pk_for_nulls_and_duplicates function to gather errors related to missing and
+          duplicate values in the specified column.
+        - If no errors are found, the returned DataFrame will be empty.
+    """
+    # Get the error data by calling the check_pk_for_nulls_and_duplicates function
+    error_data = check_pk_for_nulls_and_duplicates(workbook, sheet_name_pattern, header_column_name, skip_rows, skip_row_after_header)
+
+    # Initialize an empty list to hold the rows for the DataFrame
+    rows = []
+    error_data = error_data.get("errors", {})
+
+    # Now handle null rows (missing values) for each sheet
+    for sheet_name, sheet_errors in error_data.items():
+        # Handling null rows (missing values)
+        if sheet_errors.get('null_rows', []):
+            null_rows_str = ', '.join(map(str, sheet_errors['null_rows']))
+            rows.append({
+                'Event_Id': uuid.uuid4().hex,
+                'Sheet_Cd': sheet_name,
+                'Rule_Cd': "Rule 5: Boncode Repetition",
+                'Error_Category': "Missing Values",
+                'Error_Severity_Cd': "?",
+                "Error_Desc": f"Rows {null_rows_str} have missing values in [{header_column_name}]."
+            })
+
+        # Handling duplicate rows
+        for duplicate_value, rows_with_duplicate in sheet_errors.get('duplicate_rows', {}).items():
+            rows_with_duplicate_str = ', '.join(map(str, rows_with_duplicate))
+            rows.append({
+                'Event_Id': uuid.uuid4().hex,
+                'Sheet_Cd': sheet_name,
+                'Rule_Cd': "Rule 6: Missing Boncode Check",
+                'Error_Category': "Duplicate Value",
+                'Error_Severity_Cd': "?",
+                "Error_Desc": f"Duplicate [{header_column_name}] value '{duplicate_value}' found in rows {rows_with_duplicate_str}."
+            })
+
+    # Create the DataFrame from the list of rows
     df = pd.DataFrame(rows)
 
     return df
