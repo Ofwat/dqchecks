@@ -1191,6 +1191,7 @@ def check_for_nulls_and_duplicates(
         column_index (int): The index of the column to check for null and duplicate values.
         skip_rows (int): The number of rows to skip at the beginning.
         skip_row_after_header (int): The row to skip immediately after the header.
+        working_area (dict): Output from get_used_area function for given sheet.
     
     Returns:
         tuple: A tuple containing:
