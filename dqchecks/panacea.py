@@ -1370,7 +1370,7 @@ def find_pk_errors(
             rows.append({
                 'Event_Id': uuid.uuid4().hex,
                 'Sheet_Cd': sheet_name,
-                'Rule_Cd': "Rule 5: Boncode Repetition",
+                'Rule_Cd': "Rule 6: Missing Boncode Check",
                 'Error_Category': "Missing Values",
                 'Error_Severity_Cd': "?",
                 "Error_Desc": f"Rows {null_rows_str} have missing values in [{header_column_name}]."
@@ -1382,7 +1382,7 @@ def find_pk_errors(
             rows.append({
                 'Event_Id': uuid.uuid4().hex,
                 'Sheet_Cd': sheet_name,
-                'Rule_Cd': "Rule 6: Missing Boncode Check",
+                'Rule_Cd': "Rule 5: Boncode Repetition",
                 'Error_Category': "Duplicate Value",
                 'Error_Severity_Cd': "?",
                 "Error_Desc": f"Duplicate [{header_column_name}] value '{duplicate_value}' found in rows {rows_with_duplicate_str}."

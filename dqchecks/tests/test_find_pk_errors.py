@@ -254,8 +254,10 @@ def test_find_pk_errors_combined():
     assert not df.empty
     assert df.shape[0] == 3  # Should have 3 error rows (1 for missing, 2 for duplicates)
     assert df['Error_Category'].iloc[0] == "Missing Values"
+    assert df['Rule_Cd'].iloc[0] == "Rule 6: Missing Boncode Check"
     assert "Rows 4 have missing values in [Header]." in df['Error_Desc'].iloc[0]
     assert df['Error_Category'].iloc[1] == "Duplicate Value"
+    assert df['Rule_Cd'].iloc[1] == "Rule 5: Boncode Repetition"
     assert "Duplicate [Header] value 'Value1' found in rows 5, 6." in df['Error_Desc'].iloc[1]
     assert "Duplicate [Header] value 'Value2' found in rows 7, 8." in df['Error_Desc'].iloc[2]
 
