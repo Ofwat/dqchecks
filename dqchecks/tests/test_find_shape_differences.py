@@ -9,7 +9,8 @@ from dqchecks.panacea import (
     create_dataframe_structure_discrepancies,
     find_shape_differences,
     get_used_area,
-    StructureDiscrepancyContext)
+    StructureDiscrepancyContext,
+    UsedArea)
 
 def test_create_dataframe_valid_input():
     """Valid input data and context"""
@@ -249,10 +250,10 @@ def test_get_used_area_with_some_empty_rows_and_columns():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 1
-    assert result['empty_columns'] == 0
-    assert result['last_used_row'] == 3
-    assert result['last_used_column'] == 3
+    assert result.empty_rows == 1
+    assert result.empty_columns == 0
+    assert result.last_used_row == 3
+    assert result.last_used_column == 3
 
 def test_get_used_area_with_no_empty_rows_or_columns():
     """Test case where there are no empty rows or columns"""
@@ -264,10 +265,10 @@ def test_get_used_area_with_no_empty_rows_or_columns():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 0
-    assert result['empty_columns'] == 0
-    assert result['last_used_row'] == 3
-    assert result['last_used_column'] == 3
+    assert result.empty_rows == 0
+    assert result.empty_columns == 0
+    assert result.last_used_row == 3
+    assert result.last_used_column == 3
 
 def test_get_used_area_with_only_empty_rows():
     """Test case with only empty rows at the bottom"""
@@ -280,10 +281,10 @@ def test_get_used_area_with_only_empty_rows():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 2
-    assert result['empty_columns'] == 0
-    assert result['last_used_row'] == 2
-    assert result['last_used_column'] == 3
+    assert result.empty_rows == 2
+    assert result.empty_columns == 0
+    assert result.last_used_row == 2
+    assert result.last_used_column == 3
 
 def test_get_used_area_with_only_empty_columns():
     """Test case with only empty columns at the right"""
@@ -295,10 +296,10 @@ def test_get_used_area_with_only_empty_columns():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 0
-    assert result['empty_columns'] == 1
-    assert result['last_used_row'] == 3
-    assert result['last_used_column'] == 3
+    assert result.empty_rows == 0
+    assert result.empty_columns == 1
+    assert result.last_used_row == 3
+    assert result.last_used_column == 3
 
 def test_get_used_area_with_single_cell():
     """Test case where only one cell is filled."""
@@ -310,10 +311,10 @@ def test_get_used_area_with_single_cell():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 1
-    assert result['empty_columns'] == 1
-    assert result['last_used_row'] == 2
-    assert result['last_used_column'] == 2
+    assert result.empty_rows == 1
+    assert result.empty_columns == 1
+    assert result.last_used_row == 2
+    assert result.last_used_column == 2
 
 def test_get_used_area_with_large_data():
     """Test case with a large range of data"""
@@ -323,10 +324,10 @@ def test_get_used_area_with_large_data():
     sheet = create_worksheet(data)
     result = get_used_area(sheet)
 
-    assert result['empty_rows'] == 0
-    assert result['empty_columns'] == 0
-    assert result['last_used_row'] == 100
-    assert result['last_used_column'] == 100
+    assert result.empty_rows == 0
+    assert result.empty_columns == 0
+    assert result.last_used_row == 100
+    assert result.last_used_column == 100
 
 def test_get_used_area_with_invalid_input():
     """Test case where the input is not a valid Worksheet"""
@@ -337,3 +338,97 @@ def test_get_used_area_with_invalid_input():
     with pytest.raises(ValueError,
             match="The provided input is not a valid openpyxl Worksheet object."):
         get_used_area(None)  # Pass None as input
+
+# Test initialization of the UsedArea NamedTuple
+def test_used_area_initialization():
+    used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
+
+    # Assert that the NamedTuple is initialized correctly
+    assert used_area.empty_rows == 5
+    assert used_area.empty_columns == 2
+    assert used_area.last_used_row == 50
+    assert used_area.last_used_column == 20
+
+# Test the validate method
+def test_validate_valid():
+    used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
+
+    # No exception should be raised for valid values
+    used_area.validate()
+
+def test_validate_invalid_empty_rows():
+    used_area = UsedArea(empty_rows="5", empty_columns=2, last_used_row=50, last_used_column=20)
+
+    # Assert that a ValueError is raised for invalid 'empty_rows'
+    with pytest.raises(ValueError, match="Invalid 'empty_rows': it should be an int."):
+        used_area.validate()
+
+def test_validate_invalid_empty_columns():
+    used_area = UsedArea(empty_rows=5, empty_columns="2", last_used_row=50, last_used_column=20)
+
+    # Assert that a ValueError is raised for invalid 'empty_columns'
+    with pytest.raises(ValueError, match="Invalid 'empty_columns': it should be an int."):
+        used_area.validate()
+
+def test_validate_invalid_last_used_row():
+    used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row="50", last_used_column=20)
+
+    # Assert that a ValueError is raised for invalid 'last_used_row'
+    with pytest.raises(ValueError, match="Invalid 'last_used_row': it should be an int."):
+        used_area.validate()
+
+def test_validate_invalid_last_used_column():
+    used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column="20")
+
+    # Assert that a ValueError is raised for invalid 'last_used_column'
+    with pytest.raises(ValueError, match="Invalid 'last_used_column': it should be an int."):
+        used_area.validate()
+
+# Test the to_dict method
+def test_to_dict():
+    used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
+
+    # Check if to_dict returns the correct dictionary
+    expected_dict = {
+        "empty_rows": 5,
+        "empty_columns": 2,
+        "last_used_row": 50,
+        "last_used_column": 20,
+    }
+    assert used_area.to_dict() == expected_dict
+
+# Test an edge case where all values are zero
+def test_used_area_zero_values():
+    used_area = UsedArea(empty_rows=0, empty_columns=0, last_used_row=0, last_used_column=0)
+
+    # Assert that zero values are handled correctly
+    assert used_area.empty_rows == 0
+    assert used_area.empty_columns == 0
+    assert used_area.last_used_row == 0
+    assert used_area.last_used_column == 0
+    assert used_area.to_dict() == {
+        "empty_rows": 0,
+        "empty_columns": 0,
+        "last_used_row": 0,
+        "last_used_column": 0
+    }
+
+# Test for handling of large values
+def test_used_area_large_values():
+    used_area = UsedArea(
+        empty_rows=1000000,
+        empty_columns=500000,
+        last_used_row=1000000,
+        last_used_column=500000)
+
+    # Assert that large values are handled correctly
+    assert used_area.empty_rows == 1000000
+    assert used_area.empty_columns == 500000
+    assert used_area.last_used_row == 1000000
+    assert used_area.last_used_column == 500000
+    assert used_area.to_dict() == {
+        "empty_rows": 1000000,
+        "empty_columns": 500000,
+        "last_used_row": 1000000,
+        "last_used_column": 500000
+    }

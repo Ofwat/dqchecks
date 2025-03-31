@@ -6,7 +6,7 @@ Function used to do initial validation of the Excel files
 """
 import uuid
 import re
-from typing import Dict, Any, List
+from typing import Dict, Any, List, NamedTuple
 import logging
 from collections import namedtuple
 from openpyxl import Workbook
@@ -18,7 +18,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
+def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Workbook) -> dict:
     """
     Compares the sheet names between two openpyxl workbook objects to check if they are identical.
 
@@ -73,7 +73,73 @@ def validate_tabs_between_spreadsheets(spreadsheet1, spreadsheet2):
 
     return result
 
-def get_used_area(sheet: Worksheet):
+class UsedArea(NamedTuple):
+    """
+    A NamedTuple representing the used area of a worksheet.
+
+    This class holds information about the used area of a worksheet, including the number of 
+    empty rows at the bottom, the number of empty columns on the right, and the last non-empty
+    row and column in the worksheet.
+
+    Attributes:
+        empty_rows (int): The number of empty rows at the bottom of the sheet.
+        empty_columns (int): The number of empty columns on the right of the sheet.
+        last_used_row (int): The last non-empty row in the sheet.
+        last_used_column (int): The last non-empty column in the sheet.
+    """
+    empty_rows: int
+    empty_columns: int
+    last_used_row: int
+    last_used_column: int
+
+    def validate(self) -> None:
+        """
+        Validates the fields of the UsedArea NamedTuple to ensure they are integers.
+
+        This method checks that all attributes of the UsedArea (empty_rows, empty_columns, 
+        last_used_row, last_used_column) are of type 'int'. If any attribute does not meet 
+        this condition, a ValueError is raised.
+
+        Raises:
+            ValueError: If any attribute is not of type 'int'.
+        """
+        if not isinstance(self.empty_rows, int):  # type: ignore
+            raise ValueError("Invalid 'empty_rows': it should be an int.")
+        if not isinstance(self.empty_columns, int):  # type: ignore
+            raise ValueError("Invalid 'empty_columns': it should be an int.")
+        if not isinstance(self.last_used_row, int):  # type: ignore
+            raise ValueError("Invalid 'last_used_row': it should be an int.")
+        if not isinstance(self.last_used_column, int):  # type: ignore
+            raise ValueError("Invalid 'last_used_column': it should be an int.")
+
+    def to_dict(self) -> Dict[str, int]:
+        """
+        Converts the UsedArea instance to a dictionary.
+
+        This method returns the fields of the UsedArea instance as key-value pairs in a dictionary, 
+        which can be useful for serialization, logging, or further data processing.
+
+        Returns:
+            Dict[str, int]: A dictionary representation of the UsedArea instance, with the keys 
+                             corresponding to the field names and the values corresponding to the 
+                             field values of the instance.
+
+        Example:
+            {
+                'empty_rows': 5,
+                'empty_columns': 2,
+                'last_used_row': 50,
+                'last_used_column': 20
+            }
+        """
+        return {
+            "empty_rows": self.empty_rows,
+            "empty_columns": self.empty_columns,
+            "last_used_row": self.last_used_row,
+            "last_used_column": self.last_used_column,
+        }
+
+def get_used_area(sheet: Worksheet) -> UsedArea:
     """
     Given an openpyxl worksheet, returns the number of empty rows at the bottom,
     the number of empty columns on the right, as well as the last used row and column.
@@ -84,14 +150,14 @@ def get_used_area(sheet: Worksheet):
 
     :param sheet: The openpyxl worksheet object that contains the data.
     :type sheet: openpyxl.worksheet.worksheet.Worksheet
-    :return: A dictionary containing the number of empty rows and columns at the bottom,
+    :return: A NamedTuple containing the number of empty rows and columns at the bottom,
              and the last used row and column.
-    :rtype: dict
+    :rtype: UsedArea
     :raises ValueError: If the input is not a valid openpyxl worksheet.
     """
 
     # Validate that the input is an instance of openpyxl Worksheet
-    if not isinstance(sheet, Worksheet):
+    if not isinstance(sheet, Worksheet): # type: ignore
         raise ValueError("The provided input is not a valid openpyxl Worksheet object.")
 
     # Get the last used row and column in the sheet
@@ -122,14 +188,13 @@ def get_used_area(sheet: Worksheet):
     last_used_row = max_row - empty_row_count
     last_used_column = max_column - empty_column_count
 
-    # Return the results as a dictionary
-    return {
-        "empty_rows": empty_row_count, 
-        "empty_columns": empty_column_count,
-        "last_used_row": last_used_row,
-        "last_used_column": last_used_column,
-    }
-
+    # Return the results as a NamedTuple (UsedArea)
+    return UsedArea(
+        empty_rows=empty_row_count,
+        empty_columns=empty_column_count,
+        last_used_row=last_used_row,
+        last_used_column=last_used_column
+    )
 
 def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_number: int = 0):
     """
@@ -194,9 +259,11 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_numbe
 
     # Get used area for both sheets
     shape1 = get_used_area(sheet1)
-    rows1, cols1 = shape1["last_used_row"], shape1["last_used_column"]
+    shape1.validate()
+    rows1, cols1 = shape1.last_used_row, shape1.last_used_column
     shape2 = get_used_area(sheet2)
-    rows2, cols2 = shape2["last_used_row"], shape2["last_used_column"]
+    shape2.validate()
+    rows2, cols2 = shape2.last_used_row, shape2.last_used_column
 
     # Check if the number of rows and columns are the same
     if (rows1, cols1) != (rows2, cols2):
@@ -366,15 +433,102 @@ def check_formula_errors(sheet):
         "errors": error_details
     }
 
+class MissingSheetContext(NamedTuple):
+    """
+    A class representing the context of a missing sheet error.
+    
+    Attributes:
+        Rule_Cd (str): The code representing the rule associated with the missing sheet.
+        Error_Category (str): The category of the error related to the missing sheet.
+        Error_Severity_Cd (str): The severity code of the error for the missing sheet.
 
-# Define namedtuple for context
-MissingSheetContext = namedtuple(
-    'MissingSheetContext', ['Rule_Cd',
-                          'Error_Category',
-                          'Error_Severity_Cd']
-)
+    This class is used to provide structured information about errors related to missing sheets, 
+    including details about the rule, error category, and severity.
+    """
+    Rule_Cd: str
+    Error_Category: str
+    Error_Severity_Cd: str
 
-def create_missing_sheet_row(sheet, context: MissingSheetContext):
+    def validate(self) -> None:
+        """Helper method to validate the context fields."""
+        if not self.Rule_Cd or not isinstance(self.Rule_Cd, str): # type: ignore
+            raise ValueError("Invalid 'Rule_Cd': it must be a non-empty string.")
+        if not self.Error_Category or not isinstance(self.Error_Category, str): # type: ignore
+            raise ValueError("Invalid 'Error_Category': it must be a non-empty string.")
+        if not self.Error_Severity_Cd or not isinstance(self.Error_Severity_Cd, str): # type: ignore
+            raise ValueError("Invalid 'Error_Severity_Cd': it must be a non-empty string.")
+
+class MissingSheetRow(NamedTuple):
+    """
+    A class representing a row of information for a missing sheet error.
+
+    Attributes:
+        Event_Id (str): A unique identifier for the event.
+        Sheet_Cd (str): The code representing the missing sheet.
+        Rule_Cd (str): The code representing the rule associated with the missing sheet.
+        Error_Category (str): The category of the error related to the missing sheet.
+        Error_Severity_Cd (str): The severity code of the error for the missing sheet.
+        Error_Desc (str): A description of the error (e.g., "Missing Sheet").
+
+    This class is used to provide structured information about errors related to missing sheets,
+    including the event details, rule, error category, severity, and description.
+    """
+
+    Event_Id: str
+    Sheet_Cd: str
+    Rule_Cd: str
+    Error_Category: str
+    Error_Severity_Cd: str
+    Error_Desc: str
+
+    def validate(self) -> None:
+        """Helper method to validate the context fields."""
+        if not self.Event_Id or not isinstance(self.Event_Id, str): # type: ignore
+            raise ValueError("Invalid 'Event_Id': it must be a non-empty string.")
+        if not self.Sheet_Cd or not isinstance(self.Sheet_Cd, str): # type: ignore
+            raise ValueError("Invalid 'Sheet_Cd': it must be a non-empty string.")
+        if not self.Rule_Cd or not isinstance(self.Rule_Cd, str): # type: ignore
+            raise ValueError("Invalid 'Rule_Cd': it must be a non-empty string.")
+        if not self.Error_Category or not isinstance(self.Error_Category, str): # type: ignore
+            raise ValueError("Invalid 'Error_Category': it must be a non-empty string.")
+        if not self.Error_Severity_Cd or not isinstance(self.Error_Severity_Cd, str): # type: ignore
+            raise ValueError("Invalid 'Error_Severity_Cd': it must be a non-empty string.")
+        if not self.Error_Desc or not isinstance(self.Error_Desc, str): # type: ignore
+            raise ValueError("Invalid 'Error_Desc': it must be a non-empty string.")
+
+    def to_dict(self) -> Dict[str, str]:
+        """
+        Converts the MissingSheetRow instance to a dictionary.
+
+        This method returns the fields of the MissingSheetRow as key-value pairs in a dictionary,
+        which can be useful for serialization, logging, or data storage.
+
+        Returns:
+            Dict[str, str]: A dictionary representation of the MissingSheetRow, where the keys
+                            correspond to the field names and the values correspond to the
+                            field values of the instance.
+
+        Example:
+            {
+                'Event_Id': '12345',
+                'Sheet_Cd': 'Sheet1',
+                'Rule_Cd': 'Rule1',
+                'Error_Category': 'Data',
+                'Error_Severity_Cd': 'High',
+                'Error_Desc': 'Missing Sheet'
+            }
+        """
+        return {
+            'Event_Id': self.Event_Id,
+            'Sheet_Cd': self.Sheet_Cd,
+            'Rule_Cd': self.Rule_Cd,
+            'Error_Category': self.Error_Category,
+            'Error_Severity_Cd': self.Error_Severity_Cd,
+            'Error_Desc': self.Error_Desc
+        }
+
+
+def create_missing_sheet_row(sheet: str, context: MissingSheetContext) -> MissingSheetRow:
     """
     Creates a dictionary representing a row for a missing sheet.
     
@@ -387,41 +541,37 @@ def create_missing_sheet_row(sheet, context: MissingSheetContext):
         dict: A dictionary containing the details of the missing sheet.
     
     Raises:
-        ValueError: If 'sheet' is not a string or if 'context' does not contain
-                    the required fields.
+        ValueError: If 'sheet' is not a string, if 'context' does not contain
+                    the required fields, or if 'context' validation fails.
     """
 
-    # Input validation
-    if not isinstance(sheet, str) or not sheet:
+    # Input validation for 'sheet'
+    if not isinstance(sheet, str) or not sheet: # type: ignore
         raise ValueError("The 'sheet' argument must be a non-empty string.")
 
-    if not isinstance(context, MissingSheetContext):
+    if not isinstance(context, MissingSheetContext) or not sheet: # type: ignore
         raise ValueError("The 'context' argument must be of type MissingSheetContext.")
 
-    # Validate that context fields are not None or empty strings
-    if not context.Rule_Cd or not isinstance(context.Rule_Cd, str):
-        raise ValueError("Invalid 'Rule_Cd' in context: it must be a non-empty string.")
-
-    if not context.Error_Category or not isinstance(context.Error_Category, str):
-        raise ValueError("Invalid 'Error_Category' in context: it must be a non-empty string.")
-
-    if not context.Error_Severity_Cd or not isinstance(context.Error_Severity_Cd, str):
-        raise ValueError("Invalid 'Error_Severity_Cd' in context: it must be a non-empty string.")
+    # Validate the 'context' argument by calling the validate method
+    try:
+        context.validate()
+    except ValueError as e:
+        raise ValueError(f"Invalid context: {str(e)}") from e
 
     # Generate a unique Event_Id using uuid4
     eventid = uuid.uuid4().hex
 
-    # Return the dictionary representing the missing sheet row
-    return {
-        'Event_Id': eventid,
-        'Sheet_Cd': sheet,
-        'Rule_Cd': context.Rule_Cd,
-        'Error_Category': context.Error_Category,
-        'Error_Severity_Cd': context.Error_Severity_Cd,
-        'Error_Desc': "Missing Sheet"  # Description of the error
-    }
+    # Return the NamedTuple representing the missing sheet row
+    return MissingSheetRow(
+        Event_Id=eventid,
+        Sheet_Cd=sheet,
+        Rule_Cd=context.Rule_Cd,
+        Error_Category=context.Error_Category,
+        Error_Severity_Cd=context.Error_Severity_Cd,
+        Error_Desc="Missing Sheet",
+    )
 
-def create_dataframe_missing_sheets(input_data, context: MissingSheetContext):
+def create_dataframe_missing_sheets(input_data: dict, context: MissingSheetContext):
     """
     Creates a pandas DataFrame representing missing sheets based on
         the provided input data and context.
@@ -464,7 +614,7 @@ def create_dataframe_missing_sheets(input_data, context: MissingSheetContext):
         if not isinstance(sheet, str) or not sheet:
             # pylint: disable=C0301
             raise ValueError(f"Invalid sheet name: '{sheet}'. Each sheet must be a non-empty string.")
-        rows.append(create_missing_sheet_row(sheet, context))
+        rows.append(create_missing_sheet_row(sheet, context).to_dict())
 
     # Convert the list of rows into a pandas DataFrame
     df = pd.DataFrame(rows)
@@ -1181,7 +1331,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
     return df
 
 def check_for_nulls_and_duplicates(
-    worksheet, column_index, skip_rows, skip_row_after_header, working_area):
+    worksheet, column_index, skip_rows, skip_row_after_header, working_area: UsedArea):
     # pylint: disable=C0301
     """
     Check for null values and duplicate values in a specific column of the worksheet.
@@ -1203,7 +1353,7 @@ def check_for_nulls_and_duplicates(
     seen_values = {}
 
     # Iterate through all rows in the identified column (skip the first `skip_rows` rows)
-    for row in range(skip_rows + 2, working_area["last_used_row"] + 1):
+    for row in range(skip_rows + 2, working_area.last_used_row + 1):
         cell_value = worksheet.cell(row=row, column=column_index).value
 
         # If the cell is None (null value), record the row
@@ -1277,13 +1427,14 @@ def check_pk_for_nulls_and_duplicates(
             continue  # Skip sheets that do not match the regex
 
         working_area = get_used_area(workbook[sheet])
+        working_area.validate()
         worksheet = workbook[sheet]
         null_rows = []
         duplicate_rows = {}
 
         # Find the column index based on the header in the 2nd row
         column_index = None
-        for col in range(1, working_area["last_used_column"] + 1):
+        for col in range(1, working_area.last_used_column + 1):
             if worksheet.cell(row=2, column=col).value == header_column_name:
                 column_index = col
                 break
