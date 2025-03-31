@@ -474,3 +474,138 @@ def test_find_formula_errors_with_multiple_sheets():
     assert 'A1' in result_df['Cell_Reference'].values
     assert 'B1' in result_df['Cell_Reference'].values
     assert set(result_df["Rule_Cd"].to_list()) == {"Rule 2: Formula Error Check"}
+
+def test_valid_formula_error_sheet_context():
+    """Valid input"""
+    context = FormulaErrorSheetContext(
+        Rule_Cd="RULE123",
+        Sheet_Cd="Sheet1",
+        Error_Category="Formula Error",
+        Error_Severity_Cd="High"
+    )
+
+    # Validate should not raise any exceptions
+    context.validate()
+
+    # to_dict should return the expected dictionary
+    expected_dict = {
+        "Rule_Cd": "RULE123",
+        "Sheet_Cd": "Sheet1",
+        "Error_Category": "Formula Error",
+        "Error_Severity_Cd": "High"
+    }
+    assert context.to_dict() == expected_dict
+
+def test_missing_rule_cd():
+    """Missing Rule_Cd"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Rule_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="",
+            Sheet_Cd="Sheet1",
+            Error_Category="Formula Error",
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_missing_sheet_cd():
+    """Missing Sheet_Cd"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Sheet_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd="",
+            Error_Category="Formula Error",
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_missing_error_category():
+    """Missing Error_Category"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Error_Category': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd="Sheet1",
+            Error_Category="",
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_missing_error_severity_cd():
+    """Missing Error_Severity_Cd"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Error_Severity_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd="Sheet1",
+            Error_Category="Formula Error",
+            Error_Severity_Cd=""
+        )
+        context.validate()
+
+def test_invalid_rule_cd_type():
+    """Invalid Rule_Cd type (not a string)"""
+    with pytest.raises(ValueError, match="Invalid 'Rule_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd=123,  # Invalid type
+            Sheet_Cd="Sheet1",
+            Error_Category="Formula Error",
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_invalid_sheet_cd_type():
+    """Invalid Sheet_Cd type (not a string)"""
+    with pytest.raises(ValueError, match="Invalid 'Sheet_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd=456,  # Invalid type
+            Error_Category="Formula Error",
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_invalid_error_category_type():
+    """Invalid Error_Category type (not a string)"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Error_Category': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd="Sheet1",
+            Error_Category=789,  # Invalid type
+            Error_Severity_Cd="High"
+        )
+        context.validate()
+
+def test_invalid_error_severity_cd_type():
+    """Invalid Error_Severity_Cd type (not a string)"""
+    with pytest.raises(ValueError,
+            match="Invalid 'Error_Severity_Cd': it must be a non-empty string."):
+        context = FormulaErrorSheetContext(
+            Rule_Cd="RULE123",
+            Sheet_Cd="Sheet1",
+            Error_Category="Formula Error",
+            Error_Severity_Cd=0  # Invalid type
+        )
+        context.validate()
+
+def test_to_dict_method():
+    """Valid input with to_dict"""
+    context = FormulaErrorSheetContext(
+        Rule_Cd="RULE123",
+        Sheet_Cd="Sheet1",
+        Error_Category="Formula Error",
+        Error_Severity_Cd="High"
+    )
+
+    # Expected dictionary output
+    expected_dict = {
+        "Rule_Cd": "RULE123",
+        "Sheet_Cd": "Sheet1",
+        "Error_Category": "Formula Error",
+        "Error_Severity_Cd": "High"
+    }
+
+    # Check that to_dict produces the correct result
+    assert context.to_dict() == expected_dict

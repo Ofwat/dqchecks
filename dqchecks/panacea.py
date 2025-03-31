@@ -139,6 +139,74 @@ class UsedArea(NamedTuple):
             "last_used_column": self.last_used_column,
         }
 
+
+class FormulaErrorSheetContext(NamedTuple):
+    """
+    A NamedTuple representing the context of a formula error on a worksheet.
+
+    This class holds information related to the formula error in a worksheet, 
+    including details such as the rule code, sheet code, error category, 
+    and error severity code.
+
+    Attributes:
+        Rule_Cd (str): The code of the rule associated with the error.
+        Sheet_Cd (str): The code of the sheet where the error occurred.
+        Error_Category (str): The category of the error (e.g., syntax, reference).
+        Error_Severity_Cd (str): The severity code of the error (e.g., high, medium, low).
+    """
+
+    Rule_Cd: str
+    Sheet_Cd: str
+    Error_Category: str
+    Error_Severity_Cd: str
+
+    def validate(self) -> None:
+        """
+        Validates the fields of the FormulaErrorSheetContext NamedTuple.
+
+        This method checks that all attributes of the FormulaErrorSheetContext 
+        (Rule_Cd, Sheet_Cd, Error_Category, Error_Severity_Cd) are of type 'str'.
+        If any attribute does not meet this condition, a ValueError is raised.
+
+        Raises:
+            ValueError: If any attribute is not of type 'str' or is empty.
+        """
+        if not self.Rule_Cd or not isinstance(self.Rule_Cd, str):  # type: ignore
+            raise ValueError("Invalid 'Rule_Cd': it must be a non-empty string.")
+        if not self.Sheet_Cd or not isinstance(self.Sheet_Cd, str):  # type: ignore
+            raise ValueError("Invalid 'Sheet_Cd': it must be a non-empty string.")
+        if not self.Error_Category or not isinstance(self.Error_Category, str):  # type: ignore
+            raise ValueError("Invalid 'Error_Category': it must be a non-empty string.")
+        if (not self.Error_Severity_Cd
+            or not isinstance(self.Error_Severity_Cd, str)):  # type: ignore
+            raise ValueError("Invalid 'Error_Severity_Cd': it must be a non-empty string.")
+
+    def to_dict(self) -> Dict[str, str]:
+        """
+        Converts the FormulaErrorSheetContext instance to a dictionary.
+
+        This method returns the fields of the FormulaErrorSheetContext
+        as key-value pairs in a dictionary, where the keys correspond to
+        the attribute names and the values correspond to the attribute values.
+
+        Returns:
+            Dict[str, str]: A dictionary representation of the FormulaErrorSheetContext instance.
+            
+        Example:
+            {
+                'Rule_Cd': 'RULE123',
+                'Sheet_Cd': 'Sheet1',
+                'Error_Category': 'Formula Error',
+                'Error_Severity_Cd': 'High'
+            }
+        """
+        return {
+            "Rule_Cd": self.Rule_Cd,
+            "Sheet_Cd": self.Sheet_Cd,
+            "Error_Category": self.Error_Category,
+            "Error_Severity_Cd": self.Error_Severity_Cd,
+        }
+
 def get_used_area(sheet: Worksheet) -> UsedArea:
     """
     Given an openpyxl worksheet, returns the number of empty rows at the bottom,
@@ -571,7 +639,7 @@ def create_missing_sheet_row(sheet: str, context: MissingSheetContext) -> Missin
         Error_Desc="Missing Sheet",
     )
 
-def create_dataframe_missing_sheets(input_data: dict, context: MissingSheetContext):
+def create_dataframe_missing_sheets(input_data: dict, context: MissingSheetContext) -> pd.DataFrame:
     """
     Creates a pandas DataFrame representing missing sheets based on
         the provided input data and context.
@@ -658,11 +726,6 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
     missing_sheets_df = create_dataframe_missing_sheets(a, missing_sheet_context)
 
     return missing_sheets_df
-
-# Define the FormulaErrorSheetContext
-FormulaErrorSheetContext = namedtuple(
-    'FormulaErrorSheetContext', ['Rule_Cd', 'Sheet_Cd', 'Error_Category', 'Error_Severity_Cd']
-)
 
 def validate_input_data(input_data: dict, context: FormulaErrorSheetContext):
     """

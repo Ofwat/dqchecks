@@ -339,8 +339,8 @@ def test_get_used_area_with_invalid_input():
             match="The provided input is not a valid openpyxl Worksheet object."):
         get_used_area(None)  # Pass None as input
 
-# Test initialization of the UsedArea NamedTuple
 def test_used_area_initialization():
+    """Test initialization of the UsedArea NamedTuple"""
     used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
 
     # Assert that the NamedTuple is initialized correctly
@@ -349,14 +349,15 @@ def test_used_area_initialization():
     assert used_area.last_used_row == 50
     assert used_area.last_used_column == 20
 
-# Test the validate method
 def test_validate_valid():
+    """Test the validate method"""
     used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
 
     # No exception should be raised for valid values
     used_area.validate()
 
 def test_validate_invalid_empty_rows():
+    """Test invalid empty rows"""
     used_area = UsedArea(empty_rows="5", empty_columns=2, last_used_row=50, last_used_column=20)
 
     # Assert that a ValueError is raised for invalid 'empty_rows'
@@ -364,6 +365,7 @@ def test_validate_invalid_empty_rows():
         used_area.validate()
 
 def test_validate_invalid_empty_columns():
+    """Test invalid empty columns"""
     used_area = UsedArea(empty_rows=5, empty_columns="2", last_used_row=50, last_used_column=20)
 
     # Assert that a ValueError is raised for invalid 'empty_columns'
@@ -371,6 +373,7 @@ def test_validate_invalid_empty_columns():
         used_area.validate()
 
 def test_validate_invalid_last_used_row():
+    """Test invalid last used row"""
     used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row="50", last_used_column=20)
 
     # Assert that a ValueError is raised for invalid 'last_used_row'
@@ -378,14 +381,15 @@ def test_validate_invalid_last_used_row():
         used_area.validate()
 
 def test_validate_invalid_last_used_column():
+    """Test invalid last used column"""
     used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column="20")
 
     # Assert that a ValueError is raised for invalid 'last_used_column'
     with pytest.raises(ValueError, match="Invalid 'last_used_column': it should be an int."):
         used_area.validate()
 
-# Test the to_dict method
 def test_to_dict():
+    """Test the to_dict method"""
     used_area = UsedArea(empty_rows=5, empty_columns=2, last_used_row=50, last_used_column=20)
 
     # Check if to_dict returns the correct dictionary
@@ -397,8 +401,8 @@ def test_to_dict():
     }
     assert used_area.to_dict() == expected_dict
 
-# Test an edge case where all values are zero
 def test_used_area_zero_values():
+    """Test an edge case where all values are zero"""
     used_area = UsedArea(empty_rows=0, empty_columns=0, last_used_row=0, last_used_column=0)
 
     # Assert that zero values are handled correctly
@@ -413,8 +417,8 @@ def test_used_area_zero_values():
         "last_used_column": 0
     }
 
-# Test for handling of large values
 def test_used_area_large_values():
+    """Test for handling of large values"""
     used_area = UsedArea(
         empty_rows=1000000,
         empty_columns=500000,
