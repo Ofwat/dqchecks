@@ -48,8 +48,8 @@ def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Wor
         raise ValueError("Both arguments must be valid openpyxl workbook objects.")
 
     # Get sheet names from both workbooks
-    sheets1 = set(spreadsheet1.sheetnames)
-    sheets2 = set(spreadsheet2.sheetnames)
+    sheets1 = set(sheet for sheet in spreadsheet1.sheetnames if "Dict_" not in sheet)
+    sheets2 = set(sheet for sheet in spreadsheet2.sheetnames if "Dict_" not in sheet)
 
     # Check for missing sheets in both spreadsheets
     missing_in_1 = sheets2 - sheets1
@@ -58,7 +58,7 @@ def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Wor
     result = {
         "status": "Ok",
         "description": "Both spreadsheets have the same sheet names.",
-        "errors": {}
+        "errors": {},
     }
 
     if missing_in_1 or missing_in_2:
