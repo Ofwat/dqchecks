@@ -727,7 +727,7 @@ def find_missing_sheets(wb_template: Workbook, wb_company: Workbook):
     missing_sheet_context = MissingSheetContext(
         Rule_Cd="Rule 3: Missing Sheets",
         Error_Category="Missing Sheet",
-        Error_Severity_Cd="soft",
+        Error_Severity_Cd="hard",
     )
 
     # Generate the DataFrame for missing sheets
