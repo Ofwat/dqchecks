@@ -47,9 +47,17 @@ def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Wor
     if not isinstance(spreadsheet1, Workbook) or not isinstance(spreadsheet2, Workbook):
         raise ValueError("Both arguments must be valid openpyxl workbook objects.")
 
-    # Get sheet names from both workbooks
-    sheets1 = set(sheet for sheet in spreadsheet1.sheetnames if "Dict_" not in sheet)
-    sheets2 = set(sheet for sheet in spreadsheet2.sheetnames if "Dict_" not in sheet)
+    # List of substrings to exclude
+    excluded_substrings = ["Dict_", "CLEAR_SHEET", "Changes Log"]
+
+    # Filter sheet names that do not contain any of the excluded substrings
+    sheets1 = set(
+        sheet for sheet in spreadsheet1.sheetnames
+            if not any(excluded in sheet for excluded in excluded_substrings)
+    )
+    sheets2 = set(sheet for sheet in spreadsheet2.sheetnames
+            if not any(excluded in sheet for excluded in excluded_substrings)
+    )
 
     # Check for missing sheets in both spreadsheets
     missing_in_1 = sheets2 - sheets1
