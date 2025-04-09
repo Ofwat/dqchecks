@@ -144,7 +144,7 @@ def test_create_dataframe_valid_data():
         set(df.columns) ==
         {"Event_Id",
          "Sheet_Cd",
-         "Cell_Reference",
+         "Cell_Cd",
          "Rule_Cd",
          "Error_Category",
          "Error_Severity_Cd",
@@ -152,7 +152,7 @@ def test_create_dataframe_valid_data():
 
     # Check if the values in the dataframe match the input data
     assert df.iloc[0]["Sheet_Cd"] == "Sheet1"
-    assert df.iloc[0]["Cell_Reference"] == "B5"
+    assert df.iloc[0]["Cell_Cd"] == "B5"
     assert df.iloc[0]["Error_Desc"] == "Company name mismatch in B5"
     assert df.iloc[1]["Error_Desc"] == "Company name mismatch in B6"
     assert df.iloc[0]["Rule_Cd"] == "Rule 7: Company Name Selected"
@@ -184,7 +184,7 @@ def test_create_dataframe_no_errors():
         {
             "Event_Id",
             "Sheet_Cd",
-            "Cell_Reference",
+            "Cell_Cd",
             "Rule_Cd",
             "Error_Category",
             "Error_Severity_Cd",

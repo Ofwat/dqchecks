@@ -799,7 +799,7 @@ def create_row_for_error(sheet_cd: str, error_type: str, cell:str,
     return {
         'Event_Id': uuid.uuid4().hex,
         'Sheet_Cd': sheet_cd,
-        'Cell_Reference': cell,
+        'Cell_Cd': cell,
         'Rule_Cd': context.Rule_Cd,
         'Error_Category': context.Error_Category,
         'Error_Severity_Cd': context.Error_Severity_Cd,
@@ -1138,7 +1138,7 @@ def create_dataframe_formula_differences(
             'Event_Id': uuid.uuid4().hex,
             'Sheet_Cd': sheet_cd,
             'Rule_Cd': rule_cd,
-            'Cell_Reference': cellreference,
+            'Cell_Cd': cellreference,
             'Error_Category': error_category,
             'Error_Severity_Cd': error_severity_cd,
             'Error_Desc': " -- ".join(discrepancies),  # Join the error descriptions with " -- "
@@ -1378,7 +1378,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
 
     # If there are no errors, return an empty DataFrame with column headers
     if not errors:
-        return pd.DataFrame(columns=["Event_Id", "Sheet_Cd", "Cell_Reference", "Rule_Cd", "Error_Category",
+        return pd.DataFrame(columns=["Event_Id", "Sheet_Cd", "Cell_Cd", "Rule_Cd", "Error_Category",
                                      "Error_Severity_Cd", "Error_Desc"])
 
     # Create a list to store rows for the DataFrame
@@ -1389,7 +1389,7 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
         rows.append({
             'Event_Id': uuid.uuid4().hex,  # Generate a unique ID for each event
             'Sheet_Cd': meta["sheet_name"],  # Extract the sheet name from 'meta'
-            'Cell_Reference': meta["cell_name"],  # Extract the cell reference from 'meta'
+            'Cell_Cd': meta["cell_name"],  # Extract the cell reference from 'meta'
             'Rule_Cd': "Rule 7: Company Name Selected",  # Static rule code for company name selection
             'Error_Category': "Company name mismatch",  # Static error category
             'Error_Severity_Cd': "?",  # Placeholder for error severity

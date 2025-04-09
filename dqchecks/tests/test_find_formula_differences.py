@@ -39,7 +39,7 @@ def test_create_dataframe_formula_differences_valid():
         'Event_Id',
         'Sheet_Cd',
         'Rule_Cd',
-        'Cell_Reference',
+        'Cell_Cd',
         'Error_Category',
         'Error_Severity_Cd',
         'Error_Desc']
@@ -47,10 +47,10 @@ def test_create_dataframe_formula_differences_valid():
 
     # Check specific row values (e.g., for 'A1')
     assert result_df.loc[
-        result_df['Cell_Reference'] == 'A1', 'Error_Desc'
+        result_df['Cell_Cd'] == 'A1', 'Error_Desc'
         ].iloc[0] == 'Difference 1'
     assert result_df.loc[
-        result_df['Cell_Reference'] == 'B2', 'Error_Desc'
+        result_df['Cell_Cd'] == 'B2', 'Error_Desc'
         ].iloc[0] == 'Difference 2'
 
 def test_create_dataframe_formula_differences_invalid_input_data():
@@ -135,7 +135,7 @@ def test_create_dataframe_formula_differences_multiple_descriptions_in_one_cell(
 
     # Check if the 'Error_Desc' is correctly joined
     assert result_df.loc[
-        result_df['Cell_Reference'] == 'A1', 'Error_Desc'
+        result_df['Cell_Cd'] == 'A1', 'Error_Desc'
         ].iloc[0] == 'Difference 1 -- Difference 2'
 
 def create_test_workbook(sheet_data):

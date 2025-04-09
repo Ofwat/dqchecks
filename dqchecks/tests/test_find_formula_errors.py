@@ -180,7 +180,7 @@ def test_create_row_for_error_valid_data():
     assert isinstance(row['Event_Id'], str)  # UUID should be a string
     assert len(row['Event_Id']) == 32  # UUID hex should have 32 characters
     assert row['Sheet_Cd'] == sheet_cd
-    assert row['Cell_Reference'] == cell
+    assert row['Cell_Cd'] == cell
     assert row['Rule_Cd'] == context.Rule_Cd
     assert row['Error_Category'] == context.Error_Category
     assert row['Error_Severity_Cd'] == context.Error_Severity_Cd
@@ -212,7 +212,7 @@ def test_create_row_for_error_empty_cell():
     row = create_row_for_error(sheet_cd, error_type, cell, context)
 
     # Check if the empty cell reference is handled correctly
-    assert row['Cell_Reference'] == cell  # Should be an empty string
+    assert row['Cell_Cd'] == cell  # Should be an empty string
 
 def test_create_row_for_error_no_sheet_code():
     """Case where the sheet_cd is missing"""
@@ -326,13 +326,13 @@ def test_create_dataframe_formula_errors_single_error_type_multiple_cells(contex
 
     # Assert that the values in the DataFrame match the expected results
     assert df['Error_Desc'].iloc[0] == '#DIV/0!'
-    assert df['Cell_Reference'].iloc[0] == 'A1'
+    assert df['Cell_Cd'].iloc[0] == 'A1'
 
     assert df['Error_Desc'].iloc[1] == '#DIV/0!'
-    assert df['Cell_Reference'].iloc[1] == 'B2'
+    assert df['Cell_Cd'].iloc[1] == 'B2'
 
     assert df['Error_Desc'].iloc[2] == '#DIV/0!'
-    assert df['Cell_Reference'].iloc[2] == 'C3'
+    assert df['Cell_Cd'].iloc[2] == 'C3'
 
 # pylint: disable=W0621
 def test_create_dataframe_formula_errors_multiple_error_types(context):
@@ -354,17 +354,17 @@ def test_create_dataframe_formula_errors_multiple_error_types(context):
 
     # Assert the values for '#DIV/0!' errors
     assert df['Error_Desc'].iloc[0] == '#DIV/0!'
-    assert df['Cell_Reference'].iloc[0] == 'A1'
+    assert df['Cell_Cd'].iloc[0] == 'A1'
 
     assert df['Error_Desc'].iloc[1] == '#DIV/0!'
-    assert df['Cell_Reference'].iloc[1] == 'B2'
+    assert df['Cell_Cd'].iloc[1] == 'B2'
 
     # Assert the values for '#VALUE!' errors
     assert df['Error_Desc'].iloc[2] == '#VALUE!'
-    assert df['Cell_Reference'].iloc[2] == 'C3'
+    assert df['Cell_Cd'].iloc[2] == 'C3'
 
     assert df['Error_Desc'].iloc[3] == '#VALUE!'
-    assert df['Cell_Reference'].iloc[3] == 'D4'
+    assert df['Cell_Cd'].iloc[3] == 'D4'
 
 # pylint: disable=W0621
 def test_create_dataframe_formula_errors_empty_cell_list(context):
@@ -471,8 +471,8 @@ def test_find_formula_errors_with_multiple_sheets():
     assert '#REF!' in result_df['Error_Desc'].values
 
     # Check if the cell references are correctly included
-    assert 'A1' in result_df['Cell_Reference'].values
-    assert 'B1' in result_df['Cell_Reference'].values
+    assert 'A1' in result_df['Cell_Cd'].values
+    assert 'B1' in result_df['Cell_Cd'].values
     assert set(result_df["Rule_Cd"].to_list()) == {"Rule 2: Formula Error Check"}
 
 def test_valid_formula_error_sheet_context():
