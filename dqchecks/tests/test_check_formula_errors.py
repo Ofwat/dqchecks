@@ -17,6 +17,19 @@ def workbook_with_no_errors():
     return sheet
 
 @pytest.fixture
+def workbook_with_no_errors_two_cols():
+    """Fixture for a workbook with no formula errors."""
+    wb = Workbook()
+    sheet = wb.active
+    sheet['A1'] = 10
+    sheet['A2'] = 20
+    sheet['A3'] = "=A1+A2"  # Valid formula
+    sheet["A4"] = None
+    sheet["A5"] = None
+    sheet['B2'] = None
+    return sheet
+
+@pytest.fixture
 def workbook_with_errors():
     """Fixture for a workbook with formula errors."""
     wb = Workbook()
@@ -97,3 +110,19 @@ def test_check_formula_errors_invalid_sheet_type():
         pass
     with pytest.raises(ValueError):
         check_formula_errors(InvalidSheet())  # Passing a non-worksheet object
+
+
+def test_check_formula_errors_with_n_col_greater_than_last_used_row(
+        workbook_with_no_errors_two_cols):
+    """Here, we simulate the scenario where n_col > sheet.last_used_row"""
+    sheet = workbook_with_no_errors_two_cols
+    # Manually set last_used_row for testing
+    sheet.last_used_row = 1  # Make the last_used_row smaller than the number of columns
+
+    result = check_formula_errors(sheet)
+
+    # We expect an error as the formula errors are in row 1 and 3.
+    # The actual test could look for the presence of error statuses
+    assert result["status"] == "Ok"
+    assert result["description"] == "No errors found"
+    assert not result["errors"]

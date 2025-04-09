@@ -261,8 +261,8 @@ def get_used_area(sheet: Worksheet) -> UsedArea:
             break  # Stop once a non-empty column is found
 
     # Calculate the last used row and column (excluding the empty ones)
-    last_used_row = max_row - empty_row_count
-    last_used_column = max_column - empty_column_count
+    last_used_row = max(max_row - empty_row_count, 1)
+    last_used_column = max(max_column - empty_column_count, 1)
 
     # Return the results as a NamedTuple (UsedArea)
     return UsedArea(
@@ -409,8 +409,12 @@ def compare_formulas(sheet1, sheet2):
         raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
 
     # Check if the sheets have the same number of rows and columns
-    rows1, cols1 = sheet1.max_row, sheet1.max_column
-    rows2, cols2 = sheet2.max_row, sheet2.max_column
+    shape1 = get_used_area(sheet1)
+    shape1.validate()
+    rows1, cols1 = shape1.last_used_row, shape1.last_used_column
+    shape2 = get_used_area(sheet2)
+    shape2.validate()
+    rows2, cols2 = shape2.last_used_row, shape2.last_used_column
 
     if (rows1, cols1) != (rows2, cols2):
         return {
@@ -485,9 +489,14 @@ def check_formula_errors(sheet):
 
     error_details = {}
 
+    shape = get_used_area(sheet)
+    shape.validate()
+
     # Iterate over all cells in the sheet
-    for row in sheet.iter_rows():
-        for cell in row:
+    for n_col, row in enumerate(sheet.iter_rows()):
+        if n_col > shape.last_used_row:
+            break
+        for cell in row[:shape.last_used_column]:
             # Check if the cell contains an error (identified by an 'e')
             if cell.data_type == 'e':
                 # If the formula's output is one of the known error strings
