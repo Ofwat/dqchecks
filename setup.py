@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ofwat-dqchecks",
-    version="0.0.45",
+    version="0.0.46",
     packages=find_packages(),
     install_requires=[
         "pandas",
