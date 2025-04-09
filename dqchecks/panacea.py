@@ -236,40 +236,31 @@ def get_used_area(sheet: Worksheet) -> UsedArea:
     if not isinstance(sheet, Worksheet): # type: ignore
         raise ValueError("The provided input is not a valid openpyxl Worksheet object.")
 
+    df = pd.DataFrame(sheet.values)
+
     # Get the last used row and column in the sheet
     max_row = sheet.max_row
     max_column = sheet.max_column
 
-    # Initialize counters for empty rows and columns
-    empty_row_count = 0
-    empty_column_count = 0
-
-    # Count empty rows from the bottom (starting from max_row)
-    for row in range(max_row, 0, -1):
-        row_values = [sheet.cell(row=row, column=col).value for col in range(1, max_column + 1)]
-        if all(cell is None for cell in row_values):  # If the entire row is empty
-            empty_row_count += 1
-        else:
-            break  # Stop once a non-empty row is found
-
-    # Count empty columns from the right (starting from max_column)
-    for col in range(max_column, 0, -1):
-        column_values = [sheet.cell(row=row, column=col).value for row in range(1, max_row + 1)]
-        if all(cell is None for cell in column_values):  # If the entire column is empty
-            empty_column_count += 1
-        else:
-            break  # Stop once a non-empty column is found
-
     # Calculate the last used row and column (excluding the empty ones)
-    last_used_row = max(max_row - empty_row_count, 1)
-    last_used_column = max(max_column - empty_column_count, 1)
+    if df.shape[0] == 0:
+        last_used_row = 1
+    else:
+        last_used_row = df.last_valid_index() + 1
+    if df.shape[1] == 0:
+        last_used_column = 1
+    else:
+        last_used_column = df.apply(lambda col: col.last_valid_index()).last_valid_index() + 1
+
+    empty_row_count = max_row - last_used_row
+    empty_column_count = max_column - last_used_column
 
     # Return the results as a NamedTuple (UsedArea)
     return UsedArea(
         empty_rows=empty_row_count,
         empty_columns=empty_column_count,
         last_used_row=last_used_row,
-        last_used_column=last_used_column
+        last_used_column=last_used_column,
     )
 
 def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_number: int = 0):
