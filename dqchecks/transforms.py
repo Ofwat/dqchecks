@@ -64,14 +64,34 @@ def validate_observation_patterns(observation_patterns: list[str]):
             or not all(is_valid_regex(i) for i in observation_patterns):
         raise ValueError("The 'observation_patterns' argument needs to be a list of regex strings.")
 
-def extract_fout_sheets(wb: Workbook):
+def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
     """
-    Extracts sheets that start with 'fOut_' from the workbook.
+    Extracts sheets from the workbook whose names match any of the given regex patterns.
+    
+    Args:
+        wb (Workbook): The Excel workbook object.
+        fout_patterns (list[str]): A list of regex patterns to match sheet names.
+    
+    Returns:
+        List[str]: A list of matching sheet names.
+
+    Raises:
+        ValueError: If no matching sheets are found.
     """
-    fout_sheets = [sheet for sheet in wb.sheetnames if sheet.startswith("fOut_")]
-    if not fout_sheets:
-        raise ValueError(f"No fOut_* sheets found. Available sheets: {wb.sheetnames}")
-    return fout_sheets
+    regexes = [re.compile(p) for p in fout_patterns]
+
+    matching_sheets = [
+        sheet for sheet in wb.sheetnames
+        if any(regex.match(sheet) for regex in regexes)
+    ]
+
+    if not matching_sheets:
+        raise ValueError(
+            f"No sheets matching patterns {fout_patterns} found. Available sheets: {wb.sheetnames}"
+        )
+
+    return matching_sheets
+
 
 def read_sheets_data(wb: Workbook, fout_sheets: list):
     """
@@ -172,6 +192,7 @@ def process_fout_sheets(
         wb: Workbook,
         context: ProcessingContext,
         observation_patterns: list[str],
+        fout_patterns: list[str],
         ):
     """
     Processes all sheets in the given Excel workbook that start with 'fOut_' and extracts 
@@ -187,6 +208,7 @@ def process_fout_sheets(
                                      and last modified timestamp.
         observation_patterns (list[str]): A list of regular expression patterns
             used to match columns representing observation periods in the data.
+        fout_patterns (list[str]): A list of regex patterns to match sheet names.
 
     Returns:
         pd.DataFrame: A pandas DataFrame containing the processed data from all matching sheets, 
@@ -234,7 +256,7 @@ def process_fout_sheets(
     logging.info("Using observation patterns: %s", observation_patterns)
 
     # Extract sheets that start with 'fOut_'
-    fout_sheets = extract_fout_sheets(wb)
+    fout_sheets = extract_fout_sheets(wb, fout_patterns)
 
     # Read data from the sheets
     df_list = read_sheets_data(wb, fout_sheets)
