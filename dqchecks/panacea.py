@@ -243,11 +243,11 @@ def get_used_area(sheet: Worksheet) -> UsedArea:
     max_column = sheet.max_column
 
     # Calculate the last used row and column (excluding the empty ones)
-    if df.shape[0] == 0:
+    if df.shape[0] == 0 or df.last_valid_index() is None:
         last_used_row = 1
     else:
         last_used_row = df.last_valid_index() + 1
-    if df.shape[1] == 0:
+    if df.shape[1] == 0 or df.last_valid_index() is None:
         last_used_column = 1
     else:
         last_used_column = df.apply(lambda col: col.last_valid_index()).last_valid_index() + 1
