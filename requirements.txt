@@ -7,3 +7,5 @@ pytest-cov
 coverage-badge
 pyspark
 pylint
+sphinx
+sphinx-rtd-theme
