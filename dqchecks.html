@@ -1292,26 +1292,41 @@ contain any sheets.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.get_used_area">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">get_used_area</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheet</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Worksheet</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#dqchecks.panacea.UsedArea" title="dqchecks.panacea.UsedArea"><span class="pre">UsedArea</span></a></span></span><a class="headerlink" href="#dqchecks.panacea.get_used_area" title="Link to this definition">¶</a></dt>
-<dd><p>Given an openpyxl worksheet, returns the number of empty rows at the bottom,
-the number of empty columns on the right, as well as the last used row and column.</p>
-<p>This function iterates through the rows and columns from the bottom-right corner
-and checks for non-empty values, then returns the last used row and column,
-excluding the empty ones.</p>
+<dd><p>Analyze the contents of an Excel worksheet and return the boundaries of the used area.</p>
+<p>This function scans the worksheet to determine the last non-empty row and column, using a
+combination of binary search and sequential refinement. It accounts for intermittent empty
+rows or columns by examining a range around the current search midpoint and then performing
+final adjustments to pinpoint the exact last used index. It also calculates the number of
+empty rows and columns trailing at the bottom and right of the sheet, respectively.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>sheet</strong> (<em>openpyxl.worksheet.worksheet.Worksheet</em>) – The openpyxl worksheet object that contains the data.</p>
+<dd class="field-odd"><p><strong>sheet</strong> (<em>Worksheet</em>) – An openpyxl Worksheet object to analyze.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A NamedTuple containing the number of empty rows and columns at the bottom,
-and the last used row and column.</p>
+<dd class="field-even"><p><dl class="simple">
+<dt>A NamedTuple with the following fields:</dt><dd><ul class="simple">
+<li><p>empty_rows (int): Number of completely empty rows at the bottom.</p></li>
+<li><p>empty_columns (int): Number of completely empty columns on the right.</p></li>
+<li><p>last_used_row (int): The index of the last non-empty row.</p></li>
+<li><p>last_used_column (int): The index of the last non-empty column.</p></li>
+</ul>
+</dd>
+</dl>
+</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="#dqchecks.panacea.UsedArea" title="dqchecks.panacea.UsedArea">UsedArea</a></p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>ValueError</strong> – If the input is not a valid openpyxl worksheet.</p>
+<dd class="field-even"><p><strong>ValueError</strong> – If the provided input is not an instance of openpyxl Worksheet.</p>
 </dd>
 </dl>
+<p class="rubric">Example</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">openpyxl</span><span class="o">.</span><span class="n">load_workbook</span><span class="p">(</span><span class="s2">&quot;example.xlsx&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">active</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">area</span> <span class="o">=</span> <span class="n">get_used_area</span><span class="p">(</span><span class="n">ws</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="o">.</span><span class="n">last_used_row</span><span class="p">,</span> <span class="n">area</span><span class="o">.</span><span class="n">last_used_column</span><span class="p">)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 <dl class="py function">
