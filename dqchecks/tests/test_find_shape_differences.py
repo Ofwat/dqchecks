@@ -436,3 +436,43 @@ def test_used_area_large_values():
         "last_used_row": 1000000,
         "last_used_column": 500000
     }
+@pytest.fixture
+def sample_sheet():
+    """Creates a sample worksheet for testing."""
+    wb = Workbook()
+    sheet = wb.active
+
+    # Populate the sheet with some data
+    sheet["A1"] = "Header"
+    sheet["B1"] = "Data"
+    sheet["A2"] = "Value 1"
+    sheet["B2"] = "Value 2"
+    sheet["A3"] = "Value 3"
+    sheet["B3"] = "Value 4"
+    # Leaving empty rows in between to test binary search logic
+    sheet["A5"] = "Last Value"
+    sheet["B5"] = "Last Data"
+    # Leave some empty columns and rows
+    sheet["D1"] = None
+
+    return sheet
+
+# pylint: disable=W0621
+def test_binary_search_result_for_rows(sample_sheet):
+    """Test case to hit the empty rows after data"""
+
+    # Ensure the last used row is detected correctly, triggering the binary search logic.
+    used_area = get_used_area(sample_sheet)
+
+    # The last used row is expected to be row 5 (because we manually filled A5 and B5).
+    assert used_area.last_used_row == 5
+
+# pylint: disable=W0621
+def test_binary_search_result_for_columns(sample_sheet):
+    """Test case to hit the empty columns after data"""
+
+    # Ensure the last used column is detected correctly, triggering the binary search logic.
+    used_area = get_used_area(sample_sheet)
+
+    # The last used column should be column 2 (B column has data in B1, B2, and B5)
+    assert used_area.last_used_column == 2

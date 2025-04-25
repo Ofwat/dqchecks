@@ -215,52 +215,95 @@ class FormulaErrorSheetContext(NamedTuple):
             "Error_Severity_Cd": self.Error_Severity_Cd,
         }
 
+
 def get_used_area(sheet: Worksheet) -> UsedArea:
     """
-    Given an openpyxl worksheet, returns the number of empty rows at the bottom,
-    the number of empty columns on the right, as well as the last used row and column.
+    Analyze the contents of an Excel worksheet and return the boundaries of the used area.
 
-    This function iterates through the rows and columns from the bottom-right corner 
-    and checks for non-empty values, then returns the last used row and column, 
-    excluding the empty ones.
+    This function scans the worksheet to determine the last non-empty row and column, using a 
+    combination of binary search and sequential refinement. It accounts for intermittent empty 
+    rows or columns by examining a range around the current search midpoint and then performing 
+    final adjustments to pinpoint the exact last used index. It also calculates the number of 
+    empty rows and columns trailing at the bottom and right of the sheet, respectively.
 
-    :param sheet: The openpyxl worksheet object that contains the data.
-    :type sheet: openpyxl.worksheet.worksheet.Worksheet
-    :return: A NamedTuple containing the number of empty rows and columns at the bottom,
-             and the last used row and column.
-    :rtype: UsedArea
-    :raises ValueError: If the input is not a valid openpyxl worksheet.
+    Args:
+        sheet (Worksheet): An openpyxl Worksheet object to analyze.
+
+    Returns:
+        UsedArea: A NamedTuple with the following fields:
+            - empty_rows (int): Number of completely empty rows at the bottom.
+            - empty_columns (int): Number of completely empty columns on the right.
+            - last_used_row (int): The index of the last non-empty row.
+            - last_used_column (int): The index of the last non-empty column.
+
+    Raises:
+        ValueError: If the provided input is not an instance of openpyxl Worksheet.
+
+    Example:
+        >>> ws = openpyxl.load_workbook("example.xlsx").active
+        >>> area = get_used_area(ws)
+        >>> print(area.last_used_row, area.last_used_column)
     """
-
-    # Validate that the input is an instance of openpyxl Worksheet
-    if not isinstance(sheet, Worksheet): # type: ignore
+    if not isinstance(sheet, Worksheet):
         raise ValueError("The provided input is not a valid openpyxl Worksheet object.")
 
-    df = pd.DataFrame(sheet.values)
+    max_row, max_column = sheet.max_row, sheet.max_column
 
-    # Get the last used row and column in the sheet
-    max_row = sheet.max_row
-    max_column = sheet.max_column
+    def is_column_empty(col: int) -> bool:
+        for row in range(1, max_row + 1):
+            val = sheet.cell(row=row, column=col).value
+            if isinstance(val, str):
+                if val.strip():
+                    return False
+            elif val is not None:
+                return False
+        return True
 
-    # Calculate the last used row and column (excluding the empty ones)
-    if df.shape[0] == 0 or df.last_valid_index() is None:
-        last_used_row = 1
-    else:
-        last_used_row = df.last_valid_index() + 1
-    if df.shape[1] == 0 or df.last_valid_index() is None:
-        last_used_column = 1
-    else:
-        last_used_column = df.apply(lambda col: col.last_valid_index()).last_valid_index() + 1
+    def is_row_empty(row: int) -> bool:
+        for col in range(1, max_column + 1):
+            val = sheet.cell(row=row, column=col).value
+            if isinstance(val, str):
+                if val.strip():
+                    return False
+            elif val is not None:
+                return False
+        return True
 
-    empty_row_count = max_row - last_used_row
-    empty_column_count = max_column - last_used_column
+    def binary_search(start: int, end: int, check_empty, max_index: int) -> int:
+        result = 0
+        while start <= end:
+            mid = (start + end) // 2
+            window = range(max(1, mid - 10), min(max_index, mid + 10) + 1)
+            has_data = not all(check_empty(i) for i in window)
 
-    # Return the results as a NamedTuple (UsedArea)
+            if has_data:
+                result = max(result, mid)
+                start = mid + 1
+            else:
+                end = mid - 1
+
+        for i in range(result + 1, max_index + 1):
+            if not check_empty(i):
+                result = i
+            else:
+                break
+
+        while result > 0 and check_empty(result):
+            result -= 1
+
+        return result
+
+    last_used_row = binary_search(1, max_row, is_row_empty, max_row)
+    last_used_column = binary_search(1, max_column, is_column_empty, max_column)
+
+    empty_rows = max_row - last_used_row
+    empty_columns = max_column - last_used_column
+
     return UsedArea(
-        empty_rows=empty_row_count,
-        empty_columns=empty_column_count,
-        last_used_row=last_used_row,
-        last_used_column=last_used_column,
+        empty_rows=empty_rows,
+        empty_columns=empty_columns,
+        last_used_row=max(1, last_used_row),
+        last_used_column=max(1, last_used_column),
     )
 
 def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_number: int = 0):
