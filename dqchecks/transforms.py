@@ -325,7 +325,7 @@ def process_fout_sheets(
     fout_sheets = extract_fout_sheets(wb, fout_patterns)
 
     # Check if fOut tabs follow expected pattern with empty rows
-    # assert check_empty_rows(wb, fout_sheets)
+    assert check_empty_rows(wb, fout_sheets)
 
     # Read data from the sheets
     df_list = read_sheets_data(wb, fout_sheets)
