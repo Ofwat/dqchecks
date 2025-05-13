@@ -19,6 +19,18 @@ ProcessingContext = namedtuple(
                           'template_version', 'last_modified']
 )
 
+class EmptyRowsPatternCheckError(Exception):
+    def __init__(self, under_header_issues, top_row_issues):
+        message = "Sheet validation failed."
+        details = []
+        if under_header_issues:
+            details.append(f"Non-empty rows under header in: {under_header_issues}")
+        if top_row_issues:
+            details.append(f"Non-empty top rows in: {top_row_issues}")
+        super().__init__(f"{message} " + " ".join(details))
+        self.under_header_issues = under_header_issues
+        self.top_row_issues = top_row_issues
+
 def is_valid_regex(pattern: str) -> bool:
     """
     Check if a given string is a valid regex
@@ -188,6 +200,60 @@ def process_df(df: pd.DataFrame, context: ProcessingContext, observation_pattern
 
     return pivoted_df
 
+def check_empty_rows(wb: Workbook, sheet_names: list[str]):
+    """
+    Validates that specified sheets in a workbook contain only empty cells in specific rows.
+
+    This function performs two checks on each provided worksheet:
+      1. Verifies that all cells in row 3 (under the header) are empty.
+      2. Verifies that all cells in row 1 (the top row), excluding the third column, are empty.
+
+    If any sheet fails either check, a custom EmptyRowsPatternCheckError is raised, indicating which sheets failed.
+
+    Parameters:
+        wb (Workbook): An openpyxl Workbook instance containing the sheets to check.
+        sheet_names (list[str]): A list of worksheet names to validate.
+
+    Returns:
+        bool: True if all sheets pass the checks.
+
+    Raises:
+        TypeError: If 'wb' is not a Workbook or 'sheet_names' is not a list of strings.
+        ValueError: If 'sheet_names' is empty or contains names not found in the workbook.
+        EmptyRowsPatternCheckError: If any sheet contains non-empty values in the checked rows.
+    """
+    if not isinstance(wb, Workbook):
+        raise TypeError("Expected an openpyxl Workbook instance for 'wb'.")
+    if not isinstance(sheet_names, list) or not all(isinstance(name, str) for name in sheet_names):
+        raise TypeError("Expected 'sheet_names' to be a list of strings.")
+    if not sheet_names:
+        raise ValueError("'sheet_names' list cannot be empty.")
+
+    under_header_bad_sheet_names = []
+    top_row_bad_sheet_names = []
+
+    for sheet_name in sheet_names:
+        sheet = wb[sheet_name]
+
+        # Check under header row (row 3)
+        under_header_row = sheet.iter_rows(min_row=3, values_only=True)
+        under_header_row_vals = list(next(under_header_row, []))
+        if set(under_header_row_vals) != {None}:
+            under_header_bad_sheet_names.append(sheet_name)
+
+        # Check top row (row 1), with 3rd element removed
+        top_row = sheet.iter_rows(min_row=1, values_only=True)
+        top_row_vals = list(next(top_row, []))
+        if len(top_row_vals) > 2:
+            del top_row_vals[2]
+        if set(top_row_vals) != {None}:
+            top_row_bad_sheet_names.append(sheet_name)
+
+    if under_header_bad_sheet_names or top_row_bad_sheet_names:
+        raise EmptyRowsPatternCheckError(under_header_bad_sheet_names, top_row_bad_sheet_names)
+
+    return True  # Validation passed
+
 def process_fout_sheets(
         wb: Workbook,
         context: ProcessingContext,
@@ -257,6 +323,9 @@ def process_fout_sheets(
 
     # Extract sheets that start with 'fOut_'
     fout_sheets = extract_fout_sheets(wb, fout_patterns)
+
+    # Check if fOut tabs follow expected pattern with empty rows
+    # assert check_empty_rows(wb, fout_sheets)
 
     # Read data from the sheets
     df_list = read_sheets_data(wb, fout_sheets)

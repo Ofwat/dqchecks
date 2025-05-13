@@ -282,12 +282,6 @@ def get_used_area(sheet: Worksheet) -> UsedArea:
             else:
                 end = mid - 1
 
-        for i in range(result + 1, max_index + 1):
-            if not check_empty(i):
-                result = i
-            else:
-                break
-
         while result > 0 and check_empty(result):
             result -= 1
 

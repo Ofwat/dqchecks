@@ -10,7 +10,9 @@ import pandas as pd
 from dqchecks.transforms import (
     process_fout_sheets,
     extract_fout_sheets,
-    ProcessingContext)
+    ProcessingContext,
+    EmptyRowsPatternCheckError,
+    check_empty_rows,)
 
 @pytest.fixture
 def valid_context():
@@ -562,3 +564,79 @@ def test_partial_match_pattern():
     # but since function uses re.match, these shouldn't match
     with pytest.raises(ValueError):
         extract_fout_sheets(wb, [r"fOut_"])
+
+def create_sheet_with_rows(wb, title, top_row=None, under_header_row=None):
+    ws = wb.create_sheet(title)
+    if top_row is not None:
+        ws.append(top_row)
+    # else:
+    #     ws.append([None, None, None])  # Ensuring row 1 exists
+
+    ws.append([None, None, None])  # row 2: header
+
+    if under_header_row is not None:
+        ws.append(under_header_row)
+    # else:
+    #     ws.append([None, None, None])  # row 3: under header
+
+
+def test_valid_sheet_passes():
+    wb = Workbook()
+    wb.remove(wb.active)  # remove default sheet
+    create_sheet_with_rows(wb, "ValidSheet", top_row=[None, None, None], under_header_row=[None, None, None])
+    assert check_empty_rows(wb, ["ValidSheet"]) is True
+
+
+def test_non_empty_under_header_raises():
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(wb, "BadUnderHeader", top_row=[None, None, None], under_header_row=[1, None, None])
+    
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BadUnderHeader"])
+    
+    assert "BadUnderHeader" in exc_info.value.under_header_issues
+    assert not exc_info.value.top_row_issues
+
+
+def test_non_empty_top_row_raises():
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(wb, "BadTopRow", top_row=[None, 1, None], under_header_row=[None, None, None])
+    
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BadTopRow"])
+    
+    assert "BadTopRow" in exc_info.value.top_row_issues
+    assert not exc_info.value.under_header_issues
+
+
+def test_both_rows_invalid_raise():
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(wb, "BothBad", top_row=[1, 2, 3], under_header_row=[4, 5, 6])
+    
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BothBad"])
+    
+    assert "BothBad" in exc_info.value.top_row_issues
+    assert "BothBad" in exc_info.value.under_header_issues
+
+def test_non_workbook_input_raises_typeerror():
+    with pytest.raises(TypeError, match="Expected an openpyxl Workbook instance"):
+        check_empty_rows("not_a_workbook", ["Sheet1"])
+
+def test_sheet_names_not_list_raises_typeerror():
+    wb = Workbook()
+    with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
+        check_empty_rows(wb, "Sheet1")  # Not a list
+
+def test_sheet_names_with_non_string_raises_typeerror():
+    wb = Workbook()
+    with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
+        check_empty_rows(wb, ["Sheet1", 123])  # 123 is not a string
+
+def test_empty_sheet_names_raises_valueerror():
+    wb = Workbook()
+    with pytest.raises(ValueError, match="cannot be empty"):
+        check_empty_rows(wb, [])
