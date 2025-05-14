@@ -11,8 +11,14 @@ from dqchecks.transforms import (
     process_fout_sheets,
     extract_fout_sheets,
     ProcessingContext,
+    check_empty_rows,
+    read_sheets_data,
+    clean_data,
+    check_column_headers,)
+from dqchecks.exceptions import (
     EmptyRowsPatternCheckError,
-    check_empty_rows,)
+    ColumnHeaderValidationError,
+    )
 
 @pytest.fixture
 def valid_context():
@@ -239,7 +245,8 @@ def test_process_fout_sheets_empty_data(workbook_with_data, valid_context):
     sheet = workbook_with_data["fOut_Sheet1"]
     sheet.delete_rows(0, 5)  # Remove all data rows
 
-    with pytest.raises(ValueError, match="Sheet 'fOut_Sheet1' is empty or has no data."):
+    # with pytest.raises(ValueError, match="Sheet 'fOut_Sheet1' is empty or has no data."):
+    with pytest.raises(EmptyRowsPatternCheckError):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
@@ -266,7 +273,7 @@ def create_openpyxl_workbook(sheet_data):
     for sheet_name, df in sheet_data.items():
         ws = wb.create_sheet(sheet_name)
         # Write the DataFrame to the sheet
-        for row in convert_dataframe_to_rows(df, index=False, header=True):
+        for row in convert_dataframe_to_rows(df, index=False, header=False):
             ws.append(row)
 
     return wb
@@ -283,20 +290,22 @@ def test_different_observation_periods():
     # Create data for two sheets, each with different observation periods
     sheet_data = {
         'fOut_2023': pd.DataFrame({
-            "Reference": ["Reference", "", "Ref1", "Ref2", "Ref3"],
-            "Item description": ["Item description", "", "Item 1", "Item 2", "Item 3"],
-            "Unit": ["Unit", "", "kg", "g", "lbs"],
-            "Model": ["Model", "", "A", "B", "C"],
-            "2020-21": ["2020-21", "", 10, 20, 30],
-            "2021-22": ["2021-22", "", 15, 25, 35],
+            "Acronym": [None, "Acronym", None, "Ref1", "Ref2", "Ref3"],
+            "Reference": [None, "Reference", None, "Ref1", "Ref2", "Ref3"],
+            "Item description": [None, "Item description", None, "Item 1", "Item 2", "Item 3"],
+            "Unit": [None, "Unit", None, "kg", "g", "lbs"],
+            "Model": [None, "Model", None, "A", "B", "C"],
+            "2020-21": [None, "2020-21", None, 10, 20, 30],
+            "2021-22": [None, "2021-22", None, 15, 25, 35],
         }),
         'fOut_2024': pd.DataFrame({
-            "Reference": ["Reference", "", "Ref1", "Ref2", "Ref3"],
-            "Item description": ["Item description", "", "Item 1", "Item 2", "Item 3"],
-            "Unit": ["Unit", "", "kg", "g", "lbs"],
-            "Model": ["Model", "", "A", "B", "C"],
-            "2021-22": ["2021-22", "", 10, 20, 30],
-            "2022-23": ["2022-23", "", 15, 25, 35],
+            "Acronym": [None, "Acronym", None, "Ref1", "Ref2", "Ref3"],
+            "Reference": [None, "Reference", None, "Ref1", "Ref2", "Ref3"],
+            "Item description": [None, "Item description", None, "Item 1", "Item 2", "Item 3"],
+            "Unit": [None, "Unit", None, "kg", "g", "lbs"],
+            "Model": [None, "Model", None, "A", "B", "C"],
+            "2021-22": [None, "2021-22", None, 10, 20, 30],
+            "2022-23": [None, "2022-23", None, 15, 25, 35],
         }),
     }
 
@@ -336,307 +345,441 @@ def test_different_observation_periods():
     # Check that the resulting DataFrame is not empty
     assert not result_df.empty
 
-# # Test when context has invalid 'process_cd' (non-string or empty string)
-# # pylint: disable=W0621
-# def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
-#     """
-#     Test case to check if the function raises an error when the 'process_cd' context is invalid.
-#     """
-#     # Test case where process_cd is an empty string
-#     invalid_context = ProcessingContext(
-#         org_cd="ORG001",
-#         submission_period_cd="2025Q1",
-#         process_cd="",  # Invalid: empty string
-#         template_version="1.0",
-#         last_modified=datetime(2025, 3, 3)
-#     )
-#     observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-#     fout_patterns = ["^fOut_"]
+# Test when context has invalid 'process_cd' (non-string or empty string)
+# pylint: disable=W0621
+def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
+    """
+    Test case to check if the function raises an error when the 'process_cd' context is invalid.
+    """
+    # Test case where process_cd is an empty string
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="",  # Invalid: empty string
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
+    )
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    fout_patterns = ["^fOut_"]
 
-#     with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             invalid_context,
-#             observation_patterns,
-#             fout_patterns)
+    with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
+        process_fout_sheets(
+            workbook_with_data,
+            invalid_context,
+            observation_patterns,
+            fout_patterns)
 
-#     # Test case where process_cd is not a string (e.g., an integer)
-#     invalid_context = ProcessingContext(
-#         org_cd="ORG001",
-#         submission_period_cd="2025Q1",
-#         process_cd=1234,  # Invalid: integer
-#         template_version="1.0",
-#         last_modified=datetime(2025, 3, 3)
-#     )
+    # Test case where process_cd is not a string (e.g., an integer)
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd=1234,  # Invalid: integer
+        template_version="1.0",
+        last_modified=datetime(2025, 3, 3)
+    )
 
-#     with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             invalid_context,
-#             observation_patterns,
-#             fout_patterns)
-
-
-# # Test when context has invalid 'template_version' (non-string or empty string)
-# # pylint: disable=W0621
-# def test_process_fout_sheets_invalid_context_template_version(workbook_with_data):
-#     """
-#     Test case to check if the function raises an error
-#     when the 'template_version' context is invalid.
-#     """
-#     # Test case where template_version is an empty string
-#     invalid_context = ProcessingContext(
-#         org_cd="ORG001",
-#         submission_period_cd="2025Q1",
-#         process_cd="PROCESS01",
-#         template_version="",  # Invalid: empty string
-#         last_modified=datetime(2025, 3, 3)
-#     )
-#     observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-#     fout_patterns = ["^fOut_"]
-
-#     with pytest.raises(ValueError,
-#             match="The 'template_version' argument must be a non-empty string."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             invalid_context,
-#             observation_patterns,
-#             fout_patterns)
-
-#     # Test case where template_version is not a string (e.g., a number)
-#     invalid_context = ProcessingContext(
-#         org_cd="ORG001",
-#         submission_period_cd="2025Q1",
-#         process_cd="PROCESS01",
-#         template_version=1.0,  # Invalid: not a string
-#         last_modified=datetime(2025, 3, 3)
-#     )
-
-#     with pytest.raises(ValueError,
-#             match="The 'template_version' argument must be a non-empty string."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             invalid_context,
-#             observation_patterns,
-#             fout_patterns)
-
-# # Test when observation_patterns is not a list
-# # pylint: disable=W0621
-# def test_process_fout_sheets_invalid_observation_patterns_not_list(
-#         workbook_with_data, valid_context):
-#     """
-#     Test case to check if the function raises an error when 'observation_patterns' is not a list.
-#     """
-#     invalid_observation_patterns = "invalid_pattern_string"  # Not a list
-#     fout_patterns = ["^fOut_"]
-
-#     with pytest.raises(ValueError,
-#             match="The 'observation_patterns' argument needs to be a list of regex strings."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             valid_context,
-#             invalid_observation_patterns,
-#             fout_patterns)
-
-# # Test when observation_patterns contains elements that are not strings
-# # pylint: disable=W0621
-# def test_process_fout_sheets_invalid_observation_patterns_non_string(
-#         workbook_with_data, valid_context):
-#     """
-#     Test case to check if the function raises an error when
-#     'observation_patterns' contains elements that are not strings.
-#     """
-#     # List with non-string element (integer)
-#     invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', 1234]
-#     fout_patterns = ["^fOut_"]
-
-#     with pytest.raises(ValueError,
-#             match="The 'observation_patterns' argument needs to be a list of regex strings."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             valid_context,
-#             invalid_observation_patterns,
-#             fout_patterns)
-
-# # Test when observation_patterns contains invalid regex patterns
-# # pylint: disable=W0621
-# def test_process_fout_sheets_invalid_observation_patterns_invalid_regex(
-#         workbook_with_data, valid_context):
-#     """
-#     Test case to check if the function raises an error
-#     when 'observation_patterns' contains invalid regex patterns.
-#     """
-#     invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', r"[^"]
-#     fout_patterns = ["^fOut_"]
-
-#     with pytest.raises(ValueError,
-#             match="The 'observation_patterns' argument needs to be a list of regex strings."):
-#         process_fout_sheets(
-#             workbook_with_data,
-#             valid_context,
-#             invalid_observation_patterns,
-#             fout_patterns)
-
-# @pytest.fixture
-# def workbook_with_invalid_data():
-#     """
-#     Fixture for workbook with no valid rows after dropping NaNs
-#     """
-#     wb = Workbook()
-#     sheet = wb.create_sheet("fOut_Sheet1")
-#     sheet.append(["", "", "", "", "", "", "", ""])  # Blank row
-#     sheet.append([None, None, None, None, None, None, None, None])  # Another row with all NaNs
-#     return wb
-
-# # pylint: disable=W0621
-# def test_process_fout_sheets_no_valid_rows(workbook_with_invalid_data, valid_context):
-#     """
-#     Test case to check that an error is raised when no valid rows remain after \
-#         dropping NaN rows
-#     """
-#     observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-#     fout_patterns = ["^fOut_"]
-
-#     # Process the sheet
-#     with pytest.raises(ValueError,
-#             match="No valid data found after removing rows with NaN values."):
-#         process_fout_sheets(
-#             workbook_with_invalid_data,
-#             valid_context,
-#             observation_patterns,
-#             fout_patterns)
-
-# def create_workbook_with_sheets(sheet_names):
-#     """Helper function to create workbook with sheets"""
-#     wb = Workbook()
-#     # Remove the default sheet created by openpyxl
-#     default_sheet = wb.active
-#     wb.remove(default_sheet)
-
-#     for name in sheet_names:
-#         wb.create_sheet(title=name)
-#     return wb
-
-# def test_single_exact_pattern_match():
-#     """Test pattern match 1 element"""
-#     wb = create_workbook_with_sheets(["fOut_test1", "data_sheet", "summary"])
-#     matched = extract_fout_sheets(wb, [r"^fOut_"])
-#     assert matched == ["fOut_test1"]
-
-# def test_multiple_patterns_match():
-#     """Test multiple patterns"""
-#     wb = create_workbook_with_sheets(
-#         [
-#             "fOut_test1",
-#             "data_sheet",
-#             "fOut_data",
-#             "results",
-#             "data_export"])
-#     matched = extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
-#     assert matched == ["fOut_test1", "data_sheet", "fOut_data", "data_export"]
-
-# def test_no_matches_raises_value_error():
-#     """Test non-matchin sheet names"""
-#     wb = create_workbook_with_sheets(
-#         [
-#             "summary",
-#             "results",
-#             "report"
-#         ])
-#     with pytest.raises(ValueError, match="No sheets matching patterns"):
-#         extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
-
-# def test_case_sensitive_behavior():
-#     """Test with case variance in name"""
-#     wb = create_workbook_with_sheets(["fout_test", "FOUT_data", "fOut_valid"])
-#     matched = extract_fout_sheets(wb, [r"^fOut_"])
-#     assert matched == ["fOut_valid"]
-
-# def test_partial_match_pattern():
-#     """Partial matching within string"""
-#     wb = create_workbook_with_sheets(
-#         [
-#             "random_fOut_test",
-#             "pre_data_sheet",
-#             "info_fOut_data"
-#         ])
-#     # Using a pattern that can match anywhere (re.search instead of re.match is needed for this)
-#     # but since function uses re.match, these shouldn't match
-#     with pytest.raises(ValueError):
-#         extract_fout_sheets(wb, [r"fOut_"])
-
-# def create_sheet_with_rows(wb, title, top_row=None, under_header_row=None):
-#     ws = wb.create_sheet(title)
-#     if top_row is not None:
-#         ws.append(top_row)
-#     # else:
-#     #     ws.append([None, None, None])  # Ensuring row 1 exists
-
-#     ws.append([None, None, None])  # row 2: header
-
-#     if under_header_row is not None:
-#         ws.append(under_header_row)
-#     # else:
-#     #     ws.append([None, None, None])  # row 3: under header
+    with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
+        process_fout_sheets(
+            workbook_with_data,
+            invalid_context,
+            observation_patterns,
+            fout_patterns)
 
 
-# def test_valid_sheet_passes():
-#     wb = Workbook()
-#     wb.remove(wb.active)  # remove default sheet
-#     create_sheet_with_rows(wb, "ValidSheet", top_row=[None, None, None], under_header_row=[None, None, None])
-#     assert check_empty_rows(wb, ["ValidSheet"]) is True
+# Test when context has invalid 'template_version' (non-string or empty string)
+# pylint: disable=W0621
+def test_process_fout_sheets_invalid_context_template_version(workbook_with_data):
+    """
+    Test case to check if the function raises an error
+    when the 'template_version' context is invalid.
+    """
+    # Test case where template_version is an empty string
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="PROCESS01",
+        template_version="",  # Invalid: empty string
+        last_modified=datetime(2025, 3, 3)
+    )
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    fout_patterns = ["^fOut_"]
+
+    with pytest.raises(ValueError,
+            match="The 'template_version' argument must be a non-empty string."):
+        process_fout_sheets(
+            workbook_with_data,
+            invalid_context,
+            observation_patterns,
+            fout_patterns)
+
+    # Test case where template_version is not a string (e.g., a number)
+    invalid_context = ProcessingContext(
+        org_cd="ORG001",
+        submission_period_cd="2025Q1",
+        process_cd="PROCESS01",
+        template_version=1.0,  # Invalid: not a string
+        last_modified=datetime(2025, 3, 3)
+    )
+
+    with pytest.raises(ValueError,
+            match="The 'template_version' argument must be a non-empty string."):
+        process_fout_sheets(
+            workbook_with_data,
+            invalid_context,
+            observation_patterns,
+            fout_patterns)
+
+# Test when observation_patterns is not a list
+# pylint: disable=W0621
+def test_process_fout_sheets_invalid_observation_patterns_not_list(
+        workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error when 'observation_patterns' is not a list.
+    """
+    invalid_observation_patterns = "invalid_pattern_string"  # Not a list
+    fout_patterns = ["^fOut_"]
+
+    with pytest.raises(ValueError,
+            match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(
+            workbook_with_data,
+            valid_context,
+            invalid_observation_patterns,
+            fout_patterns)
+
+# Test when observation_patterns contains elements that are not strings
+# pylint: disable=W0621
+def test_process_fout_sheets_invalid_observation_patterns_non_string(
+        workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error when
+    'observation_patterns' contains elements that are not strings.
+    """
+    # List with non-string element (integer)
+    invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', 1234]
+    fout_patterns = ["^fOut_"]
+
+    with pytest.raises(ValueError,
+            match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(
+            workbook_with_data,
+            valid_context,
+            invalid_observation_patterns,
+            fout_patterns)
+
+# Test when observation_patterns contains invalid regex patterns
+# pylint: disable=W0621
+def test_process_fout_sheets_invalid_observation_patterns_invalid_regex(
+        workbook_with_data, valid_context):
+    """
+    Test case to check if the function raises an error
+    when 'observation_patterns' contains invalid regex patterns.
+    """
+    invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', r"[^"]
+    fout_patterns = ["^fOut_"]
+
+    with pytest.raises(ValueError,
+            match="The 'observation_patterns' argument needs to be a list of regex strings."):
+        process_fout_sheets(
+            workbook_with_data,
+            valid_context,
+            invalid_observation_patterns,
+            fout_patterns)
+
+@pytest.fixture
+def workbook_with_invalid_data():
+    """
+    Fixture for workbook with no valid rows after dropping NaNs
+    """
+    wb = Workbook()
+    sheet = wb.create_sheet("fOut_Sheet1")
+    sheet.append(["", "", "", "", "", "", "", ""])  # Blank row
+    sheet.append([None, None, None, None, None, None, None, None])  # Another row with all NaNs
+    return wb
+
+# pylint: disable=W0621
+def test_process_fout_sheets_no_valid_rows(workbook_with_invalid_data, valid_context):
+    """
+    Test case to check that an error is raised when no valid rows remain after \
+        dropping NaN rows
+    """
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    fout_patterns = ["^fOut_"]
+
+    # Process the sheet
+    # with pytest.raises(ValueError,
+    #         match="No valid data found after removing rows with NaN values."):
+    with pytest.raises(EmptyRowsPatternCheckError):
+        process_fout_sheets(
+            workbook_with_invalid_data,
+            valid_context,
+            observation_patterns,
+            fout_patterns)
+
+def create_workbook_with_sheets(sheet_names):
+    """Helper function to create workbook with sheets"""
+    wb = Workbook()
+    # Remove the default sheet created by openpyxl
+    default_sheet = wb.active
+    wb.remove(default_sheet)
+
+    for name in sheet_names:
+        wb.create_sheet(title=name)
+    return wb
+
+def test_single_exact_pattern_match():
+    """Test pattern match 1 element"""
+    wb = create_workbook_with_sheets(["fOut_test1", "data_sheet", "summary"])
+    matched = extract_fout_sheets(wb, [r"^fOut_"])
+    assert matched == ["fOut_test1"]
+
+def test_multiple_patterns_match():
+    """Test multiple patterns"""
+    wb = create_workbook_with_sheets(
+        [
+            "fOut_test1",
+            "data_sheet",
+            "fOut_data",
+            "results",
+            "data_export"])
+    matched = extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
+    assert matched == ["fOut_test1", "data_sheet", "fOut_data", "data_export"]
+
+def test_no_matches_raises_value_error():
+    """Test non-matchin sheet names"""
+    wb = create_workbook_with_sheets(
+        [
+            "summary",
+            "results",
+            "report"
+        ])
+    with pytest.raises(ValueError, match="No sheets matching patterns"):
+        extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
+
+def test_case_sensitive_behavior():
+    """Test with case variance in name"""
+    wb = create_workbook_with_sheets(["fout_test", "FOUT_data", "fOut_valid"])
+    matched = extract_fout_sheets(wb, [r"^fOut_"])
+    assert matched == ["fOut_valid"]
+
+def test_partial_match_pattern():
+    """Partial matching within string"""
+    wb = create_workbook_with_sheets(
+        [
+            "random_fOut_test",
+            "pre_data_sheet",
+            "info_fOut_data"
+        ])
+    # Using a pattern that can match anywhere (re.search instead of re.match is needed for this)
+    # but since function uses re.match, these shouldn't match
+    with pytest.raises(ValueError):
+        extract_fout_sheets(wb, [r"fOut_"])
+
+def create_sheet_with_rows(wb, title, top_row=None, under_header_row=None):
+    """Helper function for sheet with rows"""
+    ws = wb.create_sheet(title)
+    if top_row is not None:
+        ws.append(top_row)
+
+    ws.append([None, None, None])  # row 2: header
+
+    if under_header_row is not None:
+        ws.append(under_header_row)
 
 
-# def test_non_empty_under_header_raises():
-#     wb = Workbook()
-#     wb.remove(wb.active)
-#     create_sheet_with_rows(wb, "BadUnderHeader", top_row=[None, None, None], under_header_row=[1, None, None])
-    
-#     with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
-#         check_empty_rows(wb, ["BadUnderHeader"])
-    
-#     assert "BadUnderHeader" in exc_info.value.under_header_issues
-#     assert not exc_info.value.top_row_issues
+def test_valid_sheet_passes():
+    """Raise EmptyRowsPatternCheckError"""
+    wb = Workbook()
+    wb.remove(wb.active)  # remove default sheet
+    create_sheet_with_rows(
+        wb,
+        "ValidSheet",
+        top_row=[None, None, None],
+        under_header_row=[None, None, None])
+    assert check_empty_rows(wb, ["ValidSheet"]) is True
 
 
-# def test_non_empty_top_row_raises():
-#     wb = Workbook()
-#     wb.remove(wb.active)
-#     create_sheet_with_rows(wb, "BadTopRow", top_row=[None, 1, None], under_header_row=[None, None, None])
-    
-#     with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
-#         check_empty_rows(wb, ["BadTopRow"])
-    
-#     assert "BadTopRow" in exc_info.value.top_row_issues
-#     assert not exc_info.value.under_header_issues
+def test_non_empty_under_header_raises():
+    """Raise EmptyRowsPatternCheckError"""
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(
+        wb,
+        "BadUnderHeader",
+        top_row=[None, None, None],
+        under_header_row=[1, None, None])
+
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BadUnderHeader"])
+
+    assert "BadUnderHeader" in exc_info.value.under_header_issues
+    assert not exc_info.value.top_row_issues
 
 
-# def test_both_rows_invalid_raise():
-#     wb = Workbook()
-#     wb.remove(wb.active)
-#     create_sheet_with_rows(wb, "BothBad", top_row=[1, 2, 3], under_header_row=[4, 5, 6])
-    
-#     with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
-#         check_empty_rows(wb, ["BothBad"])
-    
-#     assert "BothBad" in exc_info.value.top_row_issues
-#     assert "BothBad" in exc_info.value.under_header_issues
+def test_non_empty_top_row_raises():
+    """Raise EmptyRowsPatternCheckError"""
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(
+        wb,
+        "BadTopRow",
+        top_row=[None, 1, None],
+        under_header_row=[None, None, None])
 
-# def test_non_workbook_input_raises_typeerror():
-#     with pytest.raises(TypeError, match="Expected an openpyxl Workbook instance"):
-#         check_empty_rows("not_a_workbook", ["Sheet1"])
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BadTopRow"])
 
-# def test_sheet_names_not_list_raises_typeerror():
-#     wb = Workbook()
-#     with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
-#         check_empty_rows(wb, "Sheet1")  # Not a list
+    assert "BadTopRow" in exc_info.value.top_row_issues
+    assert not exc_info.value.under_header_issues
 
-# def test_sheet_names_with_non_string_raises_typeerror():
-#     wb = Workbook()
-#     with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
-#         check_empty_rows(wb, ["Sheet1", 123])  # 123 is not a string
 
-# def test_empty_sheet_names_raises_valueerror():
-#     wb = Workbook()
-#     with pytest.raises(ValueError, match="cannot be empty"):
-#         check_empty_rows(wb, [])
+def test_both_rows_invalid_raise():
+    """Raise EmptyRowsPatternCheckError"""
+    wb = Workbook()
+    wb.remove(wb.active)
+    create_sheet_with_rows(wb, "BothBad", top_row=[1, 2, 3], under_header_row=[4, 5, 6])
+
+    with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
+        check_empty_rows(wb, ["BothBad"])
+
+    assert "BothBad" in exc_info.value.top_row_issues
+    assert "BothBad" in exc_info.value.under_header_issues
+
+def test_non_workbook_input_raises_typeerror():
+    """Input validations"""
+    with pytest.raises(TypeError, match="Expected an openpyxl Workbook instance"):
+        check_empty_rows("not_a_workbook", ["Sheet1"])
+
+def test_sheet_names_not_list_raises_typeerror():
+    """Input validations"""
+    wb = Workbook()
+    with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
+        check_empty_rows(wb, "Sheet1")  # Not a list
+
+def test_sheet_names_with_non_string_raises_typeerror():
+    """Input validations"""
+    wb = Workbook()
+    with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings"):
+        check_empty_rows(wb, ["Sheet1", 123])  # 123 is not a string
+
+def test_empty_sheet_names_raises_valueerror():
+    """Trigger value error for empty sheet"""
+    wb = Workbook()
+    with pytest.raises(ValueError, match="cannot be empty"):
+        check_empty_rows(wb, [])
+
+def test_read_sheets_data_raises_on_empty_sheet():
+    """Trigger value error for empty sheet"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "EmptySheet"
+
+    # Leave the sheet empty (no rows at all)
+
+    with pytest.raises(ValueError, match="Sheet 'EmptySheet' is empty or has no data."):
+        read_sheets_data(wb, ["EmptySheet"])
+
+def test_clean_data_raises_if_all_rows_are_nan():
+    """DataFrame with only NaNs (excluding Sheet_Cd)"""
+    df = pd.DataFrame({
+        "Col1": [None, None],
+        "Col2": [float("nan"), None],
+        "Sheet_Cd": ["Sheet1", "Sheet1"]  # This is not used in dropna
+    })
+
+    with pytest.raises(ValueError,
+            match="No valid data found after removing rows with NaN values."):
+        clean_data([df])
+
+EXPECTED_COLUMNS = ["Acronym", "Reference", "Item description", "Unit", "Model"]
+
+def create_workbook_with_headers(sheet_name: str, headers: list) -> Workbook:
+    """create_workbook_with_headers"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = sheet_name
+    ws.append([])  # Row 1 is empty (header starts at row 2)
+    ws.append(headers)  # Row 2 contains headers
+    return wb
+
+
+def test_check_column_headers_valid():
+    """test_check_column_headers_valid"""
+    wb = create_workbook_with_headers("Sheet1", EXPECTED_COLUMNS)
+    assert check_column_headers(wb, ["Sheet1"]) is True
+
+
+def test_check_column_headers_wrong_order():
+    """test_check_column_headers_wrong_order"""
+    headers_wrong_order = ["Reference", "Acronym", "Item description", "Unit", "Model"]
+    wb = create_workbook_with_headers("Sheet1", headers_wrong_order)
+
+    with pytest.raises(ColumnHeaderValidationError) as exc_info:
+        check_column_headers(wb, ["Sheet1"])
+
+    assert "Sheet1" in str(exc_info.value)
+
+
+def test_check_column_headers_missing_column():
+    """test_check_column_headers_missing_column"""
+    headers_missing = ["Acronym", "Reference", "Item description", "Model"]  # Missing "Unit"
+    wb = create_workbook_with_headers("Sheet1", headers_missing)
+
+    with pytest.raises(ColumnHeaderValidationError) as exc_info:
+        check_column_headers(wb, ["Sheet1"])
+
+    assert "Sheet1" in str(exc_info.value)
+
+
+def test_check_column_headers_extra_columns_but_correct_order():
+    """test_check_column_headers_extra_columns_but_correct_order"""
+    headers_with_extra = ["Acronym", "Reference", "Item description", "Unit", "Model", "Extra"]
+    wb = create_workbook_with_headers("Sheet1", headers_with_extra)
+
+    # Extra columns should be ignored
+    assert check_column_headers(wb, ["Sheet1"]) is True
+
+
+def test_check_column_headers_multiple_sheets_some_invalid():
+    """test_check_column_headers_multiple_sheets_some_invalid"""
+    wb = Workbook()
+    ws1 = wb.active
+    ws1.title = "ValidSheet"
+    ws1.append([])
+    ws1.append(EXPECTED_COLUMNS)
+
+    ws2 = wb.create_sheet("InvalidSheet")
+    ws2.append([])
+    ws2.append(["Acronym", "Reference", "Unit", "Model"])  # Missing "Item description"
+
+    with pytest.raises(ColumnHeaderValidationError) as exc_info:
+        check_column_headers(wb, ["ValidSheet", "InvalidSheet"])
+
+    assert "InvalidSheet" in str(exc_info.value)
+
+def test_invalid_workbook_type():
+    """test_invalid_workbook_type"""
+    with pytest.raises(TypeError, match="Expected an openpyxl Workbook instance"):
+        check_column_headers("not_a_workbook", ["Sheet1"])
+
+
+def test_invalid_sheet_names_type():
+    """test_invalid_sheet_names_type"""
+    wb = Workbook()
+    with pytest.raises(TypeError, match="Expected 'sheet_names' to be a list of strings."):
+        check_column_headers(wb, "Sheet1")
+
+def test_sheet_names_empty():
+    """test_sheet_names_empty"""
+    wb = Workbook()
+    with pytest.raises(ValueError, match="'sheet_names' list cannot be empty."):
+        check_column_headers(wb, [])
+
+
+def test_nonexistent_sheet_name():
+    """test_nonexistent_sheet_name"""
+    wb = Workbook()
+    wb.active.title = "Sheet1"
+    with pytest.raises(ValueError,
+            match="One or more sheet names are not present in the workbook."):
+        check_column_headers(wb, ["NonexistentSheet"])

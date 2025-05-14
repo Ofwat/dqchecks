@@ -10,6 +10,9 @@ import logging
 from collections import namedtuple
 from openpyxl.workbook.workbook import Workbook
 import pandas as pd
+from dqchecks.exceptions import (
+    EmptyRowsPatternCheckError,
+    ColumnHeaderValidationError,)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -18,18 +21,6 @@ ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
                           'template_version', 'last_modified']
 )
-
-class EmptyRowsPatternCheckError(Exception):
-    def __init__(self, under_header_issues, top_row_issues):
-        message = "Sheet validation failed."
-        details = []
-        if under_header_issues:
-            details.append(f"Non-empty rows under header in: {under_header_issues}")
-        if top_row_issues:
-            details.append(f"Non-empty top rows in: {top_row_issues}")
-        super().__init__(f"{message} " + " ".join(details))
-        self.under_header_issues = under_header_issues
-        self.top_row_issues = top_row_issues
 
 def is_valid_regex(pattern: str) -> bool:
     """
@@ -201,6 +192,7 @@ def process_df(df: pd.DataFrame, context: ProcessingContext, observation_pattern
     return pivoted_df
 
 def check_empty_rows(wb: Workbook, sheet_names: list[str]):
+    # pylint: disable=C0301
     """
     Validates that specified sheets in a workbook contain only empty cells in specific rows.
 
@@ -238,7 +230,7 @@ def check_empty_rows(wb: Workbook, sheet_names: list[str]):
         # Check under header row (row 3)
         under_header_row = sheet.iter_rows(min_row=3, values_only=True)
         under_header_row_vals = list(next(under_header_row, []))
-        if set(under_header_row_vals) != {None}:
+        if set(under_header_row_vals) not in [{None}, {"", None}, {""}]:
             under_header_bad_sheet_names.append(sheet_name)
 
         # Check top row (row 1), with 3rd element removed
@@ -246,13 +238,58 @@ def check_empty_rows(wb: Workbook, sheet_names: list[str]):
         top_row_vals = list(next(top_row, []))
         if len(top_row_vals) > 2:
             del top_row_vals[2]
-        if set(top_row_vals) != {None}:
+        if set(top_row_vals) not in [{None}, {"", None}, {""}]:
             top_row_bad_sheet_names.append(sheet_name)
 
     if under_header_bad_sheet_names or top_row_bad_sheet_names:
         raise EmptyRowsPatternCheckError(under_header_bad_sheet_names, top_row_bad_sheet_names)
 
     return True  # Validation passed
+
+def check_column_headers(wb: Workbook, sheet_names: list[str]):
+    """
+    Validates that each sheet has the required columns in the correct order starting from row 2.
+
+    Args:
+        wb (Workbook): The openpyxl workbook object.
+        sheet_names (list[str]): List of sheet names to check.
+
+    Raises:
+        TypeError: If wb is not a Workbook, or sheet_names is not a list of strings.
+        ValueError: If sheet_names is empty or contains names not in the workbook.
+        ColumnHeaderValidationError: If any sheet has missing or misordered expected columns.
+
+    Returns:
+        True: If all sheets pass the header validation.
+    """
+    if not isinstance(wb, Workbook):
+        raise TypeError("Expected an openpyxl Workbook instance for 'wb'.")
+    if not isinstance(sheet_names, list) or not all(isinstance(name, str) for name in sheet_names):
+        raise TypeError("Expected 'sheet_names' to be a list of strings.")
+    if not sheet_names:
+        raise ValueError("'sheet_names' list cannot be empty.")
+    if not all(name in wb.sheetnames for name in sheet_names):
+        raise ValueError("One or more sheet names are not present in the workbook.")
+
+    expected_columns = ["Acronym", "Reference", "Item description", "Unit", "Model"]
+    bad_sheets = []
+
+    for sheet_name in sheet_names:
+        sheet = wb[sheet_name]
+        header_rows = sheet.iter_rows(min_row=2, max_row=2, values_only=True)
+        header = next(header_rows, ())
+
+        # Keep only the expected columns in the order they appear in the sheet
+        filtered_header = [col for col in header if col in expected_columns]
+
+        if filtered_header != expected_columns:
+            bad_sheets.append(sheet_name)
+
+    if bad_sheets:
+        raise ColumnHeaderValidationError(bad_sheets, expected_columns)
+
+    return True
+
 
 def process_fout_sheets(
         wb: Workbook,
@@ -326,6 +363,9 @@ def process_fout_sheets(
 
     # Check if fOut tabs follow expected pattern with empty rows
     assert check_empty_rows(wb, fout_sheets)
+
+    # Check that columns exist and in correct order
+    assert check_column_headers(wb, fout_sheets)
 
     # Read data from the sheets
     df_list = read_sheets_data(wb, fout_sheets)
