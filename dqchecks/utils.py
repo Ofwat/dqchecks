@@ -3,6 +3,7 @@ Collection of helper functions
 """
 import datetime
 from pyspark.sql import SparkSession
+import pandas as pd
 
 def simple_hdfs_ls(path: str) -> list:
     """
@@ -56,3 +57,59 @@ def simple_hdfs_ls(path: str) -> list:
             file_info.append(new_val)
 
     return file_info
+
+def create_validation_event_row_dataframe(**kwargs):
+    """
+    Creates a pandas DataFrame representing a single validation event row.
+    
+    All known columns are initialized. Columns for which values are not supplied
+    will be set to None.
+
+    Parameters:
+    **kwargs: Arbitrary keyword arguments corresponding to the column-value pairs
+              to populate in the DataFrame. Only predefined column names are allowed.
+    
+    Returns:
+    pd.DataFrame: A pandas DataFrame with one row and all predefined columns.
+    
+    Raises:
+    ValueError: If any of the supplied kwargs do not match the predefined column names.
+    
+    Example:
+    >>> create_validation_event_row_dataframe(Event_Id=123, Error_Desc="Invalid format")
+           Event_Id Batch_Id Validation_Processing_Stage ... Error_Desc
+    0         123     None                      None     ... Invalid format
+    """
+
+    columns = [
+        "Event_Id",
+        "Batch_Id",
+        "Validation_Processing_Stage",
+        "Sheet_Cd",
+        "Template_Version",
+        "Rule_Cd",
+        "Organisation_Cd",
+        "Measure_Cd",
+        "Measure_Unit",
+        "Measure_Desc",
+        "Submission_Period_Cd",
+        "Process_Cd",
+        "Error_Category",
+        "Section_Cd",
+        "Cell_Cd",
+        "Data_Column",
+        "Error_Value",
+        "Error_Severity_Cd",
+        "Error_Desc"
+    ]
+
+    # Validate input keys
+    invalid_keys = set(kwargs.keys()) - set(columns)
+    if invalid_keys:
+        raise ValueError(
+            f"Invalid column names provided: {invalid_keys}. Allowed columns are: {columns}")
+
+    # Create a dictionary with all columns set to None by default, override with kwargs if provided
+    data = {col: [kwargs.get(col, None)] for col in columns}
+
+    return pd.DataFrame(data)
