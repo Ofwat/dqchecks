@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 PROCESS_MODEL_MAPPING = {
     "apr": "Cyclical Foundation",
-    "pr24bpt": "Price Review 20241",
+    "pr24bpt": "Price Review 2024",
 }
 
 def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Workbook) -> dict:
