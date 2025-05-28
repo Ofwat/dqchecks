@@ -1920,8 +1920,9 @@ def create_process_model_mapping_validation_event(
 
     if unique_pairs.shape[0] != 1:
         # pylint: disable=C0301
-        logger.error("Expected exactly 1 unique mapping but found %s ... {unique_pairs[['Model_Cd']].drop_duplicates().to_dict()}",
-            unique_pairs.shape[0])
+        logger.error("Expected exactly 1 unique mapping but found %s ... %s",
+            unique_pairs.shape[0],
+            unique_pairs[['Model_Cd']].drop_duplicates().to_dict(),)
         return create_validation_event_row_dataframe(
             Event_Id=uuid.uuid4().hex,
             Batch_Id=metadata.get("Batch_Id", "--missing--"),
