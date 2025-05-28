@@ -1077,6 +1077,50 @@ Rule_Cd, Error_Category, and Error_Severity_Cd.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.create_nulls_in_measure_validation_event">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_nulls_in_measure_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_nulls_in_measure_validation_event" title="Link to this definition">¶</a></dt>
+<dd><p>Checks for nulls in Measure_Cd, Measure_Desc, or Measure_Unit and generates a validation event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame containing measure data.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary with keys: Batch_Id, Submission_Period_Cd,
+Process_Cd, Template_Version, Organisation_Cd.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A validation event DataFrame if issues found, otherwise an empty DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.create_process_model_mapping_validation_event">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_process_model_mapping_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_model_mapping</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_process_model_mapping_validation_event" title="Link to this definition">¶</a></dt>
+<dd><p>Validates that there is exactly one unique Process_Cd → Model_Cd mapping,
+and that it matches the expected mapping in the provided dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame containing ‘Process_Cd’ and ‘Model_Cd’.</p></li>
+<li><p><strong>process_model_mapping</strong> (<em>dict</em>) – Expected {Process_Cd: Model_Cd} mapping.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary containing:
+Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Validation event if issue is found, otherwise an empty DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.create_row_for_error">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_row_for_error</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheet_cd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cell</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.panacea.FormulaErrorSheetContext" title="dqchecks.panacea.FormulaErrorSheetContext"><span class="pre">FormulaErrorSheetContext</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.panacea.create_row_for_error" title="Link to this definition">¶</a></dt>
 <dd><p>Creates a row dictionary for a single formula error.</p>
@@ -1094,6 +1138,49 @@ Rule_Cd, Error_Category, and Error_Severity_Cd.</p></li>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.create_same_boncode_diff_desc_validation_event">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_same_boncode_diff_desc_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_same_boncode_diff_desc_validation_event" title="Link to this definition">¶</a></dt>
+<dd><p>Checks for Measure_Cd (boncodes) used with multiple Measure_Desc values and generates
+a validation event DataFrame if issues are found.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with columns ‘Measure_Cd’, ‘Measure_Desc’, ‘Sheet_Cd’.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary containing keys:
+Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Validation event DataFrame if duplicates found, else empty DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.create_same_desc_diff_boncode_validation_event">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_same_desc_diff_boncode_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_same_desc_diff_boncode_validation_event" title="Link to this definition">¶</a></dt>
+<dd><p>Checks for Measure_Desc used with multiple Measure_Cd values and generates a validation event.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with measure data.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary with keys: Batch_Id, Submission_Period_Cd,
+Process_Cd, Template_Version, Organisation_Cd.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Validation event DataFrame if issues found, else empty DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1678,11 +1765,11 @@ directory. The ‘last_modified’ time is converted to a human-readable datetim
 </dd>
 </dl>
 <p class="rubric">Example</p>
-<p>file_info = simple_hdfs_ls(“hdfs://path/to/directory”)
-for file in file_info:</p>
-<blockquote>
-<div><p>print(f”File: {file[‘name’]}, Last Modified: {file[‘last_modified’]}”)</p>
-</div></blockquote>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">file_info</span> <span class="o">=</span> <span class="n">simple_hdfs_ls</span><span class="p">(</span><span class="s2">&quot;hdfs://path/to/directory&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_info</span><span class="p">:</span>
+<span class="go">        print(f&quot;File: {file[&#39;name&#39;]}, Last Modified: {file[&#39;last_modified&#39;]}&quot;)</span>
+</pre></div>
+</div>
 </dd></dl>
 
 </section>
