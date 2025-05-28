@@ -23,6 +23,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+PROCESS_MODEL_MAPPING = {
+    "apr": "Cyclical Foundation",
+    "pr24bpt": "Price Review 20241",
+}
+
 def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Workbook) -> dict:
     """
     Compares the sheet names between two openpyxl workbook objects to check if they are identical.
@@ -1677,6 +1682,9 @@ def create_nulls_in_measure_validation_event(
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Input 'df' must be a pandas DataFrame.")
 
+    if not isinstance(metadata, dict):
+        raise ValueError("Input 'metadata' must be a dict.")
+
     missing_cols = required_df_columns - set(df.columns)
     if missing_cols:
         raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
@@ -1735,6 +1743,9 @@ def create_same_desc_diff_boncode_validation_event(
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Input 'df' must be a pandas DataFrame.")
+
+    if not isinstance(metadata, dict):
+        raise ValueError("Input 'metadata' must be a dict.")
 
     missing_cols = required_df_columns - set(df.columns)
     if missing_cols:
@@ -1812,6 +1823,9 @@ def create_same_boncode_diff_desc_validation_event(
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Input 'df' must be a pandas DataFrame.")
 
+    if not isinstance(metadata, dict):
+        raise ValueError("Input 'metadata' must be a dict.")
+
     missing_cols = required_df_columns - set(df.columns)
     if missing_cols:
         raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
@@ -1862,3 +1876,93 @@ def create_same_boncode_diff_desc_validation_event(
         Error_Severity_Cd='soft',
         Error_Desc=message,
     )
+
+def create_process_model_mapping_validation_event(
+    df: pd.DataFrame,
+    process_model_mapping: dict,
+    metadata: dict,
+) -> pd.DataFrame:
+    """
+    Validates that there is exactly one unique Process_Cd → Model_Cd mapping,
+    and that it matches the expected mapping in the provided dictionary.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame containing 'Process_Cd' and 'Model_Cd'.
+        process_model_mapping (dict): Expected {Process_Cd: Model_Cd} mapping.
+        metadata (dict): Dictionary containing:
+            Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.
+
+    Returns:
+        pd.DataFrame: Validation event if issue is found, otherwise an empty DataFrame.
+    """
+    required_columns = {"Process_Cd", "Model_Cd"}
+
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("Input 'df' must be a pandas DataFrame.")
+
+    if not isinstance(metadata, dict):
+        raise ValueError("Input 'metadata' must be a dict.")
+
+    if not isinstance(process_model_mapping, dict):
+        raise ValueError("Input 'process_model_mapping' must be a dict.")
+
+    missing_cols = required_columns - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
+
+    if df.empty:
+        logger.warning("Input DataFrame is empty. No validation event will be generated.")
+        return create_validation_event_row_dataframe().dropna()
+
+    unique_pairs = df[['Process_Cd', 'Model_Cd']].drop_duplicates()
+    logger.info("Found %s unique Process_Cd-Model_Cd mappings",
+                unique_pairs.shape[0])
+
+    if unique_pairs.shape[0] != 1:
+        # pylint: disable=C0301
+        logger.error("Expected exactly 1 unique mapping but found %s ... {unique_pairs[['Model_Cd']].drop_duplicates().to_dict()}",
+            unique_pairs.shape[0])
+        return create_validation_event_row_dataframe(
+            Event_Id=uuid.uuid4().hex,
+            Batch_Id=metadata.get("Batch_Id", "--missing--"),
+            Submission_Period_Cd=metadata.get("Submission_Period_Cd", "--missing--"),
+            Process_Cd=metadata.get("Process_Cd", "--missing--"),
+            Template_Version=metadata.get("Template_Version", "--missing--"),
+            Organisation_Cd=metadata.get("Organisation_Cd", "--missing--"),
+            Validation_Processing_Stage='Excel-Based Validation Rule',
+            Rule_Cd='Exactly one mapping between process and model names',
+            # pylint: disable=C0301
+            Error_Desc=f"Expected exactly 1 unique mapping between Model_Cd and Process_Cd, observed {unique_pairs.shape[0]} ... {unique_pairs[['Model_Cd']].drop_duplicates().to_dict()}",
+        )
+
+    observed_process_cd = unique_pairs.iloc[0]['Process_Cd']
+    observed_model_cd = unique_pairs.iloc[0]['Model_Cd']
+    logger.info("Observed mapping: Process_Cd=%s, Model_Cd=%s",
+                observed_process_cd,
+                observed_model_cd,
+                )
+
+    expected_model_cd = process_model_mapping.get(observed_process_cd)
+
+    if expected_model_cd != observed_model_cd:
+        logger.error(
+            "Model_Cd mismatch for Process_Cd '%s': expected '%s', found '%s'",
+            observed_process_cd,
+            expected_model_cd,
+            observed_model_cd,
+            )
+        return create_validation_event_row_dataframe(
+            Event_Id=uuid.uuid4().hex,
+            Batch_Id=metadata.get("Batch_Id", "--missing--"),
+            Submission_Period_Cd=metadata.get("Submission_Period_Cd", "--missing--"),
+            Process_Cd=metadata.get("Process_Cd", "--missing--"),
+            Template_Version=metadata.get("Template_Version", "--missing--"),
+            Organisation_Cd=metadata.get("Organisation_Cd", "--missing--"),
+            Validation_Processing_Stage='Excel-Based Validation Rule',
+            Rule_Cd='Model matching process mapping',
+            # pylint: disable=C0301
+            Error_Desc=f"Expected '{expected_model_cd}' for {observed_process_cd} observed {observed_model_cd}",
+        )
+
+    logger.info("Process and model code mapping validated successfully.")
+    return create_validation_event_row_dataframe().dropna()

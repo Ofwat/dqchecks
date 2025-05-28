@@ -55,3 +55,21 @@ def test_returns_validation_event_when_duplicates_found():
     error_desc_col = 'Error_Desc'
     assert error_desc_col in result.columns
     assert any("A:[" in str(val) for val in result[error_desc_col].values)
+
+def test_raises_if_input_not_dataframe():
+    """test_raises_if_input_not_dataframe"""
+    not_a_df = ["not", "a", "dataframe"]
+    with pytest.raises(ValueError, match="Input 'df' must be a pandas DataFrame."):
+        create_same_boncode_diff_desc_validation_event(not_a_df, {})
+
+def test_raises_if_metadata_not_dict():
+    """test_raises_if_metadata_not_dict"""
+    df = pd.DataFrame({
+        "Measure_Cd": ["B1"],
+        "Measure_Desc": ["Desc2"],
+        "Sheet_Cd": ["Sheet3    "]
+    })
+    not_metadata = ["not", "a", "dict"]
+
+    with pytest.raises(ValueError, match="Input 'metadata' must be a dict."):
+        create_same_boncode_diff_desc_validation_event(df, not_metadata)

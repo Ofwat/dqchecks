@@ -110,3 +110,15 @@ def test_validation_event_created_on_nulls():
     assert not result.empty
     assert "Error_Desc" in result.columns
     assert "Sheet1 -- A1" in result.iloc[0]["Error_Desc"]
+
+def test_raises_if_metadata_not_dict():
+    """test_raises_if_metadata_not_dict"""
+    df = pd.DataFrame({
+        "Measure_Cd": ["C1"],
+        "Measure_Desc": ["Desc4"],
+        "Sheet_Cd": ["Sheet5"]
+    })
+    not_metadata = ["not", "a", "dict"]
+
+    with pytest.raises(ValueError, match="Input 'metadata' must be a dict."):
+        create_nulls_in_measure_validation_event(df, not_metadata)

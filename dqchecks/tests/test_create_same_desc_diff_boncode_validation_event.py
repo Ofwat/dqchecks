@@ -107,3 +107,15 @@ def test_raises_value_error_for_invalid_df_type():
 
     with pytest.raises(ValueError, match="Input 'df' must be a pandas DataFrame"):
         create_same_desc_diff_boncode_validation_event(df, metadata)
+
+def test_raises_if_metadata_not_dict():
+    """test_raises_if_metadata_not_dict"""
+    df = pd.DataFrame({
+        "Measure_Cd": ["A5"],
+        "Measure_Desc": ["Desc7"],
+        "Sheet_Cd": ["Sheet9"]
+    })
+    not_metadata = ["not", "a", "dict"]
+
+    with pytest.raises(ValueError, match="Input 'metadata' must be a dict."):
+        create_same_desc_diff_boncode_validation_event(df, not_metadata)
