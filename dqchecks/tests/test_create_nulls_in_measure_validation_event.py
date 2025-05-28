@@ -80,3 +80,33 @@ def test_fallback_metadata_values():
     })
     result = create_nulls_in_measure_validation_event(df, {})
     assert result["Batch_Id"].iloc[0] == "--missing--"
+
+def test_validation_event_created_on_nulls():
+    """test_validation_event_created_on_nulls"""
+    df = pd.DataFrame([
+        {
+            "Measure_Cd": None,
+            "Measure_Desc": "desc",
+            "Measure_Unit": "unit",
+            "Sheet_Cd": "Sheet1",
+            "Cell_Cd": "A1"},
+        {
+            "Measure_Cd": "m2",
+            "Measure_Desc": "desc2",
+            "Measure_Unit": "unit2",
+            "Sheet_Cd": "Sheet2",
+            "Cell_Cd": "B2"}
+    ])
+    metadata = {
+        "Batch_Id": "BATCH001",
+        "Submission_Period_Cd": "2025Q1",
+        "Process_Cd": "PROC1",
+        "Template_Version": "v1",
+        "Organisation_Cd": "ORG1",
+    }
+
+    result = create_nulls_in_measure_validation_event(df, metadata)
+
+    assert not result.empty
+    assert "Error_Desc" in result.columns
+    assert "Sheet1 -- A1" in result.iloc[0]["Error_Desc"]

@@ -1660,16 +1660,17 @@ def find_pk_errors(
 def create_nulls_in_measure_validation_event(
     df: pd.DataFrame,
     metadata: dict,
-):
+) -> pd.DataFrame:
     """
+    Checks for nulls in Measure_Cd, Measure_Desc, or Measure_Unit and generates a validation event.
+
     Parameters:
-        df (pd.DataFrame): Input DataFrame.
-        metadata (dict): Dictionary containing:
-            - Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd
-        create_validation_event_row_dataframe (Callable): Function to create validation event row.
+        df (pd.DataFrame): Input DataFrame containing measure data.
+        metadata (dict): Dictionary with keys: Batch_Id, Submission_Period_Cd,
+                         Process_Cd, Template_Version, Organisation_Cd.
 
     Returns:
-        pd.DataFrame or None
+        pd.DataFrame: A validation event DataFrame if issues found, otherwise an empty DataFrame.
     """
     required_df_columns = {"Measure_Cd", "Measure_Desc", "Measure_Unit", "Sheet_Cd", "Cell_Cd"}
 
@@ -1701,6 +1702,7 @@ def create_nulls_in_measure_validation_event(
         "Detected nulls in mandatory measure fields at locations: %s",
         nulls_in_pk_message)
 
+    # Metadata fallback
     missing_text_string = "--missing--"
     return create_validation_event_row_dataframe(
         Event_Id=uuid.uuid4().hex,
@@ -1712,4 +1714,79 @@ def create_nulls_in_measure_validation_event(
         Validation_Processing_Stage='Excel-Based Validation Rule',
         Rule_Cd='Nulls in either Measure_Cd, Measure_Desc or Measure_Unit',
         Error_Desc=nulls_in_pk_message,
+    )
+
+def create_same_desc_diff_boncode_validation_event(
+    df: pd.DataFrame,
+    metadata: dict,
+) -> pd.DataFrame:
+    """
+    Checks for Measure_Desc used with multiple Measure_Cd values and generates a validation event.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame with measure data.
+        metadata (dict): Dictionary with keys: Batch_Id, Submission_Period_Cd,
+                         Process_Cd, Template_Version, Organisation_Cd.
+
+    Returns:
+        pd.DataFrame: Validation event DataFrame if issues found, else empty DataFrame.
+    """
+    required_df_columns = {"Measure_Cd", "Measure_Desc", "Sheet_Cd"}
+
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("Input 'df' must be a pandas DataFrame.")
+
+    missing_cols = required_df_columns - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
+
+    if df.empty:
+        logger.warning("Input DataFrame is empty. No validation event will be generated.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Get unique Measure_Cd and Measure_Desc pairs
+    measure_desc_pairs = df[['Measure_Cd', 'Measure_Desc']].drop_duplicates()
+
+    # Find descriptions used with multiple different Measure_Cd (boncodes)
+    duplicated_descs = (
+        measure_desc_pairs.groupby('Measure_Desc')
+        .filter(lambda x: x['Measure_Cd'].nunique() > 1)
+    )
+
+    if duplicated_descs.empty:
+        logger.info("No description used with multiple Measure_Cd values found.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Merge back to original dataframe to get Sheet_Cd
+    merged_df = df.merge(
+        duplicated_descs[['Measure_Desc']].drop_duplicates(),
+        on='Measure_Desc',
+        how='inner'
+    )[['Measure_Desc', 'Measure_Cd', 'Sheet_Cd']].drop_duplicates()
+
+    # Group and format message
+    grouped = merged_df.groupby('Measure_Desc')
+    result = [
+        [f"{row.Measure_Cd} -- {row.Sheet_Cd}" for _, row in group.iterrows()]
+        for _, group in grouped
+    ]
+    message = ", ".join(["[" + ", ".join(group) + "]" for group in result])
+
+    logger.warning(
+        "Detected same description used with multiple Measure_Cd values: %s",
+        message)
+
+    missing_text_string = "--missing--"
+    return create_validation_event_row_dataframe(
+        Event_Id=uuid.uuid4().hex,
+        Batch_Id=metadata.get("Batch_Id", missing_text_string),
+        Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
+        Process_Cd=metadata.get("Process_Cd", missing_text_string),
+        Template_Version=metadata.get("Template_Version", missing_text_string),
+        Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Rule_Cd='Rule 1 - Boncode-Description Consistency',
+        Error_Category='Same description, different boncodes',
+        Error_Severity_Cd='soft',
+        Error_Desc=message,
     )
