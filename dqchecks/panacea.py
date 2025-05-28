@@ -1790,3 +1790,75 @@ def create_same_desc_diff_boncode_validation_event(
         Error_Severity_Cd='soft',
         Error_Desc=message,
     )
+
+def create_same_boncode_diff_desc_validation_event(
+    df: pd.DataFrame,
+    metadata: dict,
+) -> pd.DataFrame:
+    """
+    Checks for Measure_Cd (boncodes) used with multiple Measure_Desc values and generates
+    a validation event DataFrame if issues are found.
+
+    Parameters:
+        df (pd.DataFrame): Input DataFrame with columns 'Measure_Cd', 'Measure_Desc', 'Sheet_Cd'.
+        metadata (dict): Dictionary containing keys:
+            Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.
+
+    Returns:
+        pd.DataFrame: Validation event DataFrame if duplicates found, else empty DataFrame.
+    """
+    required_df_columns = {"Measure_Cd", "Measure_Desc", "Sheet_Cd"}
+
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("Input 'df' must be a pandas DataFrame.")
+
+    missing_cols = required_df_columns - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
+
+    if df.empty:
+        logger.warning("Input DataFrame is empty. No validation event will be generated.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Step 1: Identify Measure_Cd with more than one unique Measure_Desc
+    multi_desc_ids = (
+        df.groupby('Measure_Cd')['Measure_Desc']
+        .nunique()
+        .loc[lambda x: x > 1]
+        .index
+    )
+
+    if multi_desc_ids.empty:
+        logger.info("No Measure_Cd values associated with multiple Measure_Desc values.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Step 2: Filter to those rows only
+    df_filtered = df[df['Measure_Cd'].isin(multi_desc_ids)]
+
+    # Step 3: Format message: Measure_Cd:[Sheet_Cd1, Sheet_Cd2, ...]
+    messages = (
+        df_filtered.groupby('Measure_Cd')['Sheet_Cd']
+        .apply(lambda x: f"{x.name}:[{', '.join(sorted(x.unique()))}]")
+        .tolist()
+    )
+    message = ", ".join(messages)
+
+    logger.warning(
+        "Detected Measure_Cd with multiple Measure_Desc values: %s",
+        message
+    )
+
+    missing_text_string = "--missing--"
+    return create_validation_event_row_dataframe(
+        Event_Id=uuid.uuid4().hex,
+        Batch_Id=metadata.get("Batch_Id", missing_text_string),
+        Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
+        Process_Cd=metadata.get("Process_Cd", missing_text_string),
+        Template_Version=metadata.get("Template_Version", missing_text_string),
+        Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Rule_Cd='Rule 1 - Boncode-Description Consistency',
+        Error_Category='Same boncode, different description',
+        Error_Severity_Cd='soft',
+        Error_Desc=message,
+    )
