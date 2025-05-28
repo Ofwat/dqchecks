@@ -22,9 +22,9 @@ def simple_hdfs_ls(path: str) -> list:
               directory. The 'last_modified' time is converted to a human-readable datetime format.
 
     Example:
-        file_info = simple_hdfs_ls("hdfs://path/to/directory")
-        for file in file_info:
-            print(f"File: {file['name']}, Last Modified: {file['last_modified']}")
+        >>> file_info = simple_hdfs_ls("hdfs://path/to/directory")
+        >>> for file in file_info:
+                print(f"File: {file['name']}, Last Modified: {file['last_modified']}")
     """
     spark = SparkSession.builder.appName("spark_entry_job").getOrCreate()
     # pylint: disable=W0212

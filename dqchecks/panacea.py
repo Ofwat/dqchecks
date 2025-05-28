@@ -13,9 +13,14 @@ from openpyxl import Workbook
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
 import pandas as pd
+from dqchecks.utils import create_validation_event_row_dataframe
 
 # Configure logging for the function
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='[%(levelname)s] %(asctime)s - %(module)s.%(funcName)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 logger = logging.getLogger(__name__)
 
 def validate_tabs_between_spreadsheets(spreadsheet1: Workbook, spreadsheet2: Workbook) -> dict:
@@ -1651,3 +1656,60 @@ def find_pk_errors(
     df = pd.DataFrame(rows)
 
     return df
+
+def create_nulls_in_measure_validation_event(
+    df: pd.DataFrame,
+    metadata: dict,
+):
+    """
+    Parameters:
+        df (pd.DataFrame): Input DataFrame.
+        metadata (dict): Dictionary containing:
+            - Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd
+        create_validation_event_row_dataframe (Callable): Function to create validation event row.
+
+    Returns:
+        pd.DataFrame or None
+    """
+    required_df_columns = {"Measure_Cd", "Measure_Desc", "Measure_Unit", "Sheet_Cd", "Cell_Cd"}
+
+    if not isinstance(df, pd.DataFrame):
+        raise ValueError("Input 'df' must be a pandas DataFrame.")
+
+    missing_cols = required_df_columns - set(df.columns)
+    if missing_cols:
+        raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
+
+    if df.empty:
+        logger.warning("Input DataFrame is empty. No validation event will be generated.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Filter rows with nulls in key measure fields
+    null_df = df[
+        df[['Measure_Cd', 'Measure_Desc', 'Measure_Unit']].isnull().any(axis=1)
+    ][['Measure_Cd', 'Measure_Desc', 'Measure_Unit', 'Sheet_Cd', 'Cell_Cd']].drop_duplicates()
+
+    if null_df.empty:
+        logger.info("No nulls found in Measure_Cd, Measure_Desc, or Measure_Unit fields.")
+        return create_validation_event_row_dataframe().dropna()
+
+    # Format output message
+    result = [f"{row.Sheet_Cd} -- {row.Cell_Cd}" for _, row in null_df.iterrows()]
+    nulls_in_pk_message = ", ".join(result)
+
+    logger.warning(
+        "Detected nulls in mandatory measure fields at locations: %s",
+        nulls_in_pk_message)
+
+    missing_text_string = "--missing--"
+    return create_validation_event_row_dataframe(
+        Event_Id=uuid.uuid4().hex,
+        Batch_Id=metadata.get("Batch_Id", missing_text_string),
+        Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
+        Process_Cd=metadata.get("Process_Cd", missing_text_string),
+        Template_Version=metadata.get("Template_Version", missing_text_string),
+        Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Rule_Cd='Nulls in either Measure_Cd, Measure_Desc or Measure_Unit',
+        Error_Desc=nulls_in_pk_message,
+    )
