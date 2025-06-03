@@ -1915,6 +1915,10 @@ def create_process_model_mapping_validation_event(
         return create_validation_event_row_dataframe().dropna()
 
     unique_pairs = df[['Process_Cd', 'Model_Cd']].drop_duplicates()
+    joined_duplicate_strings = ", ".join(
+        unique_pairs[['Model_Cd']].drop_duplicates().to_dict()["Model_Cd"].values())
+    process_cd_strings = ",".join(unique_pairs["Process_Cd"].drop_duplicates().to_list())
+    combined_error_string = f"{process_cd_strings} - {joined_duplicate_strings}"
     logger.info("Found %s unique Process_Cd-Model_Cd mappings",
                 unique_pairs.shape[0])
 
@@ -1922,7 +1926,7 @@ def create_process_model_mapping_validation_event(
         # pylint: disable=C0301
         logger.error("Expected exactly 1 unique mapping but found %s ... %s",
             unique_pairs.shape[0],
-            unique_pairs[['Model_Cd']].drop_duplicates().to_dict(),)
+            combined_error_string,)
         return create_validation_event_row_dataframe(
             Event_Id=uuid.uuid4().hex,
             Batch_Id=metadata.get("Batch_Id", "--missing--"),
@@ -1933,7 +1937,7 @@ def create_process_model_mapping_validation_event(
             Validation_Processing_Stage='Excel-Based Validation Rule',
             Rule_Cd='Exactly one mapping between process and model names',
             # pylint: disable=C0301
-            Error_Desc=f"Expected exactly 1 unique mapping between Model_Cd and Process_Cd, observed {unique_pairs.shape[0]} ... {unique_pairs[['Model_Cd']].drop_duplicates().to_dict()}",
+            Error_Desc=f"Expected exactly 1 unique mapping between Model_Cd and Process_Cd, observed {unique_pairs.shape[0]} ... {combined_error_string}",
         )
 
     observed_process_cd = unique_pairs.iloc[0]['Process_Cd']
