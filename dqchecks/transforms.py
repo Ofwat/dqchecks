@@ -39,11 +39,14 @@ class FoutProcessConfig:
             If None, a default mapping will be used.
         run_validations (bool): Flag to determine whether to run validation checks on
             sheets (e.g., empty row checks, header validations). Defaults to True.
+        skip_rows (int): Number of rows to skip from of the sheet when loading.
+            Default is set to 2.
     """
     observation_patterns: list[str]
     fout_patterns: list[str]
     column_rename_map: Optional[dict[str, str]] = None
     run_validations: bool = True
+    skip_rows: int = 2
 
 def is_valid_regex(pattern: str) -> bool:
     """
@@ -119,13 +122,13 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
     return matching_sheets
 
 
-def read_sheets_data(wb: Workbook, fout_sheets: list):
+def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
     Reads data from the sheets into pandas DataFrames.
     """
     df_list = []
     for sheetname in fout_sheets:
-        data = wb[sheetname].iter_rows(min_row=2, values_only=True)
+        data = wb[sheetname].iter_rows(min_row=skip_rows, values_only=True)
         try:
             headers = next(data)
         except StopIteration as exc:
@@ -402,7 +405,7 @@ def process_fout_sheets(
         assert check_column_headers(wb, fout_sheets)
 
     # Read and clean data
-    df_list = read_sheets_data(wb, fout_sheets)
+    df_list = read_sheets_data(wb, fout_sheets, skip_rows = config.skip_rows)
     df_list = clean_data(df_list)
 
     # Use default mapping if none provided
