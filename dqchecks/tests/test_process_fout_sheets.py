@@ -15,7 +15,8 @@ from dqchecks.transforms import (
     check_empty_rows,
     read_sheets_data,
     clean_data,
-    check_column_headers,)
+    check_column_headers,
+    get_qd_column_rename_map,)
 from dqchecks.exceptions import (
     EmptyRowsPatternCheckError,
     ColumnHeaderValidationError,
@@ -867,3 +868,19 @@ def test_nonexistent_sheet_name():
     with pytest.raises(ValueError,
             match="One or more sheet names are not present in the workbook."):
         check_column_headers(wb, ["NonexistentSheet"])
+
+def test_get_qd_column_rename_map_types_and_length():
+    """Simple test of the get_qd_column_rename_map function"""
+    rename_map = get_qd_column_rename_map()
+
+    # Check that the return type is a dict
+    assert isinstance(rename_map, dict), "Return value should be a dictionary"
+
+    # Check all keys and values are strings
+    for key, value in rename_map.items():
+        assert isinstance(key, str), f"Key {key} is not a string"
+        assert isinstance(value, str), f"Value for key {key} is not a string"
+
+    # Check expected number of keys (should match the number of entries)
+    expected_length = 14
+    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"

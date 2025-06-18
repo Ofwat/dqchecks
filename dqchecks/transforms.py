@@ -310,6 +310,33 @@ def check_column_headers(wb: Workbook, sheet_names: list[str]):
 
     return True
 
+def get_qd_column_rename_map() -> dict[str, str]:
+    """
+    Returns a dictionary mapping column names to themselves for use in 
+    renaming or standardizing columns in a DataFrame related to quarterly data.
+
+    This mapping ensures consistent column naming conventions across processing steps.
+
+    Returns:
+        dict[str, str]: A dictionary where keys and values are column names.
+    """
+    return {
+        "Organisation_Cd": "Organisation_Cd",
+        "Submission_Period_Cd": "Submission_Period_Cd",
+        "Observation_Period_Cd": "Observation_Period_Cd",
+        "Process_Cd": "Process_Cd",
+        "Template_Version": "Template_Version",
+        "Sheet_Cd": "Sheet_Cd",
+        "Measure_Cd": "Measure_Cd",
+        "Measure_Value": "Measure_Value",
+        "Measure_Desc": "Measure_Desc",
+        "Measure_Unit": "Measure_Unit",
+        "Model_Cd": "Model_Cd",  # missing?
+        "Submission_Date": "Submission_Date",
+        "Section_Cd": "Section_Cd",  # missing?
+        "Cell_Cd": "Cell_Cd",
+    }
+
 def get_default_column_rename_map() -> dict[str, str]:
     """
     Returns the default mapping dictionary for renaming dataframe columns.
