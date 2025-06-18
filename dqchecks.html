@@ -1706,6 +1706,22 @@ into the standardized output column names used in the processed DataFrame.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.get_qd_column_rename_map">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">get_qd_column_rename_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#dqchecks.transforms.get_qd_column_rename_map" title="Link to this definition">¶</a></dt>
+<dd><p>Returns a dictionary mapping column names to themselves for use in
+renaming or standardizing columns in a DataFrame related to quarterly data.</p>
+<p>This mapping ensures consistent column naming conventions across processing steps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary where keys and values are column names.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.is_valid_regex">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">is_valid_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#dqchecks.transforms.is_valid_regex" title="Link to this definition">¶</a></dt>
 <dd><p>Check if a given string is a valid regex</p>
