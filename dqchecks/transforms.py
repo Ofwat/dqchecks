@@ -39,14 +39,16 @@ class FoutProcessConfig:
             If None, a default mapping will be used.
         run_validations (bool): Flag to determine whether to run validation checks on
             sheets (e.g., empty row checks, header validations). Defaults to True.
-        skip_rows (int): Number of rows to skip from of the sheet when loading.
-            Default is set to 2.
+        skip_rows (int): Number of rows to skip from the sheet when loading. Defaults to 2.
+        reshape (bool): Whether to reshape the data using melt (long format). If False,
+            data remains in wide format. Defaults to True.
     """
     observation_patterns: list[str]
     fout_patterns: list[str]
     column_rename_map: Optional[dict[str, str]] = None
     run_validations: bool = True
     skip_rows: int = 2
+    reshape: bool = True
 
 def is_valid_regex(pattern: str) -> bool:
     """
@@ -340,6 +342,37 @@ def get_qd_column_rename_map() -> dict[str, str]:
         "Cell_Cd": "Cell_Cd",
     }
 
+def finalize_dataframe(
+    df: pd.DataFrame,
+    context: ProcessingContext,
+    column_rename_map: dict[str, str]
+) -> pd.DataFrame:
+    """
+    Adds context columns, renames columns based on the mapping, and reorders columns.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to finalize.
+        context (ProcessingContext): Context metadata to embed into the DataFrame.
+        column_rename_map (dict[str, str]): Mapping from original to standardized column names.
+
+    Returns:
+        pd.DataFrame: Finalized and standardized DataFrame.
+    """
+    df["Organisation_Cd"] = context.org_cd
+    df["Submission_Period_Cd"] = context.submission_period_cd
+    df["Process_Cd"] = context.process_cd
+    df["Template_Version"] = context.template_version
+    df["Submission_Date"] = context.last_modified
+    df["Section_Cd"] = "--placeholder--"
+    df["Cell_Cd"] = "--placeholder--"
+
+    df = df.astype(str)
+    df = df.rename(columns=column_rename_map)
+
+    # Keep only columns in the final output, in the specified order
+    ordered_columns = [col for col in column_rename_map.values() if col in df.columns]
+    return df[ordered_columns]
+
 def get_default_column_rename_map() -> dict[str, str]:
     """
     Returns the default mapping dictionary for renaming dataframe columns.
@@ -373,7 +406,6 @@ def process_fout_sheets(
         context: ProcessingContext,
         config: FoutProcessConfig,
     ) -> pd.DataFrame:
-    # pylint: disable=C0301
     """
     Processes all sheets in the given Excel workbook matching the specified patterns,
     transforming and normalizing their data into a consolidated DataFrame.
@@ -381,7 +413,8 @@ def process_fout_sheets(
     Args:
         wb (Workbook): The openpyxl Workbook object.
         context (ProcessingContext): Processing context metadata.
-        config (FoutProcessConfig): Configuration options including patterns, column mapping, and validation flag.
+        config (FoutProcessConfig): Configuration options including patterns, column mapping,
+            and reshape flag.
 
     Returns:
         pd.DataFrame: The consolidated processed DataFrame.
@@ -396,26 +429,27 @@ def process_fout_sheets(
 
     logging.info("Using observation patterns: %s", config.observation_patterns)
 
-    # Extract sheets matching the patterns
+    # Extract matching sheets
     fout_sheets = extract_fout_sheets(wb, config.fout_patterns)
 
     if config.run_validations:
-        # Run validations conditionally
         assert check_empty_rows(wb, fout_sheets)
         assert check_column_headers(wb, fout_sheets)
 
     # Read and clean data
-    df_list = read_sheets_data(wb, fout_sheets, skip_rows = config.skip_rows)
+    df_list = read_sheets_data(wb, fout_sheets, skip_rows=config.skip_rows)
     df_list = clean_data(df_list)
 
-    # Use default mapping if none provided
     column_rename_map = config.column_rename_map or get_default_column_rename_map()
 
-    # Process each DataFrame with the mapping
-    melted_dfs = [
-        process_df(df, context, config.observation_patterns, column_rename_map)
-        for df in df_list
-    ]
+    processed_dfs = []
 
-    final_df = pd.concat(melted_dfs, ignore_index=True)
+    for df in df_list:
+        if config.reshape:
+            df = process_df(df, context, config.observation_patterns, column_rename_map)
+
+        processed_df = finalize_dataframe(df, context, column_rename_map)
+        processed_dfs.append(processed_df)
+
+    final_df = pd.concat(processed_dfs, ignore_index=True)
     return final_df
