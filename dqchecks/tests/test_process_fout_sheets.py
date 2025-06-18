@@ -11,6 +11,7 @@ from dqchecks.transforms import (
     process_fout_sheets,
     extract_fout_sheets,
     ProcessingContext,
+    FoutProcessConfig,
     check_empty_rows,
     read_sheets_data,
     clean_data,
@@ -60,15 +61,20 @@ def workbook_with_data():
 # pylint: disable=W0621
 def test_process_fout_sheets_valid(workbook_with_data, valid_context):
     """
-    Test valid processing of a workbook
+    Test valid processing of a workbook using FoutProcessConfig for config parameters.
     """
-    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-    fout_patterns = ["^fOut_"]
+    config = FoutProcessConfig(
+        observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
+        fout_patterns=["^fOut_"],
+        run_validations=True,
+        column_rename_map=None  # or provide custom if desired
+    )
+
     result_df = process_fout_sheets(
         workbook_with_data,
         valid_context,
-        observation_patterns,
-        fout_patterns)
+        config
+    )
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
 
@@ -87,9 +93,7 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
         "Section_Cd",
         "Cell_Cd",
     ]
-    assert all(i in result_df.columns for i in expected_columns)
-    # assert "Organisation_Cd" in result_df.columns
-    # assert "Observation_Period_Cd" in result_df.columns
+    assert all(col in result_df.columns for col in expected_columns)
     assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
 
     # Patch the logging to capture the warning message
@@ -98,10 +102,9 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
-        # Check that the warning was logged with the expected message
         mock_warning.assert_called_with(
             "Reading in non data_only mode. Some data may not be accessible.")
 
@@ -110,29 +113,33 @@ def test_process_fout_sheets_invalid_workbook(valid_context):
     """
     Test invalid workbook type (not an openpyxl Workbook)
     """
-    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-    fout_patterns = ["^fOut_"]
+    config = FoutProcessConfig(
+        observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
+        fout_patterns=["^fOut_"]
+    )
     with pytest.raises(TypeError,
             match="The 'wb' argument must be a valid openpyxl workbook object."):
         process_fout_sheets(
-            "invalid",
+            "invalid",  # invalid workbook type
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # pylint: disable=W0621
 def test_process_fout_sheets_no_fout_sheets(empty_workbook_without_fout, valid_context):
     """
     Test missing 'fOut_*' sheets in the workbook
     """
-    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-    fout_patterns = ["^fOut_"]
+    config = FoutProcessConfig(
+        observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
+        fout_patterns=["^fOut_"]
+    )
     with pytest.raises(ValueError, match="No sheets matching patterns"):
         process_fout_sheets(
             empty_workbook_without_fout,
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # pylint: disable=W0621
 def test_process_fout_sheets_missing_observation_columns(workbook_with_data, valid_context):
@@ -145,12 +152,17 @@ def test_process_fout_sheets_missing_observation_columns(workbook_with_data, val
     # Remove the observation period columns to simulate the case
     sheet.delete_cols(7, 2)
 
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(ValueError, match="No observation period columns found in the data."):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # pylint: disable=W0621
 def test_process_fout_sheets_drop_nan_rows(workbook_with_data, valid_context):
@@ -161,13 +173,18 @@ def test_process_fout_sheets_drop_nan_rows(workbook_with_data, valid_context):
     fout_patterns = ["^fOut_"]
     # Create a sheet with NaN rows
     sheet = workbook_with_data["fOut_Sheet1"]
-    sheet.append([None, None, None, None])  # Add a row with all NaNs
+    sheet.append([None] * sheet.max_column)  # Add a row with all NaNs
+
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
 
     result_df = process_fout_sheets(
         workbook_with_data,
         valid_context,
-        observation_patterns,
-        fout_patterns)
+        config
+    )
     assert result_df.shape[0] == 3  # Should have dropped the NaN row
     assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
 
@@ -185,12 +202,16 @@ def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
     with pytest.raises(ValueError, match="The 'org_cd' argument must be a non-empty string."):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config)
+
 
 # pylint: disable=W0621
 def test_process_fout_sheets_invalid_context_submission_period(workbook_with_data):
@@ -206,13 +227,17 @@ def test_process_fout_sheets_invalid_context_submission_period(workbook_with_dat
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
     with pytest.raises(ValueError,
             match="The 'submission_period_cd' argument must be a non-empty string."):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config)
+
 
 # pylint: disable=W0621
 def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
@@ -228,12 +253,15 @@ def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
         template_version="1.0",
         last_modified="invalid"  # Should be a datetime object
     )
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
     with pytest.raises(ValueError, match="The 'last_modified' argument must be a datetime object."):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config)
 
 # pylint: disable=W0621
 def test_process_fout_sheets_empty_data(workbook_with_data, valid_context):
@@ -245,19 +273,17 @@ def test_process_fout_sheets_empty_data(workbook_with_data, valid_context):
     sheet = workbook_with_data["fOut_Sheet1"]
     sheet.delete_rows(0, 5)  # Remove all data rows
 
-    # with pytest.raises(ValueError, match="Sheet 'fOut_Sheet1' is empty or has no data."):
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(EmptyRowsPatternCheckError):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config)
 
-def convert_dataframe_to_rows(df, index=True, header=True):
-    """
-    Helper function to convert a pandas DataFrame to rows for openpyxl.
-    """
-    return dataframe_to_rows(df, index=index, header=header)
 
 def create_openpyxl_workbook(sheet_data):
     """
@@ -272,8 +298,8 @@ def create_openpyxl_workbook(sheet_data):
 
     for sheet_name, df in sheet_data.items():
         ws = wb.create_sheet(sheet_name)
-        # Write the DataFrame to the sheet
-        for row in convert_dataframe_to_rows(df, index=False, header=False):
+        # Write the DataFrame to the sheet including headers
+        for row in dataframe_to_rows(df, index=False, header=False):
             ws.append(row)
 
     return wb
@@ -282,12 +308,7 @@ def test_different_observation_periods():
     """
     Test case to check if the function handles cases where different 
     sheets have different observation periods.
-    
-    This test verifies that the function correctly handles sheets with
-    different sets of observation periods, ensuring that each sheet's
-    observation periods are melted properly without causing errors.
     """
-    # Create data for two sheets, each with different observation periods
     sheet_data = {
         'fOut_2023': pd.DataFrame({
             "Acronym": [None, "Acronym", None, "Ref1", "Ref2", "Ref3"],
@@ -309,7 +330,6 @@ def test_different_observation_periods():
         }),
     }
 
-    # Create an openpyxl workbook from the sheet data
     wb = create_openpyxl_workbook(sheet_data)
 
     observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
@@ -323,27 +343,30 @@ def test_different_observation_periods():
         last_modified=datetime(2025, 2, 11),
     )
 
-    # Process the file and get the result DataFrame
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     result_df = process_fout_sheets(
         wb,
         context,
-        observation_patterns,
-        fout_patterns)
+        config
+    )
 
-    # Check that all observation periods from both sheets are present
     expected_observation_periods = {"2020-21", "2021-22", "2022-23"}
     assert set(result_df["Observation_Period_Cd"]) == expected_observation_periods
 
-    # Check observation periods for each sheet
+    assert set(result_df[result_df["Sheet_Cd"]
+            ==
+        "fOut_2023"]["Observation_Period_Cd"]) == {"2020-21", "2021-22"}
     assert set(
-        result_df[result_df["Sheet_Cd"] == "fOut_2023"]["Observation_Period_Cd"]
-        ) == {"2020-21", "2021-22"}
-    assert set(
-        result_df[result_df["Sheet_Cd"] == "fOut_2024"]["Observation_Period_Cd"]
-        ) == {"2021-22", "2022-23"}
+        result_df[result_df["Sheet_Cd"]
+            ==
+        "fOut_2024"]["Observation_Period_Cd"]) == {"2021-22", "2022-23"}
 
-    # Check that the resulting DataFrame is not empty
     assert not result_df.empty
+
 
 # Test when context has invalid 'process_cd' (non-string or empty string)
 # pylint: disable=W0621
@@ -351,6 +374,14 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
     """
     Test case to check if the function raises an error when the 'process_cd' context is invalid.
     """
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    fout_patterns = ["^fOut_"]
+
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     # Test case where process_cd is an empty string
     invalid_context = ProcessingContext(
         org_cd="ORG001",
@@ -359,15 +390,13 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
-    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-    fout_patterns = ["^fOut_"]
 
     with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
     # Test case where process_cd is not a string (e.g., an integer)
     invalid_context = ProcessingContext(
@@ -382,9 +411,8 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
-
+            config
+        )
 
 # Test when context has invalid 'template_version' (non-string or empty string)
 # pylint: disable=W0621
@@ -393,6 +421,14 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
     Test case to check if the function raises an error
     when the 'template_version' context is invalid.
     """
+    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
+    fout_patterns = ["^fOut_"]
+
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     # Test case where template_version is an empty string
     invalid_context = ProcessingContext(
         org_cd="ORG001",
@@ -401,16 +437,14 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         template_version="",  # Invalid: empty string
         last_modified=datetime(2025, 3, 3)
     )
-    observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
-    fout_patterns = ["^fOut_"]
 
     with pytest.raises(ValueError,
             match="The 'template_version' argument must be a non-empty string."):
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
     # Test case where template_version is not a string (e.g., a number)
     invalid_context = ProcessingContext(
@@ -426,8 +460,8 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         process_fout_sheets(
             workbook_with_data,
             invalid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # Test when observation_patterns is not a list
 # pylint: disable=W0621
@@ -439,13 +473,18 @@ def test_process_fout_sheets_invalid_observation_patterns_not_list(
     invalid_observation_patterns = "invalid_pattern_string"  # Not a list
     fout_patterns = ["^fOut_"]
 
+    config = FoutProcessConfig(
+        observation_patterns=invalid_observation_patterns,  # Invalid type
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(ValueError,
             match="The 'observation_patterns' argument needs to be a list of regex strings."):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            invalid_observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # Test when observation_patterns contains elements that are not strings
 # pylint: disable=W0621
@@ -459,13 +498,18 @@ def test_process_fout_sheets_invalid_observation_patterns_non_string(
     invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', 1234]
     fout_patterns = ["^fOut_"]
 
+    config = FoutProcessConfig(
+        observation_patterns=invalid_observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(ValueError,
             match="The 'observation_patterns' argument needs to be a list of regex strings."):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            invalid_observation_patterns,
-            fout_patterns)
+            config
+        )
 
 # Test when observation_patterns contains invalid regex patterns
 # pylint: disable=W0621
@@ -478,13 +522,18 @@ def test_process_fout_sheets_invalid_observation_patterns_invalid_regex(
     invalid_observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$', r"[^"]
     fout_patterns = ["^fOut_"]
 
+    config = FoutProcessConfig(
+        observation_patterns=invalid_observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(ValueError,
             match="The 'observation_patterns' argument needs to be a list of regex strings."):
         process_fout_sheets(
             workbook_with_data,
             valid_context,
-            invalid_observation_patterns,
-            fout_patterns)
+            config
+        )
 
 @pytest.fixture
 def workbook_with_invalid_data():
@@ -500,21 +549,23 @@ def workbook_with_invalid_data():
 # pylint: disable=W0621
 def test_process_fout_sheets_no_valid_rows(workbook_with_invalid_data, valid_context):
     """
-    Test case to check that an error is raised when no valid rows remain after \
-        dropping NaN rows
+    Test case to check that an error is raised when no valid rows remain after 
+    dropping NaN rows
     """
     observation_patterns = [r'^\s*2[0-9]{3}-[1-9][0-9]\s*$']
     fout_patterns = ["^fOut_"]
 
-    # Process the sheet
-    # with pytest.raises(ValueError,
-    #         match="No valid data found after removing rows with NaN values."):
+    config = FoutProcessConfig(
+        observation_patterns=observation_patterns,
+        fout_patterns=fout_patterns,
+    )
+
     with pytest.raises(EmptyRowsPatternCheckError):
         process_fout_sheets(
             workbook_with_invalid_data,
             valid_context,
-            observation_patterns,
-            fout_patterns)
+            config
+        )
 
 def create_workbook_with_sheets(sheet_names):
     """Helper function to create workbook with sheets"""
@@ -528,52 +579,85 @@ def create_workbook_with_sheets(sheet_names):
     return wb
 
 def test_single_exact_pattern_match():
-    """Test pattern match 1 element"""
+    """Test pattern match with a single exact match"""
     wb = create_workbook_with_sheets(["fOut_test1", "data_sheet", "summary"])
-    matched = extract_fout_sheets(wb, [r"^fOut_"])
+
+    config = FoutProcessConfig(
+        observation_patterns=[],  # Not used in this test
+        fout_patterns=[r"^fOut_"]
+    )
+
+    matched = extract_fout_sheets(wb, config.fout_patterns)
     assert matched == ["fOut_test1"]
 
+
 def test_multiple_patterns_match():
-    """Test multiple patterns"""
+    """Test multiple regex patterns matching multiple sheets"""
     wb = create_workbook_with_sheets(
         [
             "fOut_test1",
             "data_sheet",
             "fOut_data",
             "results",
-            "data_export"])
-    matched = extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
+            "data_export"
+        ]
+    )
+
+    config = FoutProcessConfig(
+        observation_patterns=[],  # Not used in this test
+        fout_patterns=[r"^fOut_", r"^data_"]
+    )
+
+    matched = extract_fout_sheets(wb, config.fout_patterns)
     assert matched == ["fOut_test1", "data_sheet", "fOut_data", "data_export"]
 
+
 def test_no_matches_raises_value_error():
-    """Test non-matchin sheet names"""
+    """Test that ValueError is raised when no sheet names match the given patterns"""
     wb = create_workbook_with_sheets(
         [
             "summary",
             "results",
             "report"
-        ])
+        ]
+    )
+
+    config = FoutProcessConfig(
+        observation_patterns=[],  # Not used in this test
+        fout_patterns=[r"^fOut_", r"^data_"]
+    )
+
     with pytest.raises(ValueError, match="No sheets matching patterns"):
-        extract_fout_sheets(wb, [r"^fOut_", r"^data_"])
+        extract_fout_sheets(wb, config.fout_patterns)
 
 def test_case_sensitive_behavior():
-    """Test with case variance in name"""
+    """Test that pattern matching is case-sensitive"""
     wb = create_workbook_with_sheets(["fout_test", "FOUT_data", "fOut_valid"])
-    matched = extract_fout_sheets(wb, [r"^fOut_"])
+
+    config = FoutProcessConfig(
+        observation_patterns=[],  # Not relevant for this test
+        fout_patterns=[r"^fOut_"]
+    )
+
+    matched = extract_fout_sheets(wb, config.fout_patterns)
     assert matched == ["fOut_valid"]
 
 def test_partial_match_pattern():
-    """Partial matching within string"""
+    """Partial matching within string should not match since re.match is used"""
     wb = create_workbook_with_sheets(
         [
             "random_fOut_test",
             "pre_data_sheet",
             "info_fOut_data"
         ])
-    # Using a pattern that can match anywhere (re.search instead of re.match is needed for this)
-    # but since function uses re.match, these shouldn't match
-    with pytest.raises(ValueError):
-        extract_fout_sheets(wb, [r"fOut_"])
+
+    config = FoutProcessConfig(
+        observation_patterns=[],  # Not relevant here
+        fout_patterns=[r"fOut_"]
+    )
+
+    with pytest.raises(ValueError, match="No sheets matching patterns"):
+        extract_fout_sheets(wb, config.fout_patterns)
 
 def create_sheet_with_rows(wb, title, top_row=None, under_header_row=None):
     """Helper function for sheet with rows"""

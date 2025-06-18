@@ -7,6 +7,8 @@ process_fout_sheets
 import datetime
 import re
 import logging
+from typing import Optional
+from dataclasses import dataclass
 from collections import namedtuple
 from openpyxl.workbook.workbook import Workbook
 import pandas as pd
@@ -21,6 +23,27 @@ ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
                           'template_version', 'last_modified']
 )
+
+@dataclass
+class FoutProcessConfig:
+    """
+    Configuration options for processing fOut sheets in an Excel workbook.
+
+    Attributes:
+        observation_patterns (list[str]): List of regex patterns used to identify
+            observation period columns in the data sheets.
+        fout_patterns (list[str]): List of regex patterns to match sheet names
+            that should be processed.
+        column_rename_map (Optional[dict[str, str]]): Optional mapping dictionary to rename
+            columns from their source names to standardized output names.
+            If None, a default mapping will be used.
+        run_validations (bool): Flag to determine whether to run validation checks on
+            sheets (e.g., empty row checks, header validations). Defaults to True.
+    """
+    observation_patterns: list[str]
+    fout_patterns: list[str]
+    column_rename_map: Optional[dict[str, str]] = None
+    run_validations: bool = True
 
 def is_valid_regex(pattern: str) -> bool:
     """
@@ -134,9 +157,23 @@ def process_observation_columns(df: pd.DataFrame, observation_patterns: list[str
         observation_period_columns += list(df.filter(regex=observation_pattern).columns.tolist())
     return set(observation_period_columns)
 
-def process_df(df: pd.DataFrame, context: ProcessingContext, observation_patterns: list[str]):
+def process_df(
+    df: pd.DataFrame,
+    context: ProcessingContext,
+    observation_patterns: list[str],
+    column_rename_map: dict[str, str],
+) -> pd.DataFrame:
     """
     Processes a single dataframe by melting it and adding context columns.
+
+    Args:
+        df (pd.DataFrame): The input dataframe to process.
+        context (ProcessingContext): The processing context with metadata.
+        observation_patterns (list[str]): Regex patterns to identify observation columns.
+        column_rename_map (dict[str, str]): Mapping from original to final column names.
+
+    Returns:
+        pd.DataFrame: The processed and reshaped dataframe.
     """
     observation_period_columns = process_observation_columns(df, observation_patterns)
     if not observation_period_columns:
@@ -147,7 +184,7 @@ def process_df(df: pd.DataFrame, context: ProcessingContext, observation_pattern
 
     # Pivot the DataFrame to melt observation period columns into rows
     pivoted_df = df.melt(
-        id_vars=id_columns,
+        id_vars=list(id_columns),
         var_name="Observation_Period_Cd",
         value_name="Measure_Value"
     )
@@ -164,25 +201,7 @@ def process_df(df: pd.DataFrame, context: ProcessingContext, observation_pattern
     # Convert all columns to strings for consistency
     pivoted_df = pivoted_df.astype(str)
 
-    # Define a mapping for renaming columns to the final desired format
-    column_rename_map = {
-        'Organisation_Cd': 'Organisation_Cd',
-        'Submission_Period_Cd': 'Submission_Period_Cd',
-        'Observation_Period_Cd': 'Observation_Period_Cd',
-        'Process_Cd': 'Process_Cd',
-        'Template_Version': 'Template_Version',
-        'Sheet_Cd': 'Sheet_Cd',
-        'Reference': 'Measure_Cd',
-        'Measure_Value': 'Measure_Value',
-        'Item description': 'Measure_Desc',
-        'Unit': 'Measure_Unit',
-        'Model': 'Model_Cd',
-        'Submission_Date': 'Submission_Date',
-        "Section_Cd": "Section_Cd",
-        "Cell_Cd": "Cell_Cd",
-    }
-
-    # Rename the columns according to the mapping
+    # Rename the columns according to the provided mapping
     pivoted_df = pivoted_df.rename(columns=column_rename_map)
 
     # Reorder the columns to match the desired output format
@@ -190,6 +209,7 @@ def process_df(df: pd.DataFrame, context: ProcessingContext, observation_pattern
     pivoted_df = pivoted_df[ordered_columns]
 
     return pivoted_df
+
 
 def check_empty_rows(wb: Workbook, sheet_names: list[str]):
     # pylint: disable=C0301
@@ -290,93 +310,82 @@ def check_column_headers(wb: Workbook, sheet_names: list[str]):
 
     return True
 
+def get_default_column_rename_map() -> dict[str, str]:
+    """
+    Returns the default mapping dictionary for renaming dataframe columns.
+
+    This mapping translates original column names from the input data
+    into the standardized output column names used in the processed DataFrame.
+
+    Returns:
+        dict[str, str]: A dictionary where keys are original column names,
+                        and values are the corresponding standardized column names.
+    """
+    return {
+        'Organisation_Cd': 'Organisation_Cd',
+        'Submission_Period_Cd': 'Submission_Period_Cd',
+        'Observation_Period_Cd': 'Observation_Period_Cd',
+        'Process_Cd': 'Process_Cd',
+        'Template_Version': 'Template_Version',
+        'Sheet_Cd': 'Sheet_Cd',
+        'Reference': 'Measure_Cd',
+        'Measure_Value': 'Measure_Value',
+        'Item description': 'Measure_Desc',
+        'Unit': 'Measure_Unit',
+        'Model': 'Model_Cd',
+        'Submission_Date': 'Submission_Date',
+        "Section_Cd": "Section_Cd",
+        "Cell_Cd": "Cell_Cd",
+    }
 
 def process_fout_sheets(
         wb: Workbook,
         context: ProcessingContext,
-        observation_patterns: list[str],
-        fout_patterns: list[str],
-        ):
+        config: FoutProcessConfig,
+    ) -> pd.DataFrame:
+    # pylint: disable=C0301
     """
-    Processes all sheets in the given Excel workbook that start with 'fOut_' and extracts 
-    data into a pandas DataFrame. Each sheet is expected to have columns representing 
-    observations for various periods, and the function performs a transformation to normalize 
-    the data into a consistent format.
+    Processes all sheets in the given Excel workbook matching the specified patterns,
+    transforming and normalizing their data into a consolidated DataFrame.
 
     Args:
-        wb (openpyxl.workbook.workbook.Workbook): The openpyxl Workbook object
-            containing the data to process.
-        context (ProcessingContext): The context object containing the organization code, 
-                                     submission period code, process code, template version, 
-                                     and last modified timestamp.
-        observation_patterns (list[str]): A list of regular expression patterns
-            used to match columns representing observation periods in the data.
-        fout_patterns (list[str]): A list of regex patterns to match sheet names.
+        wb (Workbook): The openpyxl Workbook object.
+        context (ProcessingContext): Processing context metadata.
+        config (FoutProcessConfig): Configuration options including patterns, column mapping, and validation flag.
 
     Returns:
-        pd.DataFrame: A pandas DataFrame containing the processed data from all matching sheets, 
-                      with columns like 'Organisation_Cd', 'Observation_Period_Cd', 'Measure_Value', 
-                      and other related columns.
-
-    Raises:
-        ValueError: If any of the input values are invalid, if no matching sheets are found, 
-                    if no observation period columns are found, or if no valid data is found after 
-                    dropping NaN rows.
-        TypeError: If the provided workbook is not of the correct type
-            (i.e., not an openpyxl Workbook).
-        Exception: For any other unexpected errors.
-
-    Example:
-        # Assuming 'wb' is a valid openpyxl Workbook and 'context' 
-        # is a valid ProcessingContext object
-        wb = openpyxl.load_workbook("data.xlsx")
-        context = ProcessingContext(
-            org_cd="ORG001",
-            submission_period_cd="2025Q1",
-            process_cd="PROCESS01",
-            template_version="v1.0",
-            last_modified=datetime.datetime(2025, 3, 4, 10, 30)
-        )
-        # Regex pattern to match observation period columns
-        observation_patterns = [r"^ObsPeriod_\\d+$"]
-
-        # Call the function
-        processed_data = process_fout_sheets(wb, context, observation_patterns)
-
-        # The result will be a DataFrame containing the processed data
-        print(processed_data.head())  # Prints the first few rows of the processed DataFrame
+        pd.DataFrame: The consolidated processed DataFrame.
     """
-
     # Validate inputs
     validate_workbook(wb)
     validate_context(context)
-    validate_observation_patterns(observation_patterns)
+    validate_observation_patterns(config.observation_patterns)
 
-    # Check if the workbook is in data_only mode (warn if not)
     if not wb.data_only:
         logging.warning("Reading in non data_only mode. Some data may not be accessible.")
 
-    logging.info("Using observation patterns: %s", observation_patterns)
+    logging.info("Using observation patterns: %s", config.observation_patterns)
 
-    # Extract sheets that start with 'fOut_'
-    fout_sheets = extract_fout_sheets(wb, fout_patterns)
+    # Extract sheets matching the patterns
+    fout_sheets = extract_fout_sheets(wb, config.fout_patterns)
 
-    # Check if fOut tabs follow expected pattern with empty rows
-    assert check_empty_rows(wb, fout_sheets)
+    if config.run_validations:
+        # Run validations conditionally
+        assert check_empty_rows(wb, fout_sheets)
+        assert check_column_headers(wb, fout_sheets)
 
-    # Check that columns exist and in correct order
-    assert check_column_headers(wb, fout_sheets)
-
-    # Read data from the sheets
+    # Read and clean data
     df_list = read_sheets_data(wb, fout_sheets)
-
-    # Clean data by dropping rows with NaN values and checking for empty DataFrames
     df_list = clean_data(df_list)
 
-    # Process each DataFrame and collect the results
-    melted_dfs = [process_df(df, context, observation_patterns) for df in df_list]
+    # Use default mapping if none provided
+    column_rename_map = config.column_rename_map or get_default_column_rename_map()
 
-    # Concatenate all the melted DataFrames into one final DataFrame
+    # Process each DataFrame with the mapping
+    melted_dfs = [
+        process_df(df, context, config.observation_patterns, column_rename_map)
+        for df in df_list
+    ]
+
     final_df = pd.concat(melted_dfs, ignore_index=True)
-
     return final_df
