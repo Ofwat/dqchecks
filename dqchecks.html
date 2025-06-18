@@ -1484,7 +1484,7 @@ Main function being:</p>
 <p>process_fout_sheets</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">FoutProcessConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_validations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig" title="Link to this definition">¶</a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">FoutProcessConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_validations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reshape</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Configuration options for processing fOut sheets in an Excel workbook.</p>
 <dl class="py attribute">
@@ -1539,11 +1539,22 @@ sheets (e.g., empty row checks, header validations). Defaults to True.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.skip_rows">
 <span class="sig-name descname"><span class="pre">skip_rows</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.skip_rows" title="Link to this definition">¶</a></dt>
-<dd><p>Number of rows to skip from of the sheet when loading.
-Default is set to 2.</p>
+<dd><p>Number of rows to skip from the sheet when loading. Defaults to 2.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.reshape">
+<span class="sig-name descname"><span class="pre">reshape</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.reshape" title="Link to this definition">¶</a></dt>
+<dd><p>Whether to reshape the data using melt (long format). If False,
+data remains in wide format. Defaults to True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1565,12 +1576,17 @@ Default is set to 2.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="id20">
-<span class="sig-name descname"><span class="pre">run_validations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#id20" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">reshape</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#id20" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="id21">
-<span class="sig-name descname"><span class="pre">skip_rows</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#id21" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">run_validations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#id21" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id22">
+<span class="sig-name descname"><span class="pre">skip_rows</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#id22" title="Link to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -1703,6 +1719,27 @@ Default is set to 2.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.finalize_dataframe">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">finalize_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.finalize_dataframe" title="Link to this definition">¶</a></dt>
+<dd><p>Adds context columns, renames columns based on the mapping, and reorders columns.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – The DataFrame to finalize.</p></li>
+<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – Context metadata to embed into the DataFrame.</p></li>
+<li><p><strong>column_rename_map</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Mapping from original to standardized column names.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Finalized and standardized DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.get_default_column_rename_map">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">get_default_column_rename_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#dqchecks.transforms.get_default_column_rename_map" title="Link to this definition">¶</a></dt>
 <dd><p>Returns the default mapping dictionary for renaming dataframe columns.</p>
@@ -1776,7 +1813,8 @@ transforming and normalizing their data into a consolidated DataFrame.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>wb</strong> (<em>Workbook</em>) – The openpyxl Workbook object.</p></li>
 <li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – Processing context metadata.</p></li>
-<li><p><strong>config</strong> (<a class="reference internal" href="#dqchecks.transforms.FoutProcessConfig" title="dqchecks.transforms.FoutProcessConfig"><em>FoutProcessConfig</em></a>) – Configuration options including patterns, column mapping, and validation flag.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#dqchecks.transforms.FoutProcessConfig" title="dqchecks.transforms.FoutProcessConfig"><em>FoutProcessConfig</em></a>) – Configuration options including patterns, column mapping,
+and reshape flag.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
@@ -1829,7 +1867,7 @@ transforming and normalizing their data into a consolidated DataFrame.</p>
 <p>All known columns are initialized. Columns for which values are not supplied
 will be set to None.</p>
 <p>Parameters:
-<a href="#id22"><span class="problematic" id="id23">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
+<a href="#id23"><span class="problematic" id="id24">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
 <blockquote>
 <div><p>to populate in the DataFrame. Only predefined column names are allowed.</p>
 </div></blockquote>
