@@ -42,7 +42,7 @@ class ColumnHeaderValidationError(Exception):
     def __init__(self, sheet_names, expected_columns):
         message = (
             f"Column header validation failed in sheets: {sheet_names}. "
-            f"Expected columns (in order): {expected_columns}"
+            f"Expected columns (in order and matching case): {expected_columns}"
         )
         super().__init__(message)
         self.sheet_names = sheet_names
