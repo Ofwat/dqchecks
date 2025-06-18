@@ -1483,6 +1483,82 @@ If no errors, this will be an empty dictionary.</p></li>
 Main function being:</p>
 <p>process_fout_sheets</p>
 <dl class="py class">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">FoutProcessConfig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run_validations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Configuration options for processing fOut sheets in an Excel workbook.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.observation_patterns">
+<span class="sig-name descname"><span class="pre">observation_patterns</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.observation_patterns" title="Link to this definition">¶</a></dt>
+<dd><p>List of regex patterns used to identify
+observation period columns in the data sheets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.fout_patterns">
+<span class="sig-name descname"><span class="pre">fout_patterns</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.fout_patterns" title="Link to this definition">¶</a></dt>
+<dd><p>List of regex patterns to match sheet names
+that should be processed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.column_rename_map">
+<span class="sig-name descname"><span class="pre">column_rename_map</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.column_rename_map" title="Link to this definition">¶</a></dt>
+<dd><p>Optional mapping dictionary to rename
+columns from their source names to standardized output names.
+If None, a default mapping will be used.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Optional[dict[str, str]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dqchecks.transforms.FoutProcessConfig.run_validations">
+<span class="sig-name descname"><span class="pre">run_validations</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.run_validations" title="Link to this definition">¶</a></dt>
+<dd><p>Flag to determine whether to run validation checks on
+sheets (e.g., empty row checks, header validations). Defaults to True.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id17">
+<span class="sig-name descname"><span class="pre">column_rename_map</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#id17" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id18">
+<span class="sig-name descname"><span class="pre">fout_patterns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id18" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id19">
+<span class="sig-name descname"><span class="pre">observation_patterns</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#id19" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="id20">
+<span class="sig-name descname"><span class="pre">run_validations</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#id20" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="dqchecks.transforms.ProcessingContext">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">ProcessingContext</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">org_cd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">submission_period_cd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">process_cd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">template_version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_modified</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.ProcessingContext" title="Link to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></p>
@@ -1610,6 +1686,26 @@ Main function being:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.get_default_column_rename_map">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">get_default_column_rename_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#dqchecks.transforms.get_default_column_rename_map" title="Link to this definition">¶</a></dt>
+<dd><p>Returns the default mapping dictionary for renaming dataframe columns.</p>
+<p>This mapping translates original column names from the input data
+into the standardized output column names used in the processed DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p><dl class="simple">
+<dt>A dictionary where keys are original column names,</dt><dd><p>and values are the corresponding standardized column names.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.is_valid_regex">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">is_valid_regex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#dqchecks.transforms.is_valid_regex" title="Link to this definition">¶</a></dt>
 <dd><p>Check if a given string is a valid regex</p>
@@ -1617,71 +1713,46 @@ Main function being:</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.process_df">
-<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.process_df" title="Link to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.process_df" title="Link to this definition">¶</a></dt>
 <dd><p>Processes a single dataframe by melting it and adding context columns.</p>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="dqchecks.transforms.process_fout_sheets">
-<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_fout_sheets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.process_fout_sheets" title="Link to this definition">¶</a></dt>
-<dd><p>Processes all sheets in the given Excel workbook that start with ‘<a href="#id19"><span class="problematic" id="id20">fOut_</span></a>’ and extracts
-data into a pandas DataFrame. Each sheet is expected to have columns representing
-observations for various periods, and the function performs a transformation to normalize
-the data into a consistent format.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>wb</strong> (<em>openpyxl.workbook.workbook.Workbook</em>) – The openpyxl Workbook object
-containing the data to process.</p></li>
-<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – The context object containing the organization code,
-submission period code, process code, template version,
-and last modified timestamp.</p></li>
-<li><p><strong>observation_patterns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – A list of regular expression patterns
-used to match columns representing observation periods in the data.</p></li>
-<li><p><strong>fout_patterns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – A list of regex patterns to match sheet names.</p></li>
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – The input dataframe to process.</p></li>
+<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – The processing context with metadata.</p></li>
+<li><p><strong>observation_patterns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Regex patterns to identify observation columns.</p></li>
+<li><p><strong>column_rename_map</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Mapping from original to final column names.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl class="simple">
-<dt>A pandas DataFrame containing the processed data from all matching sheets,</dt><dd><p>with columns like ‘Organisation_Cd’, ‘Observation_Period_Cd’, ‘Measure_Value’,
-and other related columns.</p>
-</dd>
-</dl>
-</p>
+<dd class="field-even"><p>The processed and reshaped dataframe.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pd.DataFrame</p>
 </dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If any of the input values are invalid, if no matching sheets are found,
-    if no observation period columns are found, or if no valid data is found after
-    dropping NaN rows.</p></li>
-<li><p><strong>TypeError</strong> – If the provided workbook is not of the correct type
-    (i.e., not an openpyxl Workbook).</p></li>
-<li><p><strong>Exception</strong> – For any other unexpected errors.</p></li>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.process_fout_sheets">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_fout_sheets</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.FoutProcessConfig" title="dqchecks.transforms.FoutProcessConfig"><span class="pre">FoutProcessConfig</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.process_fout_sheets" title="Link to this definition">¶</a></dt>
+<dd><p>Processes all sheets in the given Excel workbook matching the specified patterns,
+transforming and normalizing their data into a consolidated DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>wb</strong> (<em>Workbook</em>) – The openpyxl Workbook object.</p></li>
+<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – Processing context metadata.</p></li>
+<li><p><strong>config</strong> (<a class="reference internal" href="#dqchecks.transforms.FoutProcessConfig" title="dqchecks.transforms.FoutProcessConfig"><em>FoutProcessConfig</em></a>) – Configuration options including patterns, column mapping, and validation flag.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The consolidated processed DataFrame.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
 </dl>
-<p class="rubric">Example</p>
-<p># Assuming ‘wb’ is a valid openpyxl Workbook and ‘context’
-# is a valid ProcessingContext object
-wb = openpyxl.load_workbook(“data.xlsx”)
-context = ProcessingContext(</p>
-<blockquote>
-<div><p>org_cd=”ORG001”,
-submission_period_cd=”2025Q1”,
-process_cd=”PROCESS01”,
-template_version=”v1.0”,
-last_modified=datetime.datetime(2025, 3, 4, 10, 30)</p>
-</div></blockquote>
-<p>)
-# Regex pattern to match observation period columns
-observation_patterns = [r”^ObsPeriod_d+$”]</p>
-<p># Call the function
-processed_data = process_fout_sheets(wb, context, observation_patterns)</p>
-<p># The result will be a DataFrame containing the processed data
-print(processed_data.head())  # Prints the first few rows of the processed DataFrame</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1725,7 +1796,7 @@ print(processed_data.head())  # Prints the first few rows of the processed DataF
 <p>All known columns are initialized. Columns for which values are not supplied
 will be set to None.</p>
 <p>Parameters:
-<a href="#id17"><span class="problematic" id="id18">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
+<a href="#id21"><span class="problematic" id="id22">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
 <blockquote>
 <div><p>to populate in the DataFrame. Only predefined column names are allowed.</p>
 </div></blockquote>
