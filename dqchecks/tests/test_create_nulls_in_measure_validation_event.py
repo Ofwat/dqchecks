@@ -13,6 +13,7 @@ valid_metadata = {
     "Process_Cd": "pr24bpt",
     "Template_Version": "1.0",
     "Organisation_Cd": "ORG123",
+    "Validation_Processing_Stage":"Validation_Processing_Stage",
 }
 
 

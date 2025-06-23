@@ -1720,7 +1720,8 @@ def create_nulls_in_measure_validation_event(
         Process_Cd=metadata.get("Process_Cd", missing_text_string),
         Template_Version=metadata.get("Template_Version", missing_text_string),
         Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
-        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Validation_Processing_Stage=
+            metadata.get("Validation_Processing_Stage", missing_text_string),
         Rule_Cd='Nulls in either Measure_Cd, Measure_Desc or Measure_Unit',
         Error_Desc=nulls_in_pk_message,
     )
@@ -1796,7 +1797,8 @@ def create_same_desc_diff_boncode_validation_event(
         Process_Cd=metadata.get("Process_Cd", missing_text_string),
         Template_Version=metadata.get("Template_Version", missing_text_string),
         Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
-        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Validation_Processing_Stage=
+            metadata.get("Validation_Processing_Stage", missing_text_string),
         Rule_Cd='Rule 1 - Boncode-Description Consistency',
         Error_Category='Same description, different boncodes',
         Error_Severity_Cd='soft',
@@ -1871,7 +1873,8 @@ def create_same_boncode_diff_desc_validation_event(
         Process_Cd=metadata.get("Process_Cd", missing_text_string),
         Template_Version=metadata.get("Template_Version", missing_text_string),
         Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
-        Validation_Processing_Stage='Excel-Based Validation Rule',
+        Validation_Processing_Stage=
+            metadata.get("Validation_Processing_Stage", missing_text_string),
         Rule_Cd='Rule 1 - Boncode-Description Consistency',
         Error_Category='Same boncode, different description',
         Error_Severity_Cd='soft',
@@ -1935,7 +1938,7 @@ def create_process_model_mapping_validation_event(
             Process_Cd=metadata.get("Process_Cd", "--missing--"),
             Template_Version=metadata.get("Template_Version", "--missing--"),
             Organisation_Cd=metadata.get("Organisation_Cd", "--missing--"),
-            Validation_Processing_Stage='Excel-Based Validation Rule',
+            Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", "--missing--"),
             Rule_Cd='Exactly one mapping between process and model names',
             # pylint: disable=C0301
             Error_Desc=f"Expected exactly 1 unique mapping between Model_Cd and Process_Cd, observed {unique_pairs.shape[0]} ... {combined_error_string}",
@@ -1964,7 +1967,7 @@ def create_process_model_mapping_validation_event(
             Process_Cd=metadata.get("Process_Cd", "--missing--"),
             Template_Version=metadata.get("Template_Version", "--missing--"),
             Organisation_Cd=metadata.get("Organisation_Cd", "--missing--"),
-            Validation_Processing_Stage='Excel-Based Validation Rule',
+            Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", "--missing--"),
             Rule_Cd='Model matching process mapping',
             # pylint: disable=C0301
             Error_Desc=f"Expected '{expected_model_cd}' for {observed_process_cd} observed {observed_model_cd}",

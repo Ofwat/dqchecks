@@ -14,7 +14,8 @@ def valid_metadata():
         "Submission_Period_Cd": "202401",
         "Process_Cd": "PROC1",
         "Template_Version": "v1.0",
-        "Organisation_Cd": "ORGX"
+        "Organisation_Cd": "ORGX",
+        "Validation_Processing_Stage": "Validation_Processing_Stage",
     }
 
 
