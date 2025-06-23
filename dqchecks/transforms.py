@@ -258,11 +258,12 @@ def check_empty_rows(wb: Workbook, sheet_names: list[str]):
         if set(under_header_row_vals) not in [{None}, {"", None}, {""}]:
             under_header_bad_sheet_names.append(sheet_name)
 
-        # Check top row (row 1), with 3rd element removed
+        # Check top row (row 1), with 3rd and 2nd element removed
         top_row = sheet.iter_rows(min_row=1, values_only=True)
         top_row_vals = list(next(top_row, []))
         if len(top_row_vals) > 2:
-            del top_row_vals[2]
+            del top_row_vals[2] # Remove C1
+            del top_row_vals[1] # Remove B1
         if set(top_row_vals) not in [{None}, {"", None}, {""}]:
             top_row_bad_sheet_names.append(sheet_name)
 

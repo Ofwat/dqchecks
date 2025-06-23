@@ -708,7 +708,7 @@ def test_non_empty_top_row_raises():
     create_sheet_with_rows(
         wb,
         "BadTopRow",
-        top_row=[None, 1, None],
+        top_row=[1, None, None],
         under_header_row=[None, None, None])
 
     with pytest.raises(EmptyRowsPatternCheckError) as exc_info:
