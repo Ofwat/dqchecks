@@ -366,8 +366,10 @@ def finalize_dataframe(
     df["Process_Cd"] = context.process_cd
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
-    df["Section_Cd"] = "--placeholder--"
-    df["Cell_Cd"] = "--placeholder--"
+    if "Cell_Cd" not in df.columns:
+        df["Cell_Cd"] = "--placeholder--"
+    if "Section_Cd" not in df.columns:
+        df["Section_Cd"] = "--placeholder--"
 
     df = df.astype(str)
     df = df.rename(columns=column_rename_map)

@@ -16,7 +16,8 @@ from dqchecks.transforms import (
     read_sheets_data,
     clean_data,
     check_column_headers,
-    get_qd_column_rename_map,)
+    get_qd_column_rename_map,
+    finalize_dataframe,)
 from dqchecks.exceptions import (
     EmptyRowsPatternCheckError,
     ColumnHeaderValidationError,
@@ -884,3 +885,70 @@ def test_get_qd_column_rename_map_types_and_length():
     # Check expected number of keys (should match the number of entries)
     expected_length = 14
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
+
+@pytest.fixture
+def context():
+    return ProcessingContext(
+        org_cd="ORG1",
+        submission_period_cd="2024Q4",
+        process_cd="PROC123",
+        template_version="v1.0",
+        last_modified="2025-06-23"
+    )
+
+@pytest.fixture
+def rename_map():
+    return {
+        "Event_Id": "event_id",
+        "Cell_Cd": "cell_code",
+        "Section_Cd": "section_code",
+        "Organisation_Cd": "org_code",
+    }
+
+def test_finalize_with_all_columns(context, rename_map):
+    df = pd.DataFrame({
+        "Event_Id": ["E1"],
+        "Cell_Cd": ["C1"],
+        "Section_Cd": ["S1"]
+    })
+    result = finalize_dataframe(df.copy(), context, rename_map)
+
+    # Check that placeholder logic did not overwrite existing data
+    assert result.loc[0, "cell_code"] == "C1"
+    assert result.loc[0, "section_code"] == "S1"
+
+    # Check context fields added
+    assert result.loc[0, "org_code"] == "ORG1"
+
+def test_finalize_missing_Cell_Cd(context, rename_map):
+    df = pd.DataFrame({
+        "Event_Id": ["E1"],
+        "Section_Cd": ["S1"]
+    })
+    result = finalize_dataframe(df.copy(), context, rename_map)
+
+    assert result.loc[0, "cell_code"] == "--placeholder--"
+    assert result.loc[0, "section_code"] == "S1"
+
+def test_finalize_missing_Section_Cd(context, rename_map):
+    df = pd.DataFrame({
+        "Event_Id": ["E1"],
+        "Cell_Cd": ["C1"]
+    })
+    result = finalize_dataframe(df.copy(), context, rename_map)
+
+    assert result.loc[0, "cell_code"] == "C1"
+    assert result.loc[0, "section_code"] == "--placeholder--"
+
+def test_renamed_and_ordered_columns(context, rename_map):
+    df = pd.DataFrame({
+        "Event_Id": ["E1"],
+        "Cell_Cd": ["C1"],
+        "Section_Cd": ["S1"]
+    })
+    result = finalize_dataframe(df.copy(), context, rename_map)
+
+    # Check column ordering matches rename_map values
+    expected_cols = ["event_id", "cell_code", "section_code", "org_code"]
+    actual_cols = list(result.columns)
+    assert actual_cols == expected_cols
