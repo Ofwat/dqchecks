@@ -200,8 +200,10 @@ def process_df(
     pivoted_df["Process_Cd"] = context.process_cd
     pivoted_df["Template_Version"] = context.template_version
     pivoted_df["Submission_Date"] = context.last_modified  # Use the last modified date
-    pivoted_df["Section_Cd"] = "--placeholder--"
-    pivoted_df["Cell_Cd"] = "--placeholder--"
+    if "Cell_Cd" not in pivoted_df.columns:
+        pivoted_df["Cell_Cd"] = "--placeholder--"
+    if "Section_Cd" not in pivoted_df.columns:
+        pivoted_df["Section_Cd"] = "--placeholder--"
 
     # Convert all columns to strings for consistency
     pivoted_df = pivoted_df.astype(str)
