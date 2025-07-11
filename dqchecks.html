@@ -838,41 +838,11 @@ print(result)</p>
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">compare_formulas</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sheet1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.panacea.compare_formulas" title="Link to this definition">¶</a></dt>
 <dd><p>Compares the formulas between two openpyxl worksheet objects.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>sheet1</strong> (<em>openpyxl.worksheet.worksheet.Worksheet</em>) – The first worksheet to compare.</p></li>
-<li><p><strong>sheet2</strong> (<em>openpyxl.worksheet.worksheet.Worksheet</em>) – The second worksheet to compare.</p></li>
-</ul>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary with status, description, and any differences.</p>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><dl>
-<dt>A dictionary with status, description, and any differences:</dt><dd><ul class="simple">
-<li><dl class="simple">
-<dt>If formulas are equivalent: {</dt><dd><p>“status”: “Ok”,
-“description”: “All formulas are equivalent”,
-“errors”: {}</p>
-</dd>
-</dl>
-</li>
-</ul>
-<p>}
-- If formulas differ: {</p>
-<blockquote>
-<div><p>”status”: “Error”,
-“description”: “Found formula differences”,
-“errors”: {</p>
-<blockquote>
-<div><p>”Cell_Name”: [“Sheet1!A1”]
-}</p>
-</div></blockquote>
-<p>}</p>
-</div></blockquote>
-</dd>
-</dl>
-</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
 </dd>
 </dl>
 </dd></dl>
