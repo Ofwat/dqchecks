@@ -424,67 +424,51 @@ def compare_formulas(sheet1, sheet2):
     """
     Compares the formulas between two openpyxl worksheet objects.
 
-    Arguments:
-        sheet1 (openpyxl.worksheet.worksheet.Worksheet): The first worksheet to compare.
-        sheet2 (openpyxl.worksheet.worksheet.Worksheet): The second worksheet to compare.
-
     Returns:
-        dict: A dictionary with status, description, and any differences:
-            - If formulas are equivalent: {
-                "status": "Ok",
-                "description": "All formulas are equivalent",
-                "errors": {}
-            }
-            - If formulas differ: {
-                "status": "Error",
-                "description": "Found formula differences",
-                "errors": {
-                    "Cell_Name": ["Sheet1!A1"]
-                    }
-                }
+        dict: A dictionary with status, description, and any differences.
     """
-    # Validate input types
     if not isinstance(sheet1, Worksheet) or not isinstance(sheet2, Worksheet):
         raise ValueError("Both inputs must be valid openpyxl worksheet objects.")
 
-    # Check if the sheets have the same number of rows and columns
     shape1 = get_used_area(sheet1)
     shape1.validate()
-    rows1, cols1 = shape1.last_used_row, shape1.last_used_column
     shape2 = get_used_area(sheet2)
     shape2.validate()
-    rows2, cols2 = shape2.last_used_row, shape2.last_used_column
 
-    if (rows1, cols1) != (rows2, cols2):
+    if (shape1.last_used_row, shape1.last_used_column) !=\
+        (shape2.last_used_row, shape2.last_used_column):
         return {
             "status": "Error",
-            "description": f"Sheets have different dimensions: '{sheet1.title}' "+\
-                f"in template has {rows1} rows & {cols1} columns, '{sheet2.title}' "+\
-                    f"in company has {rows2} rows & {cols2} columns.",
+            "description": (
+                f"Sheets have different dimensions: '{sheet1.title}' in template has "
+                f"{shape1.last_used_row} rows & {shape1.last_used_column} columns, "
+                f"'{sheet2.title}' in company has {shape2.last_used_row} rows & "
+                f"{shape2.last_used_column} columns."
+            ),
             "errors": {}
         }
 
-    # Dictionary to hold differing cells, grouped by their names
     differing_cells = {}
 
-    # Compare formulas cell by cell
-    for row in range(1, rows1 + 1):
-        for col in range(1, cols1 + 1):
-            cell1 = sheet1.cell(row=row, column=col)
-            cell2 = sheet2.cell(row=row, column=col)
+    for row in range(1, shape1.last_used_row + 1):
+        for col in range(1, shape1.last_used_column + 1):
+            c1, c2 = sheet1.cell(row=row, column=col), sheet2.cell(row=row, column=col)
 
-            # Check if both cells contain formulas (we check if cell.value starts with '=')
-            if isinstance(cell1.value, str) and cell1.value.startswith('=') and \
-               isinstance(cell2.value, str) and cell2.value.startswith('='):
-                if cell1.value != cell2.value:
-                    cell_name = f"{get_column_letter(col)}{row}"
-                    # Add the differing cell to the dictionary, grouped by the cell name
-                    if cell_name not in differing_cells:
-                        differing_cells[cell_name] = []
-                    differing_cells[cell_name].append(f"Template: {sheet1.title}!{cell_name} "+\
-                        f"({cell1.value}) != {sheet2.title}!{cell_name} ({cell2.value}) :Company")
+            is_f1, is_f2 = c1.data_type == "f", c2.data_type == "f"
 
-    # If there are differences in formulas, return detailed message
+            if is_f1 and is_f2 and c1.value != c2.value:
+                differing_cells.setdefault(f"{get_column_letter(col)}{row}", []).append(
+                    f"Template: {sheet1.title}!{get_column_letter(col)}{row} ({c1.value}) "
+                    f"!= {sheet2.title}!{get_column_letter(col)}{row} ({c2.value}) :Company"
+                )
+            elif is_f1 != is_f2:
+                val1 = f"Formula: {c1.value}" if is_f1 else f"Value: {c1.value}"
+                val2 = f"Formula: {c2.value}" if is_f2 else f"Value: {c2.value}"
+                differing_cells.setdefault(f"{get_column_letter(col)}{row}", []).append(
+                    f"Template: {sheet1.title}!{get_column_letter(col)}{row} ({val1}) "
+                    f"!= {sheet2.title}!{get_column_letter(col)}{row} ({val2}) :Company"
+                )
+
     if differing_cells:
         return {
             "status": "Error",
@@ -492,13 +476,11 @@ def compare_formulas(sheet1, sheet2):
             "errors": differing_cells
         }
 
-    # If all formulas are equivalent
     return {
         "status": "Ok",
         "description": "All formulas are equivalent",
         "errors": {}
     }
-
 
 def check_formula_errors(sheet):
     """

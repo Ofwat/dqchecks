@@ -888,6 +888,7 @@ def test_get_qd_column_rename_map_types_and_length():
 
 @pytest.fixture
 def context():
+    """context"""
     return ProcessingContext(
         org_cd="ORG1",
         submission_period_cd="2024Q4",
@@ -898,6 +899,7 @@ def context():
 
 @pytest.fixture
 def rename_map():
+    """rename_map"""
     return {
         "Event_Id": "event_id",
         "Cell_Cd": "cell_code",
@@ -906,6 +908,7 @@ def rename_map():
     }
 
 def test_finalize_with_all_columns(context, rename_map):
+    """test_finalize_with_all_columns"""
     df = pd.DataFrame({
         "Event_Id": ["E1"],
         "Cell_Cd": ["C1"],
@@ -920,7 +923,8 @@ def test_finalize_with_all_columns(context, rename_map):
     # Check context fields added
     assert result.loc[0, "org_code"] == "ORG1"
 
-def test_finalize_missing_Cell_Cd(context, rename_map):
+def test_finalize_missing_cell_cd(context, rename_map):
+    """test_finalize_missing_Cell_Cd"""
     df = pd.DataFrame({
         "Event_Id": ["E1"],
         "Section_Cd": ["S1"]
@@ -930,7 +934,8 @@ def test_finalize_missing_Cell_Cd(context, rename_map):
     assert result.loc[0, "cell_code"] == "--placeholder--"
     assert result.loc[0, "section_code"] == "S1"
 
-def test_finalize_missing_Section_Cd(context, rename_map):
+def test_finalize_missing_section_cd(context, rename_map):
+    """test_finalize_missing_Section_Cd"""
     df = pd.DataFrame({
         "Event_Id": ["E1"],
         "Cell_Cd": ["C1"]
@@ -941,6 +946,7 @@ def test_finalize_missing_Section_Cd(context, rename_map):
     assert result.loc[0, "section_code"] == "--placeholder--"
 
 def test_renamed_and_ordered_columns(context, rename_map):
+    """test_renamed_and_ordered_columns"""
     df = pd.DataFrame({
         "Event_Id": ["E1"],
         "Cell_Cd": ["C1"],

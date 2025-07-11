@@ -204,3 +204,30 @@ def test_find_formula_differences_invalid_workbook_type():
     # Test with an invalid input type (not a Workbook)
     with pytest.raises(TypeError, match="Both inputs must be instances of openpyxl Workbook."):
         find_formula_differences([], [])  # Passing lists instead of workbooks
+
+def test_find_formula_differences_formula_vs_value():
+    """Detects when one sheet has a formula and the other has a static value"""
+    # Create template workbook: A1 is a formula
+    template_data = [
+        ["=SUM(1, 2)"],  # A1
+    ]
+    wb_template = create_test_workbook(template_data)
+
+    # Create company workbook: A1 is a static value
+    company_data = [
+        [3],  # A1
+    ]
+    wb_company = create_test_workbook(company_data)
+
+    # Call the function to compare the workbooks
+    result_df = find_formula_differences(wb_template, wb_company)
+
+    # Assertions
+    assert not result_df.empty
+    assert result_df.shape[0] == 1
+    error_desc = result_df.loc[result_df['Cell_Cd'] == 'A1', 'Error_Desc'].iloc[0]
+
+    assert "Formula: =SUM(1, 2)" in error_desc
+    assert "Value: 3" in error_desc
+    assert "Template:" in error_desc
+    assert "Company" in error_desc
