@@ -916,6 +916,46 @@ like Rule_Cd, Sheet_Cd, Error_Category, and Error_Severity_Cd.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.create_dataframe_from_company_acronym_check">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_dataframe_from_company_acronym_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_dataframe_from_company_acronym_check" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a pandas DataFrame based on the output of a company acronym check function.
+This function processes errors returned from the check and structures them into a DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>input_data</strong> (<em>dict</em>) – <p>The output data from a value check function, which contains:
+- ‘status’ (str): A string indicating whether the value matches or not (e.g., “Ok” or “Error”).
+- ‘description’ (str): A description of the result.
+- ‘errors’ (list): A list of error messages (if any) related to acronym mismatches.
+- ‘meta’ (dict): A dictionary containing metadata with the following keys:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>’sheet_name’ (str): Name of the sheet where the error occurred.</p></li>
+<li><p>’cell_name’ (str): The name of the cell where the error occurred.</p></li>
+</ul>
+</div></blockquote>
+</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>A DataFrame representing the errors, with columns for event ID, sheet name, cell reference,</dt><dd><p>error category, error severity, and error description.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If ‘input_data’ is not a dictionary or does not contain the required keys.</p></li>
+<li><p><strong>ValueError</strong> – If ‘errors’ is not a list or is empty.</p></li>
+<li><p><strong>KeyError</strong> – If expected keys in ‘input_data’ (such as ‘meta’, ‘sheet_name’, or ‘cell_name’) are missing.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.create_dataframe_from_company_selection_check">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_dataframe_from_company_selection_check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_dataframe_from_company_selection_check" title="Link to this definition">¶</a></dt>
 <dd><p>Creates a pandas DataFrame based on the output of a value check(e.g., ‘check_value_in_b2’) function.
