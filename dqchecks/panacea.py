@@ -1431,6 +1431,67 @@ def create_dataframe_from_company_selection_check(input_data: Dict[str, Any]) ->
 
     return df
 
+def create_dataframe_from_company_acronym_check(input_data: Dict[str, Any]) -> pd.DataFrame:
+    # pylint: disable=C0301
+    """
+    Creates a pandas DataFrame based on the output of a company acronym check function.
+    This function processes errors returned from the check and structures them into a DataFrame.
+
+    Args:
+        input_data (dict): The output data from a value check function, which contains:
+            - 'status' (str): A string indicating whether the value matches or not (e.g., "Ok" or "Error").
+            - 'description' (str): A description of the result.
+            - 'errors' (list): A list of error messages (if any) related to acronym mismatches.
+            - 'meta' (dict): A dictionary containing metadata with the following keys:
+                - 'sheet_name' (str): Name of the sheet where the error occurred.
+                - 'cell_name' (str): The name of the cell where the error occurred.
+
+    Returns:
+        pd.DataFrame: A DataFrame representing the errors, with columns for event ID, sheet name, cell reference, 
+                      error category, error severity, and error description.
+
+    Raises:
+        ValueError: If 'input_data' is not a dictionary or does not contain the required keys.
+        ValueError: If 'errors' is not a list or is empty.
+        KeyError: If expected keys in 'input_data' (such as 'meta', 'sheet_name', or 'cell_name') are missing.
+    """
+
+    if not isinstance(input_data, dict):
+        raise ValueError("The 'input_data' argument must be a dictionary.")
+
+    if 'errors' not in input_data:
+        raise ValueError("The 'input_data' must contain the 'errors' key.")
+    if 'meta' not in input_data:
+        raise ValueError("The 'input_data' must contain the 'meta' key.")
+
+    errors = input_data.get('errors', [])
+    if not isinstance(errors, list):
+        raise ValueError("The 'errors' key must be a list.")
+
+    meta = input_data.get('meta', {})
+    if not isinstance(meta, dict) or 'sheet_name' not in meta or 'cell_name' not in meta:
+        raise ValueError(
+            "The 'meta' key must be a dictionary containing 'sheet_name' and 'cell_name'.")
+
+    if not errors:
+        return pd.DataFrame(columns=["Event_Id", "Sheet_Cd", "Cell_Cd", "Rule_Cd", "Error_Category",
+                                     "Error_Severity_Cd", "Error_Desc"])
+
+    rows = []
+
+    for error in errors:
+        rows.append({
+            'Event_Id': uuid.uuid4().hex,
+            'Sheet_Cd': meta["sheet_name"],
+            'Cell_Cd': meta["cell_name"],
+            'Rule_Cd': "Rule 8: Company Acronym Check",
+            'Error_Category': "Company acronym mismatch",
+            'Error_Severity_Cd': "?",
+            'Error_Desc': error
+        })
+
+    return pd.DataFrame(rows)
+
 def check_for_nulls_and_duplicates(
     worksheet, column_index, skip_rows, skip_row_after_header, working_area: UsedArea):
     # pylint: disable=C0301
