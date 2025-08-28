@@ -7,9 +7,10 @@ Function used to do initial validation of the Excel files
 import uuid
 import re
 from typing import Dict, Any, List, NamedTuple
+from io import BytesIO
 import logging
 from collections import namedtuple
-from openpyxl import Workbook
+from openpyxl import (Workbook, load_workbook)
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
 import pandas as pd
@@ -2018,3 +2019,34 @@ def create_process_model_mapping_validation_event(
 
     logger.info("Process and model code mapping validated successfully.")
     return create_validation_event_row_dataframe().dropna()
+
+def clean_formula_spaces_in_workbook(wb):
+    """clean_formula_spaces_in_workbook"""
+    # Save the original workbook to a virtual file (in-memory)
+    virtual_wb = BytesIO()
+    wb.save(virtual_wb)
+    virtual_wb.seek(0)
+
+    # Load a new workbook from the virtual file to avoid modifying the original
+    wb_copy = load_workbook(virtual_wb)
+
+    for ws in wb_copy.worksheets:
+        used_area = get_used_area(ws)
+
+        # Compute bounds
+        min_row = used_area.empty_rows + 1
+        min_col = used_area.empty_columns + 1
+        max_row = used_area.last_used_row
+        max_col = used_area.last_used_column
+
+        for row in ws.iter_rows(min_row=min_row, max_row=max_row,
+                                min_col=min_col, max_col=max_col):
+            for cell in row:
+                if cell.data_type == 'f' and isinstance(cell.value, str):
+                    if cell.value.startswith("= "):
+                        original = cell.value
+                        cell.value = '=' + cell.value[2:]
+                        # pylint: disable=C0301
+                        print(f"Updated formula in {ws.title} {cell.coordinate}: '{original}' -> '{cell.value}'")
+
+    return wb_copy
