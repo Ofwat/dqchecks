@@ -33,28 +33,43 @@ def test_returns_empty_df_when_no_duplicates_found():
     assert result.empty
 
 def test_returns_validation_event_when_duplicates_found():
-    """test_returns_validation_event_when_duplicates_found"""
+    """Test that validation event is returned for Measure_Cd used with multiple Measure_Desc values."""
     df = pd.DataFrame({
         'Measure_Cd': ['A', 'A', 'B'],
         'Measure_Desc': ['desc1', 'desc2', 'desc3'],
         'Sheet_Cd': ['S1', 'S2', 'S3'],
     })
+
     metadata = {
         "Batch_Id": "batch1",
         "Submission_Period_Cd": "period1",
         "Process_Cd": "proc1",
         "Template_Version": "v1",
-        "Organisation_Cd": "org1"
+        "Organisation_Cd": "org1",
+        "Validation_Processing_Stage": "stage1"
     }
 
     result = create_same_boncode_diff_desc_validation_event(df, metadata)
+
+    # Basic checks
     assert isinstance(result, pd.DataFrame)
     assert not result.empty
+    assert 'Error_Desc' in result.columns
+    assert 'Event_Id' in result.columns
 
-    # Check that error description contains Measure_Cd and sheets
-    error_desc_col = 'Error_Desc'
-    assert error_desc_col in result.columns
-    assert any("A:[" in str(val) for val in result[error_desc_col].values)
+    # Check number of rows: expect 2 rows (for desc1 and desc2)
+    assert len(result) == 2
+
+    # Check that each row corresponds to 'A' with a distinct Measure_Desc
+    for desc in ['desc1', 'desc2']:
+        assert any(desc in str(val) for val in result['Error_Desc'].values)
+
+    # Check that Measure_Cd 'A' is mentioned in the description
+    assert all("Measure_Cd 'A'" in str(val) for val in result['Error_Desc'].values)
+
+    # Check that Event_Id is unique
+    assert result['Event_Id'].is_unique
+
 
 def test_raises_if_input_not_dataframe():
     """test_raises_if_input_not_dataframe"""
