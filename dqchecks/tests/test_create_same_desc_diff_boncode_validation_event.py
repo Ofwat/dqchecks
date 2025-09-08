@@ -43,17 +43,36 @@ def test_returns_validation_event_when_duplicates_found():
         'Submission_Period_Cd': '202301',
         'Process_Cd': 'proc1',
         'Template_Version': 'v1',
-        'Organisation_Cd': 'org1'
+        'Organisation_Cd': 'org1',
+        'Validation_Processing_Stage': 'stage1'
     }
 
     result = create_same_desc_diff_boncode_validation_event(df, metadata)
+
+    # Basic structure checks
     assert isinstance(result, pd.DataFrame)
     assert not result.empty
-    # The error description should include both boncodes and sheet codes for 'desc1'
-    error_desc = result.get('Error_Desc', [''])[0]
-    assert 'desc1' not in error_desc  # desc1 itself won't be in message, only boncode-sheet combos
-    assert 'A1 -- sheet1' in error_desc
-    assert 'A2 -- sheet2' in error_desc
+    assert 'Error_Desc' in result.columns
+    assert 'Event_Id' in result.columns
+    assert result['Event_Id'].is_unique
+
+    # Expect two rows: one for A1, one for A2 (both under desc1)
+    assert len(result) == 2
+
+    # Check that each Error_Desc contains the correct format and data
+    for _, row in result.iterrows():
+        error_desc = row['Error_Desc']
+        measure_cd = row['Error_Desc'].split("Current Measure_Cd: '")[1].split("'")[0]
+
+        # It should reference 'desc1' (the conflicting Measure_Desc)
+        assert "Measure_Desc 'desc1'" in error_desc
+
+        # It should mention all sheet codes involved
+        assert 'sheet1' in error_desc
+        assert 'sheet2' in error_desc
+
+        # It should reference the current Measure_Cd
+        assert measure_cd in ['A1', 'A2']
 
 def test_returns_empty_df_on_empty_input():
     """

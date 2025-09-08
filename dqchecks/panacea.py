@@ -1775,21 +1775,20 @@ def create_same_desc_diff_boncode_validation_event(
     metadata: dict,
 ) -> pd.DataFrame:
     """
-    Checks for Measure_Desc used with multiple Measure_Cd values and generates a validation event.
+    Creates one validation event row per Measure_Cd when the same Measure_Desc is used
+    with multiple Measure_Cd values. Each row has a unique Event_Id.
 
     Parameters:
-        df (pd.DataFrame): Input DataFrame with measure data.
-        metadata (dict): Dictionary with keys: Batch_Id, Submission_Period_Cd,
-                         Process_Cd, Template_Version, Organisation_Cd.
+        df (pd.DataFrame): Input DataFrame with 'Measure_Cd', 'Measure_Desc', 'Sheet_Cd'.
+        metadata (dict): Dictionary containing metadata keys.
 
     Returns:
-        pd.DataFrame: Validation event DataFrame if issues found, else empty DataFrame.
+        pd.DataFrame: Validation event DataFrame, one row per conflicting Measure_Cd.
     """
     required_df_columns = {"Measure_Cd", "Measure_Desc", "Sheet_Cd"}
 
     if not isinstance(df, pd.DataFrame):
         raise ValueError("Input 'df' must be a pandas DataFrame.")
-
     if not isinstance(metadata, dict):
         raise ValueError("Input 'metadata' must be a dict.")
 
@@ -1801,129 +1800,57 @@ def create_same_desc_diff_boncode_validation_event(
         logger.warning("Input DataFrame is empty. No validation event will be generated.")
         return create_validation_event_row_dataframe().dropna()
 
-    # Get unique Measure_Cd and Measure_Desc pairs
-    measure_desc_pairs = df[['Measure_Cd', 'Measure_Desc']].drop_duplicates()
-
-    # Find descriptions used with multiple different Measure_Cd (boncodes)
-    duplicated_descs = (
-        measure_desc_pairs.groupby('Measure_Desc')
-        .filter(lambda x: x['Measure_Cd'].nunique() > 1)
+    # Step 1: Identify Measure_Desc values used with multiple Measure_Cd
+    multi_cd_descs = (
+        df.groupby('Measure_Desc')['Measure_Cd']
+        .nunique()
+        .loc[lambda x: x > 1]
+        .index
     )
 
-    if duplicated_descs.empty:
-        logger.info("No description used with multiple Measure_Cd values found.")
+    if multi_cd_descs.empty:
+        logger.info("No Measure_Desc values associated with multiple Measure_Cd values.")
         return create_validation_event_row_dataframe().dropna()
 
-    # Merge back to original dataframe to get Sheet_Cd
-    merged_df = df.merge(
-        duplicated_descs[['Measure_Desc']].drop_duplicates(),
-        on='Measure_Desc',
-        how='inner'
-    )[['Measure_Desc', 'Measure_Cd', 'Sheet_Cd']].drop_duplicates()
+    # Step 2: Filter to those rows only
+    df_filtered = df[df['Measure_Desc'].isin(multi_cd_descs)].copy()
 
-    # Group and format message
-    grouped = merged_df.groupby('Measure_Desc')
-    result = [
-        [f"{row.Measure_Cd} -- {row.Sheet_Cd}" for _, row in group.iterrows()]
-        for _, group in grouped
-    ]
-    message = ", ".join(["[" + ", ".join(group) + "]" for group in result])
+    # Step 3: Drop duplicates of (Measure_Desc, Measure_Cd)
+    conflict_rows = df_filtered.drop_duplicates(subset=['Measure_Desc', 'Measure_Cd'])
 
-    logger.warning(
-        "Detected same description used with multiple Measure_Cd values: %s",
-        message)
-
+    # Step 4: Prepare validation rows
+    validation_rows = []
     missing_text_string = "--missing--"
-    return create_validation_event_row_dataframe(
-        Event_Id=uuid.uuid4().hex,
-        Batch_Id=metadata.get("Batch_Id", missing_text_string),
-        Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
-        Process_Cd=metadata.get("Process_Cd", missing_text_string),
-        Template_Version=metadata.get("Template_Version", missing_text_string),
-        Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
-        Validation_Processing_Stage=
-            metadata.get("Validation_Processing_Stage", missing_text_string),
-        Rule_Cd='Rule 1 - Boncode-Description Consistency',
-        Error_Category='Same description, different boncodes',
-        Error_Severity_Cd='soft',
-        Error_Desc=message,
-    )
 
-# def create_same_boncode_diff_desc_validation_event(
-#     df: pd.DataFrame,
-#     metadata: dict,
-# ) -> pd.DataFrame:
-#     """
-#     Checks for Measure_Cd (boncodes) used with multiple Measure_Desc values and generates
-#     a validation event DataFrame if issues are found.
+    for _, row in conflict_rows.iterrows():
+        measure_desc = row['Measure_Desc']
+        measure_cd = row['Measure_Cd']
 
-#     Parameters:
-#         df (pd.DataFrame): Input DataFrame with columns 'Measure_Cd', 'Measure_Desc', 'Sheet_Cd'.
-#         metadata (dict): Dictionary containing keys:
-#             Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.
+        related_sheets = df_filtered.loc[
+            (df_filtered['Measure_Desc'] == measure_desc)
+        ]['Sheet_Cd'].unique()
 
-#     Returns:
-#         pd.DataFrame: Validation event DataFrame if duplicates found, else empty DataFrame.
-#     """
-#     required_df_columns = {"Measure_Cd", "Measure_Desc", "Sheet_Cd"}
+        error_desc = (
+            f"Measure_Desc '{measure_desc}' used with multiple Measure_Cd values. "
+            f"Current Measure_Cd: '{measure_cd}'. "
+            f"Appears in Sheets: [{', '.join(sorted(related_sheets))}]"
+        )
 
-#     if not isinstance(df, pd.DataFrame):
-#         raise ValueError("Input 'df' must be a pandas DataFrame.")
+        validation_rows.append(create_validation_event_row_dataframe(
+            Event_Id=uuid.uuid4().hex,
+            Batch_Id=metadata.get("Batch_Id", missing_text_string),
+            Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
+            Process_Cd=metadata.get("Process_Cd", missing_text_string),
+            Template_Version=metadata.get("Template_Version", missing_text_string),
+            Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+            Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", missing_text_string),
+            Rule_Cd='Rule 1 - Boncode-Description Consistency',
+            Error_Category='Same description, different boncodes',
+            Error_Severity_Cd='soft',
+            Error_Desc=error_desc,
+        ))
 
-#     if not isinstance(metadata, dict):
-#         raise ValueError("Input 'metadata' must be a dict.")
-
-#     missing_cols = required_df_columns - set(df.columns)
-#     if missing_cols:
-#         raise ValueError(f"Missing required columns in input DataFrame: {missing_cols}")
-
-#     if df.empty:
-#         logger.warning("Input DataFrame is empty. No validation event will be generated.")
-#         return create_validation_event_row_dataframe().dropna()
-
-#     # Step 1: Identify Measure_Cd with more than one unique Measure_Desc
-#     multi_desc_ids = (
-#         df.groupby('Measure_Cd')['Measure_Desc']
-#         .nunique()
-#         .loc[lambda x: x > 1]
-#         .index
-#     )
-
-#     if multi_desc_ids.empty:
-#         logger.info("No Measure_Cd values associated with multiple Measure_Desc values.")
-#         return create_validation_event_row_dataframe().dropna()
-
-#     # Step 2: Filter to those rows only
-#     df_filtered = df[df['Measure_Cd'].isin(multi_desc_ids)]
-
-#     # Step 3: Format message: Measure_Cd:[Sheet_Cd1, Sheet_Cd2, ...]
-#     messages = (
-#         df_filtered.groupby('Measure_Cd')['Sheet_Cd']
-#         .apply(lambda x: f"{x.name}:[{', '.join(sorted(x.unique()))}]")
-#         .tolist()
-#     )
-#     message = ", ".join(messages)
-
-#     logger.warning(
-#         "Detected Measure_Cd with multiple Measure_Desc values: %s",
-#         message
-#     )
-
-#     missing_text_string = "--missing--"
-#     return create_validation_event_row_dataframe(
-#         Event_Id=uuid.uuid4().hex,
-#         Batch_Id=metadata.get("Batch_Id", missing_text_string),
-#         Submission_Period_Cd=metadata.get("Submission_Period_Cd", missing_text_string),
-#         Process_Cd=metadata.get("Process_Cd", missing_text_string),
-#         Template_Version=metadata.get("Template_Version", missing_text_string),
-#         Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
-#         Validation_Processing_Stage=
-#             metadata.get("Validation_Processing_Stage", missing_text_string),
-#         Rule_Cd='Rule 1 - Boncode-Description Consistency',
-#         Error_Category='Same boncode, different description',
-#         Error_Severity_Cd='soft',
-#         Error_Desc=message,
-#     )
+    return pd.concat(validation_rows, ignore_index=True) if validation_rows else create_validation_event_row_dataframe().dropna()
 
 def create_same_boncode_diff_desc_validation_event(
     df: pd.DataFrame,
