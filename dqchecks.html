@@ -1160,18 +1160,18 @@ Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.</
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.create_same_boncode_diff_desc_validation_event">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_same_boncode_diff_desc_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_same_boncode_diff_desc_validation_event" title="Link to this definition">¶</a></dt>
-<dd><p>Checks for Measure_Cd (boncodes) used with multiple Measure_Desc values and generates
-a validation event DataFrame if issues are found.</p>
+<dd><p>Creates one validation event row per Measure_Desc when the same Measure_Cd is used
+with multiple Measure_Desc values. Each row has a unique Event_Id.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with columns ‘Measure_Cd’, ‘Measure_Desc’, ‘Sheet_Cd’.</p></li>
-<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary containing keys:
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary containing metadata keys:
 Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Validation event DataFrame if duplicates found, else empty DataFrame.</p>
+<dd class="field-even"><p>Validation event DataFrame, one row per Measure_Cd/Measure_Desc conflict.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pd.DataFrame</p>
@@ -1182,17 +1182,17 @@ Batch_Id, Submission_Period_Cd, Process_Cd, Template_Version, Organisation_Cd.</
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.create_same_desc_diff_boncode_validation_event">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">create_same_desc_diff_boncode_validation_event</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.create_same_desc_diff_boncode_validation_event" title="Link to this definition">¶</a></dt>
-<dd><p>Checks for Measure_Desc used with multiple Measure_Cd values and generates a validation event.</p>
+<dd><p>Creates one validation event row per Measure_Cd when the same Measure_Desc is used
+with multiple Measure_Cd values. Each row has a unique Event_Id.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with measure data.</p></li>
-<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary with keys: Batch_Id, Submission_Period_Cd,
-Process_Cd, Template_Version, Organisation_Cd.</p></li>
+<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – Input DataFrame with ‘Measure_Cd’, ‘Measure_Desc’, ‘Sheet_Cd’.</p></li>
+<li><p><strong>metadata</strong> (<em>dict</em>) – Dictionary containing metadata keys.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Validation event DataFrame if issues found, else empty DataFrame.</p>
+<dd class="field-even"><p>Validation event DataFrame, one row per conflicting Measure_Cd.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>pd.DataFrame</p>
