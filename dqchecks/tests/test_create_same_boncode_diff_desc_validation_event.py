@@ -33,6 +33,7 @@ def test_returns_empty_df_when_no_duplicates_found():
     assert result.empty
 
 def test_returns_validation_event_when_duplicates_found():
+    # pylint: disable=C0301
     """Test that validation event is returned for Measure_Cd used with multiple Measure_Desc values."""
     df = pd.DataFrame({
         'Measure_Cd': ['A', 'A', 'B'],

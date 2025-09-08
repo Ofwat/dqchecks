@@ -1843,6 +1843,7 @@ def create_same_desc_diff_boncode_validation_event(
             Process_Cd=metadata.get("Process_Cd", missing_text_string),
             Template_Version=metadata.get("Template_Version", missing_text_string),
             Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+            # pylint: disable=C0301
             Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", missing_text_string),
             Rule_Cd='Rule 1 - Boncode-Description Consistency',
             Error_Category='Same description, different boncodes',
@@ -1850,7 +1851,10 @@ def create_same_desc_diff_boncode_validation_event(
             Error_Desc=error_desc,
         ))
 
-    return pd.concat(validation_rows, ignore_index=True) if validation_rows else create_validation_event_row_dataframe().dropna()
+    return (
+        pd.concat(validation_rows, ignore_index=True)
+            if validation_rows
+            else create_validation_event_row_dataframe().dropna())
 
 def create_same_boncode_diff_desc_validation_event(
     df: pd.DataFrame,
@@ -1927,6 +1931,7 @@ def create_same_boncode_diff_desc_validation_event(
             Process_Cd=metadata.get("Process_Cd", missing_text_string),
             Template_Version=metadata.get("Template_Version", missing_text_string),
             Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+            # pylint: disable=C0301
             Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", missing_text_string),
             Rule_Cd='Rule 1 - Boncode-Description Consistency',
             Error_Category='Same boncode, different description',
@@ -1934,7 +1939,10 @@ def create_same_boncode_diff_desc_validation_event(
             Error_Desc=error_desc,
         ))
 
-    return pd.concat(validation_rows, ignore_index=True) if validation_rows else create_validation_event_row_dataframe().dropna()
+    return (
+        pd.concat(validation_rows, ignore_index=True)
+            if validation_rows
+            else create_validation_event_row_dataframe().dropna())
 
 def create_process_model_mapping_validation_event(
     df: pd.DataFrame,
