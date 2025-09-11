@@ -91,7 +91,7 @@ dqchecks.panacea.find_missing_sheets(wb_template_dataonly, wb_company_dataonly)
 | 9a0cdce3  | F_Outputs 9 OK | Rule 3: Missing Sheets |       | Missing Sheet   | hard           | Missing Sheet    |
 
 
-### 4. Rule 4: Structural Discrepancy
+### 5. Rule 4: Structural Discrepancy
 
 This check compares the shape (i.e. number of rows and columns) of each sheet in the submitted workbook (`wb_company_dataonly`) against the corresponding sheet in the template. It helps detect added or removed rows/columns.
 
@@ -108,7 +108,7 @@ dqchecks.panacea.find_shape_differences(wb_template, wb_company)
 | 9a0cdce4  | F_Outputs 9 OK | Rule 4: Structural Discrepancy |       | Structure Discrepancy   | hard           | Template file has 49 rows and 7 columns, Company file has 54 rows and 7 columns.    |
 
 
-### 5. Rule 5: Boncode Repetition Check
+### 6. Rule 5: Boncode Repetition Check
 
 This check scans sheets whose names match a given regex pattern (e.g. `^fOut_`), attempts to read them as flat tables, and validates that a given column (e.g. `Reference`) contains **unique** values — similar to enforcing a primary key constraint in databases.
 
@@ -125,7 +125,7 @@ dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
 
 
 
-### 6. Rule 6: Missing Boncode Check
+### 7. Rule 6: Missing Boncode Check
 
 This rule uses the same mechanism as Rule 5 but checks for null or missing values in the specified primary key column.
 
@@ -139,3 +139,31 @@ dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
 | 9a0cdce6  | F_Outputs 9 OK | Rule 6: Missing Boncode Check |       | Missing Values   | ?           | Rows [2,3,5,8] have missing values in [Reference].    |
 
+
+
+### 9. Rule 7: Company Name Selected
+
+This rule checks whether the company name entered in the submitted spreadsheet matches the expected company name (`company_name_full`).
+
+> Note: Because different templates may store the company name in different sheets or cells, this check uses a fallback approach. It looks for the company name in one of several known sheet/cell combinations.
+
+```python
+if "SelectCompany" in wb_company_dataonly.sheetnames:
+    company_selection_df = dqchecks.panacea.create_dataframe_from_company_selection_check(
+        dqchecks.panacea.check_value_in_cell(wb_company_dataonly, "SelectCompany", company_name_full, cell_name="B4")
+    )
+elif "Quarterly_Data" in wb_company_dataonly.sheetnames:
+    company_selection_df = dqchecks.panacea.create_dataframe_from_company_selection_check(
+        dqchecks.panacea.check_value_in_cell(wb_company_dataonly, "Quarterly_Data", company_name_full, cell_name="G9")
+    )
+else:
+    company_selection_df = dqchecks.panacea.create_dataframe_from_company_selection_check(
+        dqchecks.panacea.check_value_in_cell(wb_company_dataonly, "Validation", company_name_full, cell_name="B5")
+    )
+```
+
+#### Sample output
+
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce7  | F_Outputs 9 OK | Rule 7: Company Name Selected |       | Company name mismatch   | ?           | Expected [Cool company] found [Fun company]    |
