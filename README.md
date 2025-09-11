@@ -55,9 +55,10 @@ dqchecks.panacea.find_formula_differences(wb_template, wb_company)
 
 ### Sample output
 
-| Event_Id | Sheet_Cd       | Rule_Cd                | Cell_Cd   | Error_Category | Error_Severity | Error_Desc                                                                                                                  |
-| --------- | --------------- | -------------------------- | --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 9a0cdce1  | F_Outputs 9 OK | Rule 1: Formula Difference | A4 | Formula Difference     | hard            | Template: F_Outputs 9 OK!A4 (Formula: ='F_Outputs 1 OK'!A4) != Company: F_Outputs 9 OK!A4 (Value: ¬¬'F_Outputs 1 OK'!A4) |
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category     | Error_Severity | Error_Desc                                                                                                                |
+|-----------|----------------|---------------------------|---------|--------------------|----------------|---------------------------------------------------------------------------------------------------------------------------|
+| 9a0cdce1  | F_Outputs 9 OK | Rule 1: Formula Difference | A4      | Formula Difference | hard           | Template: F_Outputs 9 OK!A4 (Formula: ='F_Outputs 1 OK'!A4) != Company: F_Outputs 9 OK!A4 (Value: ¬¬'F_Outp_
+
 
 ### 3. Rule 2: Formula Error Check
 This check scans the entire workbook and identifies any cells containing Excel formula errors (e.g., #DIV/0!, #VALUE!, #REF!, etc.). Each cell with an error is returned as a separate row in the output dataframe, with a unique Event_Id.
@@ -68,6 +69,6 @@ This check scans the entire workbook and identifies any cells containing Excel f
 
 #### Sample output
 
-| Event_Id | Sheet_Cd       | Rule_Cd              | Cell_Cd      | Error_Category | Error_Severity | Error_Desc                                                                                                                  |
-| --------- | --------------- | -------------------------- | --------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 9a0cdce2  | F_Outputs 9 OK | Rule 2: Formula Error Check | A4 | Formula Error      | hard            | #DIV/0! |
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce2  | F_Outputs 9 OK | Rule 2: Formula Error Check | A4      | Formula Error   | hard           | #DIV/0!    |
