@@ -108,11 +108,26 @@ dqchecks.panacea.find_shape_differences(wb_template, wb_company)
 | 9a0cdce4  | F_Outputs 9 OK | Rule 4: Structural Discrepancy |       | Structure Discrepancy   | hard           | Template file has 49 rows and 7 columns, Company file has 54 rows and 7 columns.    |
 
 
-### 4. Rule 5: Boncode Repetition **and** Rule 6: Missing Boncode Check
+### 5. Rule 5: Boncode Repetition Check
 
-This check searches for sheets whose name matches a regex pattern, attempts to load it into a flat pandas dataframe, then checks a given column name for primary key constraints. Mainly, uniqueness, and non-nullability.
+This check scans sheets whose names match a given regex pattern (e.g. `^fOut_`), attempts to read them as flat tables, and validates that a given column (e.g. `Reference`) contains **unique** values — similar to enforcing a primary key constraint in databases.
 
-> Note: This check only works for sheets which are flat tables. It is possible to specify number of spaces below and above the header.
+> Note: This check assumes the sheet follows a flat table structure. You can configure the number of rows above/below the header row to accommodate formatting quirks.
+
+```python
+dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
+```
+#### Sample output
+
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce5  | F_Outputs 9 OK | Rule 5: Boncode Repetition |       | Duplicate Value   | ?           | Duplicate [Reference] value '123' found in rows [2,3,4].    |
+
+
+
+### 6. Rule 6: Missing Boncode Check
+
+This rule uses the same mechanism as Rule 5 but checks for null or missing values in the specified primary key column.
 
 ```python
 dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
@@ -122,5 +137,5 @@ dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
 
 | Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
-| 9a0cdce5  | F_Outputs 9 OK | Rule 5: Boncode Repetition |       | Duplicate Value   | ?           | Duplicate [Reference] value '123' found in rows [2,3,4].    |
 | 9a0cdce6  | F_Outputs 9 OK | Rule 6: Missing Boncode Check |       | Missing Values   | ?           | Rows [2,3,5,8] have missing values in [Reference].    |
+
