@@ -318,4 +318,18 @@ same_measure_diff_description = dqchecks.panacea.create_same_boncode_diff_desc_v
 |----------|-------------------------------------|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|---------------------------------------------------------------|
 | 0        | 24efed9df6004e60ba48c0f75fa4dea0     | Template-based validations   | None     | template_after_python_errata_changes.xlsx | Rule 1 - Boncode-Description Consistency | template         | None       | None          | None          | 2025-07               | apr        | Same description, different boncodes | None        | None    | None         | None         | soft              | Measure_Desc 'Other income - Statutory' used with multiple boncodes |
 | 1        | 5c97eace3f2444d0a43b308e5121c039 | Template-based validations    | None     | template_after_python_errata_changes.xlsx | Rule 1 - Boncode-Description Consistency | template        | None       | None         | None         | 2025-07              | apr        | Same boncode, different description | None       | None    | None        | None        | soft              | Measure_Cd 'B0372TEO_F' used with multiple Measure_Desc values |
-| 
+
+
+
+### 13. Mandatory Field Validation
+
+Verifies that key fields in the flat table — specifically `"Reference"`, `"Item Description"`, and `"Unit"` — are not null or empty. Each row missing one or more of these fields will result in a validation event.
+
+```python
+dqchecks.panacea.create_nulls_in_measure_validation_event(pivoted_df, metadata)
+```
+
+#### Sample output
+| Event_Id | Batch_Id                            | Validation_Processing_Stage  | Sheet_Cd | Template_Version                         | Rule_Cd                                | Organisation_Cd | Measure_Cd | Measure_Unit | Measure_Desc | Submission_Period_Cd | Process_Cd | Error_Category                    | Section_Cd | Cell_Cd | Data_Column | Error_Value | Error_Severity_Cd | Error_Desc                                                  |
+|----------|-------------------------------------|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|---------------------------------------------------------------|
+|0|1|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|1,2,3|
