@@ -297,3 +297,25 @@ except Exception as e:
 
 > ✅ If successful, `pivoted_df` contains the loaded and validated data.  
 > ❌ If validation fails, `error_df` will contain a structured error record for review or logging.
+
+
+
+### 12. Boncode-Description Consistency 
+
+After loading, we can use pandas to do additional checks, which are simpler to do in pandas than on Excel. We want to make sure that Boncodes do not have multiple descriptions, and the same description does not appear for multiple boncodes
+
+> Note: We changed output to split errors by rows
+
+```python
+same_description_different_boncodes = dqchecks.panacea.create_same_desc_diff_boncode_validation_event(pivoted_df, metadata)
+same_measure_diff_description = dqchecks.panacea.create_same_boncode_diff_desc_validation_event(pivoted_df, metadata)
+```
+
+#### Sample output
+
+
+| Event_Id | Batch_Id                            | Validation_Processing_Stage  | Sheet_Cd | Template_Version                         | Rule_Cd                                | Organisation_Cd | Measure_Cd | Measure_Unit | Measure_Desc | Submission_Period_Cd | Process_Cd | Error_Category                    | Section_Cd | Cell_Cd | Data_Column | Error_Value | Error_Severity_Cd | Error_Desc                                                  |
+|----------|-------------------------------------|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|---------------------------------------------------------------|
+| 0        | 24efed9df6004e60ba48c0f75fa4dea0     | Template-based validations   | None     | template_after_python_errata_changes.xlsx | Rule 1 - Boncode-Description Consistency | template         | None       | None          | None          | 2025-07               | apr        | Same description, different boncodes | None        | None    | None         | None         | soft              | Measure_Desc 'Other income - Statutory' used with multiple boncodes |
+| 1        | 5c97eace3f2444d0a43b308e5121c039 | Template-based validations    | None     | template_after_python_errata_changes.xlsx | Rule 1 - Boncode-Description Consistency | template        | None       | None         | None         | 2025-07              | apr        | Same boncode, different description | None       | None    | None        | None        | soft              | Measure_Cd 'B0372TEO_F' used with multiple Measure_Desc values |
+| 
