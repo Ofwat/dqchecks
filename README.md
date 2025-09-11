@@ -243,15 +243,15 @@ elif process_cd == "apr":
 ```
 
 
-### 11. Loading and Validating Column Headers and Empty Row Patterns
+### 11. Loading then Validating Column Headers and Empty Row Patterns
 
-The `process_fout_sheets` function is responsible for loading flat (tabular) data from specific sheets.  
-As part of this process, it performs structural validation and may raise the following exceptions if expectations are not met:
+This step uses `process_fout_sheets` to load the Excel data and, as part of that process, validates the structure of the sheets.  
+It raises four specific exceptions if expectations are not met:
 
-- `ColumnHeaderValidationError`: Raised when required column headers are missing, incorrect, or not in the expected order: Acronym, Reference, Item Description, Unit, Model
-- `EmptyRowsPatternCheckError`: Raised when the row structure is malformed — for example:
-- When expected empty rows above or below the header are not found
-- When a row expected to be empty contains unexpected data
+- `ColumnHeaderValidationError`: when required column headers are missing or incorrect
+- `EmptyRowsPatternCheckError`: when the row structure is unexpectedly empty or malformed
+- `ColumnHeaderValidationError`: when headers do not contain the following columns in this order "Acronym, Reference, Item Description, Unit, Model"
+- `EmptyRowsPatternCheckError`: when we expected an empty row around header, but found data
 
 
 Any validation failures are captured into an `error_df` for downstream processing.
