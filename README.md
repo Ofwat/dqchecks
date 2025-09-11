@@ -214,6 +214,15 @@ context = dqchecks.transforms.ProcessingContext(
     last_modified=datetime.datetime.now()
 )
 
+metadata = {
+    "Batch_Id":"Batch_Id",
+    "Submission_Period_Cd":"Submission_Period_Cd",
+    "Process_Cd":"Process_Cd",
+    "Template_Version":"Template_Version",
+    "Organisation_Cd":"Organisation_Cd",
+    "Validation_Processing_Stage":"Validation_Processing_Stage",
+}
+
 # Define the process code (should be set earlier in real use)
 process_cd = "qd"
 
