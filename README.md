@@ -300,11 +300,11 @@ except Exception as e:
 
 
 
-### 12. Boncode-Description Consistency 
+### 12. Boncode-Description Consistency
 
-After loading, we can use pandas to do additional checks, which are simpler to do in pandas than on Excel. We want to make sure that Boncodes do not have multiple descriptions, and the same description does not appear for multiple boncodes
+After loading the data, additional validation checks can be performed using pandas, which offers more flexibility than Excel for these types of operations. Specifically, we verify that Boncodes do not have multiple descriptions, and that the same description does not correspond to multiple Boncodes.
 
-> Note: We changed output to split errors by rows
+> Note: The output has been updated to report errors on a per-row basis, making it easier to identify and address individual issues.
 
 ```python
 same_description_different_boncodes = dqchecks.panacea.create_same_desc_diff_boncode_validation_event(pivoted_df, metadata)
