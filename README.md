@@ -141,7 +141,7 @@ dqchecks.panacea.find_pk_errors(wb_company_dataonly, '^fOut_', 'Reference')
 
 
 
-### 9. Rule 7: Company Name Selected
+### 8. Rule 7: Company Name Selected
 
 This rule checks whether the company name entered in the submitted spreadsheet matches the expected company name (`company_name_full`).
 
@@ -167,3 +167,23 @@ else:
 | Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
 | 9a0cdce7  | F_Outputs 9 OK | Rule 7: Company Name Selected |       | Company name mismatch   | ?           | Expected [Cool company] found [Fun company]    |
+
+
+
+### 9. Rule 8: Company Acronym Check
+
+This rule is similar to Rule 7 but checks the company acronym (stored in `Organisation_Cd`) instead of the full company name.
+
+It verifies that the value in a specific cell matches the expected organisation code.
+
+```python
+dqchecks.panacea.create_dataframe_from_company_acronym_check(
+    dqchecks.panacea.check_value_in_cell(wb_company_dataonly, "Quarterly_Data", Organisation_Cd, cell_name="G10")
+)
+```
+
+#### Sample output
+
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce7  | F_Outputs 9 OK | Rule 8: Company Acronym Check |   A4  | Company acronym mismatch   | ?           | Expected [ABC] found [EFG]    |
