@@ -341,4 +341,28 @@ dqchecks.panacea.create_nulls_in_measure_validation_event(pivoted_df, metadata)
 #### Sample output
 | Event_Id | Batch_Id                            | Validation_Processing_Stage  | Sheet_Cd | Template_Version                         | Rule_Cd                                | Organisation_Cd | Measure_Cd | Measure_Unit | Measure_Desc | Submission_Period_Cd | Process_Cd | Error_Category                    | Section_Cd | Cell_Cd | Data_Column | Error_Value | Error_Severity_Cd | Error_Desc                                                  |
 |----------|-------------------------------------|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|---------------------------------------------------------------|
-|0|1|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|1,2,3|
+|0|1|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|1,2,3|
+
+
+### 14. Process-Model Mapping Validation
+
+This check ensures that the `Model` column in the `"F_Output"` sheet contains the correct model name based on the `Process_Cd` value. The expected mappings are:
+
+- For `APR`, the model must be `"Cyclical Foundation"`
+- For `BPT`, the model must be `"Price Review 2024"`
+- For `PCD`, the model must be `"Delta"`
+
+Each row in the dataset is validated against this mapping.
+
+```python
+dqchecks.panacea.create_process_model_mapping_validation_event(
+    pivoted_df,
+    dqchecks.panacea.PROCESS_MODEL_MAPPING,
+    metadata
+)
+```
+
+#### Sample output
+| Event_Id | Batch_Id                            | Validation_Processing_Stage  | Sheet_Cd | Template_Version                         | Rule_Cd                                | Organisation_Cd | Measure_Cd | Measure_Unit | Measure_Desc | Submission_Period_Cd | Process_Cd | Error_Category                    | Section_Cd | Cell_Cd | Data_Column | Error_Value | Error_Severity_Cd | Error_Desc                                                  |
+|----------|-------------------------------------|-------------------------------|----------|-------------------------------------------|-----------------------------------------|------------------|------------|---------------|---------------|------------------------|------------|----------------------------------|-------------|---------|--------------|--------------|-------------------|---------------------------------------------------------------|
+|0|1|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|-|
