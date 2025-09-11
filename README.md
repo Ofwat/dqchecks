@@ -72,3 +72,20 @@ This check scans the entire workbook and identifies any cells containing Excel f
 | Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
 | 9a0cdce2  | F_Outputs 9 OK | Rule 2: Formula Error Check | A4      | Formula Error   | hard           | #DIV/0!    |
+
+
+### 4. Rule 3: Missing Sheets
+
+This check compares the submitted workbook (`wb_company_dataonly`) against the template, and returns a DataFrame listing any sheets that are present in the template but missing from the submitted file.
+
+> Note: This check only identifies missing sheets. It does **not** detect extra sheets added in the submitted file.
+
+```python
+dqchecks.panacea.find_missing_sheets(wb_template_dataonly, wb_company_dataonly)
+```
+
+#### Sample output
+
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce3  | F_Outputs 9 OK | Rule 3: Missing Sheets |       | Missing Sheet   | hard           | Missing Sheet    |
