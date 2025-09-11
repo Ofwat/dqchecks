@@ -14,10 +14,12 @@ pip install ofwat-dqchecks
 
 ## Overview
 
-There are two types of checks:
+There are three main types of data quality checks supported by this library:
 
-1. Template-based validation – compares a submitted Excel file against a reference template.
-2. Standalone validation – runs checks on a single Excel file without comparing it to a template.
+1. **Template-based validation** – Compares a submitted Excel file against a known template, detecting differences in structure, formulas, or expected values.
+2. **Standalone validation** – Runs checks on a single Excel file, without reference to a template. This is useful for general integrity or content checks.
+3. **Flat table loading checks** – Performed when reading flat (tabular) data from specific sheets. These include checks for header spacing and primary key-like constraints such as uniqueness and non-nullability.
+
 
 Due to how openpyxl handles formula and value parsing, both the template and the submitted file must be opened twice:
 
@@ -187,3 +189,108 @@ dqchecks.panacea.create_dataframe_from_company_acronym_check(
 | Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
 | 9a0cdce7  | F_Outputs 9 OK | Rule 8: Company Acronym Check |   A4  | Company acronym mismatch   | ?           | Expected [ABC] found [EFG]    |
+
+
+### 10. Preparing to Load Tables into Pandas DataFrames
+
+Before loading your Excel-based tables into Pandas, you need to set up a few configuration elements and context.
+
+```python
+import openpyxl
+import datetime
+import dqchecks
+from dqchecks.exceptions import ColumnHeaderValidationError, EmptyRowsPatternCheckError
+
+# Load the Excel workbook
+template_path = "<path_to_template>.xlsx"
+wb = openpyxl.load_workbook(template_path, data_only=True)
+
+# Initialize the processing context
+context = dqchecks.transforms.ProcessingContext(
+    org_cd="ABC",
+    submission_period_cd="2020-12",
+    process_cd="EFG",
+    template_version="v1",
+    last_modified=datetime.datetime.now()
+)
+
+# Define the process code (should be set earlier in real use)
+process_cd = "qd"
+
+# Configure based on process type
+if process_cd == "qd":
+    config = dqchecks.transforms.FoutProcessConfig(
+        observation_patterns=[],
+        fout_patterns=[r"Flat File"],
+        column_rename_map=dqchecks.transforms.get_qd_column_rename_map(),
+        run_validations=False,
+        skip_rows=0,
+        reshape=False,
+    )
+elif process_cd == "pcd":
+    config = dqchecks.transforms.FoutProcessConfig(
+        observation_patterns=[r"\d{4}-\d{2}"],
+        fout_patterns=[r"F_Outputs"],
+        column_rename_map=dqchecks.transforms.get_default_column_rename_map(),
+    )
+elif process_cd == "apr":
+    config = dqchecks.transforms.FoutProcessConfig(
+        observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
+        fout_patterns=["^fOut_", r"^\s*F_Outputs"],
+        column_rename_map=dqchecks.transforms.get_default_column_rename_map(),
+        run_validations=True,
+    )
+```
+
+
+### 11. Loading then Validating Column Headers and Empty Row Patterns
+
+This step uses `process_fout_sheets` to load the Excel data and, as part of that process, validates the structure of the sheets.  
+It raises two specific exceptions if expectations are not met:
+
+- `ColumnHeaderValidationError`: when required column headers are missing or incorrect
+- `EmptyRowsPatternCheckError`: when the row structure is unexpectedly empty or malformed
+
+Any validation failures are captured into an `error_df` for downstream processing.
+
+```python
+import uuid
+
+pivoted_df = None
+error_df = None
+
+try:
+    pivoted_df = dqchecks.transforms.process_fout_sheets(wb, context, config)
+
+except ColumnHeaderValidationError as e:
+    error_df = dqchecks.utils.create_validation_event_row_dataframe(
+        Event_Id = uuid.uuid4().hex,
+        Batch_Id = "Batch_Id",
+        Validation_Processing_Stage = "Validation_Processing_Stage",
+        Rule_Cd = 'Column header check',
+        Error_Desc = ", ".join(e.args),
+        Submission_Period_Cd = "Submission_Period_Cd",
+        Process_Cd = "Process_Cd",
+        Template_Version = "Template_Version",
+        Organisation_Cd = "Organisation_Cd",
+    )
+
+except EmptyRowsPatternCheckError as e:
+    error_df = dqchecks.utils.create_validation_event_row_dataframe(
+        Event_Id = uuid.uuid4().hex,
+        Batch_Id = "Batch_Id",
+        Validation_Processing_Stage = "Validation_Processing_Stage",
+        Rule_Cd = 'Empty row pattern check',
+        Error_Desc = ", ".join(e.args),
+        Submission_Period_Cd = "Submission_Period_Cd",
+        Process_Cd = "Process_Cd",
+        Template_Version = "Template_Version",
+        Organisation_Cd = "Organisation_Cd",
+    )
+
+except Exception as e:
+    raise RuntimeError(f"Unexpected exception during processing: {e}")
+```
+
+> ✅ If successful, `pivoted_df` contains the loaded and validated data.  
+> ❌ If validation fails, `error_df` will contain a structured error record for review or logging.
