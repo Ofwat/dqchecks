@@ -89,3 +89,20 @@ dqchecks.panacea.find_missing_sheets(wb_template_dataonly, wb_company_dataonly)
 | Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
 |-----------|----------------|---------------------------|---------|----------------|----------------|------------|
 | 9a0cdce3  | F_Outputs 9 OK | Rule 3: Missing Sheets |       | Missing Sheet   | hard           | Missing Sheet    |
+
+
+### 4. Rule 4: Structural Discrepancy
+
+This check compares the shape (i.e. number of rows and columns) of each sheet in the submitted workbook (`wb_company_dataonly`) against the corresponding sheet in the template. It helps detect added or removed rows/columns.
+
+> Note: Excel tracks an internal "used range" for each worksheet. This can include cells that appear empty but were previously populated. If data is added and then deleted, the worksheet's shape may still reflect those cells. To address this, we scan each sheet to find the last row and column that contain actual data, and use those dimensions for comparison.
+
+```python
+dqchecks.panacea.find_shape_differences(wb_template, wb_company)
+```
+
+#### Sample output
+
+| Event_Id  | Sheet_Cd       | Rule_Cd                  | Cell_Cd | Error_Category | Error_Severity | Error_Desc |
+|-----------|----------------|---------------------------|---------|----------------|----------------|------------|
+| 9a0cdce3  | F_Outputs 9 OK | Rule 4: Structural Discrepancy |       | Structure Discrepancy   | hard           | Template file has 49 rows and 7 columns, Company file has 54 rows and 7 columns.    |
