@@ -126,21 +126,22 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
 
 
 # def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
-    """
-    Reads data from the sheets into pandas DataFrames.
-    df_list = []
-    for sheetname in fout_sheets:
-        data = wb[sheetname].iter_rows(min_row=skip_rows, values_only=True)
-        try:
-            headers = next(data)
-        except StopIteration as exc:
-            raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
+#    """
+#    Reads data from the sheets into pandas DataFrames.
+#    """
+#    df_list = []
+#    for sheetname in fout_sheets:
+#        data = wb[sheetname].iter_rows(min_row=skip_rows, values_only=True)
+#        try:
+#            headers = next(data)
+#        except StopIteration as exc:
+#            raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
 
-        df = pd.DataFrame(data, columns=headers)
-        df["Sheet_Cd"] = sheetname  # Add a column for the sheet name
-        df_list.append(df)
-    return df_list
-    """
+#        df = pd.DataFrame(data, columns=headers)
+#        df["Sheet_Cd"] = sheetname  # Add a column for the sheet name
+#        df_list.append(df)
+#    return df_list
+
 
 def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
@@ -174,16 +175,16 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
 
 
 # def clean_data(df_list: list):
-    """
-    Drops rows with NaN values and checks if any dataframe is empty.
-    """
-    """df_list = [
-        df.dropna(how='all', subset=df.columns.difference(['Sheet_Cd']))
-        for df in df_list
-    ]
-    if any(i.empty for i in df_list):
-        raise ValueError("No valid data found after removing rows with NaN values.")
-    return df_list"""
+#    """
+#    Drops rows with NaN values and checks if any dataframe is empty.
+#    """
+#    df_list = [
+#        df.dropna(how='all', subset=df.columns.difference(['Sheet_Cd']))
+#        for df in df_list
+#    ]
+#    if any(i.empty for i in df_list):
+#        raise ValueError("No valid data found after removing rows with NaN values.")
+#    return df_list"""
 
 def clean_data(df_list: list):
     """
@@ -212,59 +213,60 @@ def process_observation_columns(df: pd.DataFrame, observation_patterns: list[str
         observation_period_columns += list(df.filter(regex=observation_pattern).columns.tolist())
     return set(observation_period_columns)
 
-"""def process_df(
-    df: pd.DataFrame,
-    context: ProcessingContext,
-    observation_patterns: list[str],
-    column_rename_map: dict[str, str],
-) -> pd.DataFrame:
-    Processes a single dataframe by melting it and adding context columns.
+# def process_df(
+#    df: pd.DataFrame,
+#    context: ProcessingContext,
+#    observation_patterns: list[str],
+#    column_rename_map: dict[str, str],
+#) -> pd.DataFrame:
+#    """
+#    Processes a single dataframe by melting it and adding context columns.
 
-    Args:
-        df (pd.DataFrame): The input dataframe to process.
-        context (ProcessingContext): The processing context with metadata.
-        observation_patterns (list[str]): Regex patterns to identify observation columns.
-        column_rename_map (dict[str, str]): Mapping from original to final column names.
+#    Args:
+#        df (pd.DataFrame): The input dataframe to process.
+#        context (ProcessingContext): The processing context with metadata.
+#        observation_patterns (list[str]): Regex patterns to identify observation columns.
+#        column_rename_map (dict[str, str]): Mapping from original to final column names.
 
-    Returns:
-        pd.DataFrame: The processed and reshaped dataframe.
-    observation_period_columns = process_observation_columns(df, observation_patterns)
-    if not observation_period_columns:
-        raise ValueError("No observation period columns found in the data.")
+#    Returns:
+#        pd.DataFrame: The processed and reshaped dataframe.
+#    """
+#    observation_period_columns = process_observation_columns(df, observation_patterns)
+#    if not observation_period_columns:
+#        raise ValueError("No observation period columns found in the data.")
 
     # Get the ID columns (all columns except observation period columns)
-    id_columns = set(df.columns.tolist()) - observation_period_columns
+#    id_columns = set(df.columns.tolist()) - observation_period_columns
 
     # Pivot the DataFrame to melt observation period columns into rows
-    pivoted_df = df.melt(
-        id_vars=list(id_columns),
-        var_name="Observation_Period_Cd",
-        value_name="Measure_Value"
-    )
+#    pivoted_df = df.melt(
+#        id_vars=list(id_columns),
+#        var_name="Observation_Period_Cd",
+#        value_name="Measure_Value"
+#    )
 
     # Add static context columns to the pivoted DataFrame
-    pivoted_df["Organisation_Cd"] = context.org_cd
-    pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
-    pivoted_df["Process_Cd"] = context.process_cd
-    pivoted_df["Template_Version"] = context.template_version
-    pivoted_df["Submission_Date"] = context.last_modified  # Use the last modified date
-    if "Cell_Cd" not in pivoted_df.columns:
-        pivoted_df["Cell_Cd"] = "--placeholder--"
-    if "Section_Cd" not in pivoted_df.columns:
-        pivoted_df["Section_Cd"] = "--placeholder--"
+#    pivoted_df["Organisation_Cd"] = context.org_cd
+#    pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
+#    pivoted_df["Process_Cd"] = context.process_cd
+#    pivoted_df["Template_Version"] = context.template_version
+#    pivoted_df["Submission_Date"] = context.last_modified  # Use the last modified date
+#    if "Cell_Cd" not in pivoted_df.columns:
+#        pivoted_df["Cell_Cd"] = "--placeholder--"
+#    if "Section_Cd" not in pivoted_df.columns:
+#        pivoted_df["Section_Cd"] = "--placeholder--"
 
     # Convert all columns to strings for consistency
-    pivoted_df = pivoted_df.astype(str)
+#    pivoted_df = pivoted_df.astype(str)
 
     # Rename the columns according to the provided mapping
-    pivoted_df = pivoted_df.rename(columns=column_rename_map)
+#    pivoted_df = pivoted_df.rename(columns=column_rename_map)
 
     # Reorder the columns to match the desired output format
-    ordered_columns = list(column_rename_map.values())
-    pivoted_df = pivoted_df[ordered_columns]
+#    ordered_columns = list(column_rename_map.values())
+#    pivoted_df = pivoted_df[ordered_columns]
+#    return pivoted_df
 
-    return pivoted_df
-    """
 
 def process_df(
     df: pd.DataFrame,
