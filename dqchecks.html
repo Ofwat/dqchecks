@@ -1799,23 +1799,8 @@ renaming or standardizing columns in a DataFrame related to quarterly data.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.process_df">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.process_df" title="Link to this definition">¶</a></dt>
-<dd><p>Processes a single dataframe by melting it and adding context columns.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – The input dataframe to process.</p></li>
-<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – The processing context with metadata.</p></li>
-<li><p><strong>observation_patterns</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – Regex patterns to identify observation columns.</p></li>
-<li><p><strong>column_rename_map</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Mapping from original to final column names.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The processed and reshaped dataframe.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame</p>
-</dd>
-</dl>
+<dd><p>Processes a single dataframe by melting it and adding context columns.
+Also computes Cell_Cd (A1 reference) using header position + original Excel row.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -1850,7 +1835,9 @@ and reshape flag.</p></li>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.read_sheets_data">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">read_sheets_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.read_sheets_data" title="Link to this definition">¶</a></dt>
-<dd><p>Reads data from the sheets into pandas DataFrames.</p>
+<dd><p>Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
+- Header row is at <cite>skip_rows</cite>
+- First data row is Excel row <cite>skip_rows + 1</cite></p>
 </dd></dl>
 
 <dl class="py function">
