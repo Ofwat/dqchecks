@@ -1707,7 +1707,8 @@ data remains in wide format. Defaults to True.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.clean_data">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">clean_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.clean_data" title="Link to this definition">¶</a></dt>
-<dd><p>Drops rows with NaN values and checks if any dataframe is empty.</p>
+<dd><p>Drops rows with NaN values in all data columns (ignores tech columns),
+and checks if any dataframe is empty.</p>
 </dd></dl>
 
 <dl class="py function">
