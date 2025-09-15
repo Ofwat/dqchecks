@@ -149,9 +149,18 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
 def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
     Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
-    - Header row is at `skip_rows`
-    - First data row is Excel row `skip_rows + 1`
+    - Header row is at `skip_rows` (e.g. row 2 in APR)
+    - First data row is Excel row `skip_rows + 1` (row 3), which APR templates keep empty.
     """
+    import datetime as _dt
+    import pandas as _pd
+
+    def _canon_header(x):
+        # Standardise headers so "2024-25" style columns match later lookups
+        if isinstance(x, (_pd.Timestamp, _dt.date, _dt.datetime)):
+            return x.strftime("%Y-%m")
+        return str(x).strip() if x is not None else ""
+
     df_list = []
     for sheetname in fout_sheets:
         ws = wb[sheetname]
@@ -162,13 +171,13 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
         except StopIteration as exc:
             raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
 
-        # Build df from remaining rows
-        df = pd.DataFrame(data, columns=headers)
+        # Build df from remaining rows with CANONICAL headers
+        df = pd.DataFrame(data, columns=[_canon_header(h) for h in headers])
 
-        # Tag sheet + original Excel row number for each record
+        # Tag sheet + original Excel row numbers
         df["Sheet_Cd"] = sheetname
         if df.shape[0] > 0:
-            first_excel_row = skip_rows + 1  # first data row after header
+            first_excel_row = skip_rows + 1  # row just under header (APR has this empty)
             df["__Excel_Row"] = range(first_excel_row, first_excel_row + len(df))
         else:
             df["__Excel_Row"] = []
@@ -536,55 +545,75 @@ def get_default_column_rename_map() -> dict[str, str]:
         "Cell_Cd": "Cell_Cd",
     }
 
-def process_fout_sheets(
-        wb: Workbook,
-        context: ProcessingContext,
-        config: FoutProcessConfig,
-    ) -> pd.DataFrame:
+def process_df(
+    df: pd.DataFrame,
+    context: ProcessingContext,
+    observation_patterns: list[str],
+    column_rename_map: dict[str, str],
+) -> pd.DataFrame:
     """
-    Processes all sheets in the given Excel workbook matching the specified patterns,
-    transforming and normalizing their data into a consolidated DataFrame.
-
-    Args:
-        wb (Workbook): The openpyxl Workbook object.
-        context (ProcessingContext): Processing context metadata.
-        config (FoutProcessConfig): Configuration options including patterns, column mapping,
-            and reshape flag.
-
-    Returns:
-        pd.DataFrame: The consolidated processed DataFrame.
+    Processes a single dataframe by melting it and adding context columns.
+    Also computes Cell_Cd (A1 address) from the year header column and the
+    original Excel row captured in __Excel_Row.
     """
-    # Validate inputs
-    validate_workbook(wb)
-    validate_context(context)
-    validate_observation_patterns(config.observation_patterns)
+    # 1) Which columns are observation periods (e.g. "2024-25")?
+    observation_period_columns = process_observation_columns(df, observation_patterns)
+    if not observation_period_columns:
+        raise ValueError("No observation period columns found in the data.")
 
-    if not wb.data_only:
-        logging.warning("Reading in non data_only mode. Some data may not be accessible.")
+    # 2) Build header-position map (1-based) to convert column index -> A/B/C...
+    #    Use canonicalised headers (strings) and ignore tech columns.
+    header_order = [c for c in df.columns if c not in ("Sheet_Cd", "__Excel_Row")]
+    header_pos = {str(c).strip(): i + 1 for i, c in enumerate(header_order)}
 
-    logging.info("Using observation patterns: %s", config.observation_patterns)
+    # 3) Keep ID columns (everything except observation columns); keep __Excel_Row
+    id_columns = set(df.columns.tolist()) - observation_period_columns
+    if "__Excel_Row" in df.columns:
+        id_columns.add("__Excel_Row")
 
-    # Extract matching sheets
-    fout_sheets = extract_fout_sheets(wb, config.fout_patterns)
+    # 4) Melt to long format: one row per (ID, Observation_Period_Cd)
+    pivoted_df = df.melt(
+        id_vars=list(id_columns),
+        var_name="Observation_Period_Cd",
+        value_name="Measure_Value"
+    )
 
-    if config.run_validations:
-        assert check_empty_rows(wb, fout_sheets)
-        assert check_column_headers(wb, fout_sheets)
+    # 5) Compute Cell_Cd from (Observation_Period_Cd -> column index) + __Excel_Row
+    if "__Excel_Row" in pivoted_df.columns:
+        obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
+        col_idx  = obs_norm.map(header_pos.get)
 
-    # Read and clean data
-    df_list = read_sheets_data(wb, fout_sheets, skip_rows=config.skip_rows)
-    df_list = clean_data(df_list)
+        row_idx  = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
+        has_both = col_idx.notna() & row_idx.notna()
 
-    column_rename_map = config.column_rename_map or get_default_column_rename_map()
+        cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
+        cell_cd.loc[has_both] = [
+            f"{get_column_letter(int(ci))}{int(ri)}"
+            for ci, ri in zip(col_idx[has_both], row_idx[has_both])
+        ]
 
-    processed_dfs = []
+        pivoted_df["Cell_Cd"] = cell_cd
+        # __Excel_Row is technical; drop after computing Cell_Cd
+        pivoted_df.drop(columns=["__Excel_Row"], inplace=True, errors="ignore")
+    else:
+        # Safety: ensure Cell_Cd exists
+        if "Cell_Cd" not in pivoted_df.columns:
+            pivoted_df["Cell_Cd"] = "--placeholder--"
 
-    for df in df_list:
-        if config.reshape:
-            df = process_df(df, context, config.observation_patterns, column_rename_map)
+    # 6) Stamp context columns
+    pivoted_df["Organisation_Cd"] = context.org_cd
+    pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
+    pivoted_df["Process_Cd"] = context.process_cd
+    pivoted_df["Template_Version"] = context.template_version
+    pivoted_df["Submission_Date"] = context.last_modified
+    if "Section_Cd" not in pivoted_df.columns:
+        pivoted_df["Section_Cd"] = "--placeholder--"
 
-        processed_df = finalize_dataframe(df, context, column_rename_map)
-        processed_dfs.append(processed_df)
+    # 7) Normalise types, rename, and reorder to the final schema
+    pivoted_df = pivoted_df.astype(str)
+    pivoted_df = pivoted_df.rename(columns=column_rename_map)
 
-    final_df = pd.concat(processed_dfs, ignore_index=True)
-    return final_df
+    ordered_columns = [c for c in column_rename_map.values() if c in pivoted_df.columns]
+    pivoted_df = pivoted_df[ordered_columns]
+
+    return pivoted_df
