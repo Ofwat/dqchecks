@@ -11,6 +11,7 @@ from typing import Optional
 from dataclasses import dataclass
 from collections import namedtuple
 from openpyxl.workbook.workbook import Workbook
+from openpyxl.utils import get_column_letter
 import pandas as pd
 from dqchecks.exceptions import (
     EmptyRowsPatternCheckError,
@@ -124,10 +125,9 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
     return matching_sheets
 
 
-def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
+# def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
     Reads data from the sheets into pandas DataFrames.
-    """
     df_list = []
     for sheetname in fout_sheets:
         data = wb[sheetname].iter_rows(min_row=skip_rows, values_only=True)
@@ -140,6 +140,38 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
         df["Sheet_Cd"] = sheetname  # Add a column for the sheet name
         df_list.append(df)
     return df_list
+    """
+
+def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
+    """
+    Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
+    - Header row is at `skip_rows`
+    - First data row is Excel row `skip_rows + 1`
+    """
+    df_list = []
+    for sheetname in fout_sheets:
+        ws = wb[sheetname]
+        data = ws.iter_rows(min_row=skip_rows, values_only=True)
+
+        try:
+            headers = next(data)  # header row at `skip_rows`
+        except StopIteration as exc:
+            raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
+
+        # Build df from remaining rows
+        df = pd.DataFrame(data, columns=headers)
+
+        # Tag sheet + original Excel row number for each record
+        df["Sheet_Cd"] = sheetname
+        if df.shape[0] > 0:
+            first_excel_row = skip_rows + 1  # first data row after header
+            df["__Excel_Row"] = range(first_excel_row, first_excel_row + len(df))
+        else:
+            df["__Excel_Row"] = []
+
+        df_list.append(df)
+    return df_list
+
 
 def clean_data(df_list: list):
     """
@@ -162,13 +194,12 @@ def process_observation_columns(df: pd.DataFrame, observation_patterns: list[str
         observation_period_columns += list(df.filter(regex=observation_pattern).columns.tolist())
     return set(observation_period_columns)
 
-def process_df(
+"""def process_df(
     df: pd.DataFrame,
     context: ProcessingContext,
     observation_patterns: list[str],
     column_rename_map: dict[str, str],
 ) -> pd.DataFrame:
-    """
     Processes a single dataframe by melting it and adding context columns.
 
     Args:
@@ -179,7 +210,6 @@ def process_df(
 
     Returns:
         pd.DataFrame: The processed and reshaped dataframe.
-    """
     observation_period_columns = process_observation_columns(df, observation_patterns)
     if not observation_period_columns:
         raise ValueError("No observation period columns found in the data.")
@@ -216,7 +246,83 @@ def process_df(
     pivoted_df = pivoted_df[ordered_columns]
 
     return pivoted_df
+    """
 
+def process_df(
+    df: pd.DataFrame,
+    context: ProcessingContext,
+    observation_patterns: list[str],
+    column_rename_map: dict[str, str],
+) -> pd.DataFrame:
+    """
+    Processes a single dataframe by melting it and adding context columns.
+    Also computes Cell_Cd (A1 reference) using header position + original Excel row.
+    """
+    # Identify observation columns using the configured regex patterns
+    observation_period_columns = process_observation_columns(df, observation_patterns)
+    if not observation_period_columns:
+        raise ValueError("No observation period columns found in the data.")
+
+    # --- NEW: build a header-position map (1-based) for A1 column letters ---
+    # Keep the original header order (all headers except technical columns)
+    header_order = [c for c in df.columns if c not in ("Sheet_Cd", "__Excel_Row")]
+    header_pos = {str(c).strip(): i + 1 for i, c in enumerate(header_order) if c is not None}
+
+    # Get the ID columns (all columns except observation period columns)
+    id_columns = set(df.columns.tolist()) - observation_period_columns
+    # --- NEW: ensure we keep the original Excel row through the melt ---
+    if "__Excel_Row" in df.columns:
+        id_columns.add("__Excel_Row")
+
+    # Melt observation period columns into rows
+    pivoted_df = df.melt(
+        id_vars=list(id_columns),
+        var_name="Observation_Period_Cd",
+        value_name="Measure_Value"
+    )
+
+    # --- NEW: compute Cell_Cd from (Observation_Period_Cd -> column index) + __Excel_Row ---
+    if "__Excel_Row" in pivoted_df.columns:
+        # normalise label for lookup
+        obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
+        col_idx = obs_norm.map(lambda k: header_pos.get(k, None))
+
+        # Build A1 address where we have both parts
+        row_idx = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
+        has_both = col_idx.notna() & row_idx.notna()
+
+        cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
+        cell_cd.loc[has_both] = [
+            f"{get_column_letter(int(ci))}{int(ri)}" for ci, ri in zip(col_idx[has_both], row_idx[has_both])
+        ]
+
+        pivoted_df["Cell_Cd"] = cell_cd
+        # optional: drop the technical column
+        pivoted_df.drop(columns=["__Excel_Row"], inplace=True, errors="ignore")
+    else:
+        if "Cell_Cd" not in pivoted_df.columns:
+            pivoted_df["Cell_Cd"] = "--placeholder--"
+
+    # Add static context columns to the pivoted DataFrame
+    pivoted_df["Organisation_Cd"] = context.org_cd
+    pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
+    pivoted_df["Process_Cd"] = context.process_cd
+    pivoted_df["Template_Version"] = context.template_version
+    pivoted_df["Submission_Date"] = context.last_modified  # Use the last modified date
+    if "Section_Cd" not in pivoted_df.columns:
+        pivoted_df["Section_Cd"] = "--placeholder--"
+
+    # Convert all columns to strings for consistency
+    pivoted_df = pivoted_df.astype(str)
+
+    # Rename the columns according to the provided mapping
+    pivoted_df = pivoted_df.rename(columns=column_rename_map)
+
+    # Reorder the columns to match the desired output format
+    ordered_columns = list(column_rename_map.values())
+    pivoted_df = pivoted_df[ordered_columns]
+
+    return pivoted_df
 
 def check_empty_rows(wb: Workbook, sheet_names: list[str]):
     # pylint: disable=C0301
