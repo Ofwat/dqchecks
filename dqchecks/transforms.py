@@ -173,17 +173,35 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     return df_list
 
 
-def clean_data(df_list: list):
+# def clean_data(df_list: list):
     """
     Drops rows with NaN values and checks if any dataframe is empty.
     """
-    df_list = [
+    """df_list = [
         df.dropna(how='all', subset=df.columns.difference(['Sheet_Cd']))
         for df in df_list
     ]
     if any(i.empty for i in df_list):
         raise ValueError("No valid data found after removing rows with NaN values.")
+    return df_list"""
+
+def clean_data(df_list: list):
+    """
+    Drops rows with NaN values in all data columns (ignores tech columns),
+    and checks if any dataframe is empty.
+    """
+    tech_cols = {"Sheet_Cd", "__Excel_Row"}
+    df_list = [
+        df.dropna(
+            how="all",
+            subset=[c for c in df.columns if c not in tech_cols]
+        )
+        for df in df_list
+    ]
+    if any(i.empty for i in df_list):
+        raise ValueError("No valid data found after removing rows with NaN values.")
     return df_list
+
 
 def process_observation_columns(df: pd.DataFrame, observation_patterns: list[str]):
     """
