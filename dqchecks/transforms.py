@@ -150,14 +150,12 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
     Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
     - Header row is at `skip_rows` (e.g. row 2 in APR)
-    - First data row is Excel row `skip_rows + 1` (row 3), which APR often leaves empty
+    - First data row is Excel row `skip_rows + 1` (row 3), which APR often leaves empty.
     """
-    import datetime as _dt
-    import pandas as _pd
 
     def _canon_header(x):
         # Standardise headers so regex matches and lookups behave
-        if isinstance(x, (_pd.Timestamp, _dt.date, _dt.datetime)):
+        if isinstance(x, (pd.Timestamp, datetime.date, datetime.datetime)):
             return x.strftime("%Y-%m")
         return str(x).strip() if x is not None else ""
 
@@ -165,6 +163,7 @@ def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     for sheetname in fout_sheets:
         ws = wb[sheetname]
         data = ws.iter_rows(min_row=skip_rows, values_only=True)
+
         try:
             headers = next(data)  # header row at `skip_rows`
         except StopIteration as exc:
