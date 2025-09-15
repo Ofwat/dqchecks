@@ -534,3 +534,51 @@ def process_df(
     pivoted_df = pivoted_df[ordered_columns]
 
     return pivoted_df
+
+def process_fout_sheets(
+    wb: Workbook,
+    context: ProcessingContext,
+    config: FoutProcessConfig,
+) -> pd.DataFrame:
+    """
+    Processes all sheets in the given Excel workbook matching the specified patterns,
+    transforming and normalizing their data into a consolidated DataFrame.
+    """
+    # Validate inputs
+    validate_workbook(wb)
+    validate_context(context)
+    validate_observation_patterns(config.observation_patterns)
+
+    if not wb.data_only:
+        logging.warning("Reading in non data_only mode. Some data may not be accessible.")
+    logging.info("Using observation patterns: %s", config.observation_patterns)
+
+    # Extract matching sheets
+    fout_sheets = extract_fout_sheets(wb, config.fout_patterns)
+
+    # Optional validations on the workbook structure
+    if config.run_validations:
+        assert check_empty_rows(wb, fout_sheets)
+        assert check_column_headers(wb, fout_sheets)
+
+    # Read and clean the raw sheet data
+    df_list = read_sheets_data(wb, fout_sheets, skip_rows=config.skip_rows)
+    df_list = clean_data(df_list)
+
+    # Column mapping to the final schema
+    column_rename_map = config.column_rename_map or get_default_column_rename_map()
+
+    processed_dfs = []
+    for df in df_list:
+        # Reshape + compute Cell_Cd (done inside process_df)
+        if config.reshape:
+            df = process_df(df, context, config.observation_patterns, column_rename_map)
+
+        # Finalize types / names / order
+        processed_df = finalize_dataframe(df, context, column_rename_map)
+        processed_dfs.append(processed_df)
+
+    # Union everything
+    final_df = pd.concat(processed_dfs, ignore_index=True)
+    return final_df
+
