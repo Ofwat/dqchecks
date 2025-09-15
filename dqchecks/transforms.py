@@ -119,8 +119,11 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
 
     if not matching_sheets:
         raise ValueError(
-            f"No sheets matching patterns {fout_patterns} found. Available sheets: {wb.sheetnames}"
+            "No sheets matching patterns "
+            f"{fout_patterns} found. "
+            f"Available sheets: {wb.sheetnames}"
         )
+
 
     return matching_sheets
 
@@ -313,7 +316,8 @@ def process_df(
 
         cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
         cell_cd.loc[has_both] = [
-            f"{get_column_letter(int(ci))}{int(ri)}" for ci, ri in zip(col_idx[has_both], row_idx[has_both])
+            f"{get_column_letter(int(ci))}{int(ri)}"
+            for ci, ri in zip(col_idx[has_both], row_idx[has_both])
         ]
 
         pivoted_df["Cell_Cd"] = cell_cd
