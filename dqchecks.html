@@ -1816,7 +1816,7 @@ original Excel row captured in __Excel_Row.</p>
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">read_sheets_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.read_sheets_data" title="Link to this definition">¶</a></dt>
 <dd><p>Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
 - Header row is at <cite>skip_rows</cite> (e.g. row 2 in APR)
-- First data row is Excel row <cite>skip_rows + 1</cite> (row 3), which APR templates keep empty.</p>
+- First data row is Excel row <cite>skip_rows + 1</cite> (row 3), which APR often leaves empty</p>
 </dd></dl>
 
 <dl class="py function">
