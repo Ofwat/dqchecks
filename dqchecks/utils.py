@@ -76,7 +76,7 @@ def create_validation_event_row_dataframe(**kwargs):
     ValueError: If any of the supplied kwargs do not match the predefined column names.
     
     Example:
-    >>> create_validation_event_row_dataframe(Event_Id=123, Error_Desc="Invalid format")
+    >>> create_validation_event_row_datFaframe(Event_Id=123, Error_Desc="Invalid format")
            Event_Id Batch_Id Validation_Processing_Stage ... Error_Desc
     0         123     None                      None     ... Invalid format
     """
