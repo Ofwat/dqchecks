@@ -36,7 +36,8 @@ def test_returns_validation_event_when_duplicates_found():
     df = pd.DataFrame({
         'Measure_Cd': ['A1', 'A2', 'B1'],
         'Measure_Desc': ['desc1', 'desc1', 'desc2'],
-        'Sheet_Cd': ['sheet1', 'sheet2', 'sheet3']
+        'Sheet_Cd': ['sheet1', 'sheet2', 'sheet3'],
+        "Cell_Cd": ["B1", "B2", "B4"],
     })
     metadata = {
         'Batch_Id': 'batch1',

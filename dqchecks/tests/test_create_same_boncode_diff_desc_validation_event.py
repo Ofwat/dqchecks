@@ -39,6 +39,7 @@ def test_returns_validation_event_when_duplicates_found():
         'Measure_Cd': ['A', 'A', 'B'],
         'Measure_Desc': ['desc1', 'desc2', 'desc3'],
         'Sheet_Cd': ['S1', 'S2', 'S3'],
+        "Cell_Cd": ["A1", "A2", "A3"],
     })
 
     metadata = {
