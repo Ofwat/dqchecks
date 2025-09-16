@@ -130,46 +130,116 @@ def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
 def read_sheets_data(wb: Workbook, fout_sheets: list, skip_rows: int = 2):
     """
     Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
-    - Header row is at `skip_rows` (e.g. row 2 in APR)
-    - First data row is Excel row `skip_rows + 1` (row 3), which APR often leaves empty.
+
+    - Handles data starting in arbitrary columns (e.g., column G)
+    - Handles gaps in headers (blank columns)
+    - Inserts actual Excel column letters (e.g., G, H, J, ...) as the FIRST ROW of the DataFrame
+    - Header row is at `skip_rows`
+    - First data row is Excel row `skip_rows + 1`
+    - Sets __Excel_Row as the DataFrame index
+    """
+    return [process_sheet(wb[sheetname], sheetname, skip_rows) for sheetname in fout_sheets]
+
+
+def process_sheet(ws, sheetname, skip_rows):
+    """
+    Processes a single Excel worksheet into a pandas DataFrame with metadata.
+
+    - Extracts and canonicalizes headers from the specified header row.
+    - Handles missing or blank headers by inserting placeholder names.
+    - Inserts a first row containing Excel column letters for Cell_Cd generation.
+    - Reads and pads data rows to match header width.
+    - Adds metadata columns: 'Sheet_Cd' and '__Excel_Row'.
+    - Sets '__Excel_Row' as the DataFrame index to preserve original Excel row numbers.
+
+    Parameters:
+        ws (Worksheet): An openpyxl worksheet object.
+        sheetname (str): The name of the worksheet being processed (used for metadata).
+        skip_rows (int): Number of rows to skip before the header row.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing the processed sheet data with metadata.
     """
 
-    def _canon_header(x):
-        # Standardise headers so regex matches and lookups behave
-        if isinstance(x, (pd.Timestamp, datetime.date, datetime.datetime)):
-            return x.strftime("%Y-%m")
+    data_iter = ws.iter_rows(min_row=skip_rows, values_only=False)
+
+    try:
+        header_cells = next(data_iter)
+    except StopIteration as exc:
+        raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
+
+    headers, col_letters = build_headers(header_cells)
+    data_rows = extract_data_rows(data_iter, len(headers))
+
+    df = pd.DataFrame(data_rows, columns=headers)
+    df = pd.concat([pd.DataFrame([dict(zip(headers, col_letters))]), df], ignore_index=True)
+
+    # Add metadata
+    total_rows = len(df)
+    data_start_row = skip_rows + 1
+    df["Sheet_Cd"] = [None] + [sheetname] * (total_rows - 1)
+    df["__Excel_Row"] = [None] + list(range(data_start_row, data_start_row + total_rows - 1))
+
+    df.set_index("__Excel_Row", inplace=True)
+    return df
+
+
+def build_headers(header_cells):
+    """
+    Builds standardized headers and corresponding Excel column letters from a list of header cells.
+
+    - Strips whitespace and converts header values to strings.
+    - Replaces blank or None headers with placeholders like "__EMPTY_COL_1", "__EMPTY_COL_2", etc.
+    - Retrieves Excel-style column letters (e.g., 'A', 'B', 'C') for each header cell.
+
+    Parameters:
+        header_cells (list): A list of openpyxl Cell objects representing the header row.
+
+    Returns:
+        tuple:
+            headers (list of str): Cleaned or placeholder header names.
+            col_letters (list of str): Corresponding Excel column letters for each header.
+    """
+    def _canon(x):
         return str(x).strip() if x is not None else ""
+    headers = []
+    col_letters = []
+    for i, cell in enumerate(header_cells):
+        headers.append(_canon(cell.value) or f"__EMPTY_COL_{i+1}")
+        col_letters.append(get_column_letter(cell.column))
+    return headers, col_letters
 
-    df_list = []
-    for sheetname in fout_sheets:
-        ws = wb[sheetname]
-        data = ws.iter_rows(min_row=skip_rows, values_only=True)
 
-        try:
-            headers = next(data)  # header row at `skip_rows`
-        except StopIteration as exc:
-            raise ValueError(f"Sheet '{sheetname}' is empty or has no data.") from exc
 
-        # Build df from remaining rows with CANONICAL headers
-        df = pd.DataFrame(data, columns=[_canon_header(h) for h in headers])
+def extract_data_rows(data_iter, width):
+    """
+    Extracts non-empty rows from an Excel data iterator, padding or trimming
+    each row to a fixed width.
 
-        # Tag sheet + original Excel row numbers
-        df["Sheet_Cd"] = sheetname
-        if df.shape[0] > 0:
-            first_excel_row = skip_rows + 1  # first data row after header
-            df["__Excel_Row"] = range(first_excel_row, first_excel_row + len(df))
-        else:
-            df["__Excel_Row"] = []
+    Parameters:
+        data_iter (iterator): An iterator of Excel rows (each a list of Cell objects).
+        width (int): The target number of columns for each row.
 
-        df_list.append(df)
-    return df_list
+    Returns:
+        list[list]: A list of padded row values, excluding fully empty rows.
+    """
+    rows = []
+    for row in data_iter:
+        values = [cell.value for cell in row]
+        padded = (values + [None] * width)[:width]
+        if any(v is not None for v in padded):
+            rows.append(padded)
+    return rows
+
+
+
 
 def clean_data(df_list: list):
     """
     Drops rows with NaN values in all data columns (ignores tech columns),
     and checks if any dataframe is empty.
     """
-    tech_cols = {"Sheet_Cd", "__Excel_Row"}
+    tech_cols = {"Sheet_Cd"}
     df_list = [
         df.dropna(how="all", subset=[c for c in df.columns if c not in tech_cols])
         for df in df_list
@@ -382,56 +452,91 @@ def process_df(
     observation_patterns: list[str],
     column_rename_map: dict[str, str],
 ) -> pd.DataFrame:
+    # pylint: disable=C0301
     """
-    Processes a single dataframe by melting it and adding context columns.
-    Also computes Cell_Cd (A1 address) from the year header column and the
-    original Excel row captured in __Excel_Row.
+    Transform a wide-format DataFrame extracted from Excel into a normalized long-format DataFrame.
+
+    This function:
+    - Assumes the first row contains Excel column letters (e.g., 'G', 'H', 'J', ...) corresponding
+      to each data column.
+    - Removes that first row and stores the column letters for cell reference computations.
+    - Resets the DataFrame index to capture the original Excel row numbers as a column '__Excel_Row'.
+    - Identifies observation period columns based on given patterns.
+    - Melts the DataFrame to long format with one row per observation period per ID.
+    - Computes the Excel-style cell address (Cell_Cd) combining the column letter and row number.
+    - Adds context metadata columns from the provided ProcessingContext.
+    - Renames and reorders columns according to the provided mapping.
+
+    Parameters:
+    -----------
+    df : pd.DataFrame
+        Input DataFrame representing Excel sheet data, with the first row containing Excel column letters.
+        The DataFrame index is expected to represent the original Excel row numbers.
+    
+    context : ProcessingContext
+        An object containing metadata to be appended to each row (e.g., organisation code, submission period).
+    
+    observation_patterns : list[str]
+        A list of string patterns used to identify observation period columns (e.g., ['2024', '2025']).
+    
+    column_rename_map : dict[str, str]
+        Mapping of original column names to desired output column names.
+
+    Returns:
+    --------
+    pd.DataFrame
+        A long-format DataFrame with melted observations, calculated 'Cell_Cd' Excel addresses,
+        added context columns, and columns renamed and reordered as specified.
+
+    Raises:
+    -------
+    ValueError
+        If no observation period columns matching the patterns are found.
+
+    Example:
+    --------
+    >>> processed_df = process_df(raw_df, context, ['2024', '2025'], {'Measure_Value': 'Value'})
     """
-    # 1) Which columns are observation periods (e.g. "2024-25")?
+
+    # Extract Excel column letters from first row and remove that row
+    col_letter_map = df.iloc[0].to_dict()
+    df = df.iloc[1:].copy()
+
+    # Move original index (Excel row number) into a column
+    df = df.reset_index().rename(columns={"index": "__Excel_Row"})
+
+    # Identify observation period columns based on patterns
     observation_period_columns = process_observation_columns(df, observation_patterns)
     if not observation_period_columns:
         raise ValueError("No observation period columns found in the data.")
 
-    # 2) Build header-position map (1-based) to convert column index -> A/B/C...
-    #    Use canonicalised headers (strings) and ignore tech columns.
-    header_order = [c for c in df.columns if c not in ("Sheet_Cd", "__Excel_Row")]
-    header_pos = {str(c).strip(): i + 1 for i, c in enumerate(header_order)}
+    # Define ID columns (all except observation period columns, plus __Excel_Row)
+    id_columns = set(df.columns) - observation_period_columns
+    id_columns.add("__Excel_Row")
 
-    # 3) Keep ID columns (everything except observation columns); keep __Excel_Row
-    id_columns = set(df.columns.tolist()) - observation_period_columns
-    if "__Excel_Row" in df.columns:
-        id_columns.add("__Excel_Row")
-
-    # 4) Melt to long format: one row per (ID, Observation_Period_Cd)
+    # Melt dataframe to long format
     pivoted_df = df.melt(
         id_vars=list(id_columns),
         var_name="Observation_Period_Cd",
         value_name="Measure_Value"
     )
 
-    # 5) Compute Cell_Cd from (Observation_Period_Cd -> column index) + __Excel_Row
-    if "__Excel_Row" in pivoted_df.columns:
-        obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
-        col_idx  = obs_norm.map(header_pos.get)
+    # Compute Cell_Cd (e.g. G15) from Excel column letters and row numbers
+    obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
+    col_letters_for_obs = obs_norm.map(col_letter_map)
+    row_idx = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
+    has_both = col_letters_for_obs.notna() & row_idx.notna()
 
-        row_idx  = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
-        has_both = col_idx.notna() & row_idx.notna()
+    cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
+    cell_cd.loc[has_both] = [
+        f"{col}{int(ri)}" for col, ri in zip(col_letters_for_obs[has_both], row_idx[has_both])
+    ]
+    pivoted_df["Cell_Cd"] = cell_cd
 
-        cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
-        cell_cd.loc[has_both] = [
-            f"{get_column_letter(int(ci))}{int(ri)}"
-            for ci, ri in zip(col_idx[has_both], row_idx[has_both])
-        ]
+    # Drop the technical __Excel_Row column
+    pivoted_df.drop(columns=["__Excel_Row"], inplace=True, errors="ignore")
 
-        pivoted_df["Cell_Cd"] = cell_cd
-        # __Excel_Row is technical; drop after computing Cell_Cd
-        pivoted_df.drop(columns=["__Excel_Row"], inplace=True, errors="ignore")
-    else:
-        # Safety: ensure Cell_Cd exists
-        if "Cell_Cd" not in pivoted_df.columns:
-            pivoted_df["Cell_Cd"] = "--placeholder--"
-
-    # 6) Stamp context columns
+    # Add context columns
     pivoted_df["Organisation_Cd"] = context.org_cd
     pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
     pivoted_df["Process_Cd"] = context.process_cd
@@ -440,10 +545,9 @@ def process_df(
     if "Section_Cd" not in pivoted_df.columns:
         pivoted_df["Section_Cd"] = "--placeholder--"
 
-    # 7) Normalise types, rename, and reorder to the final schema
+    # Normalize types, rename columns, and reorder as per mapping
     pivoted_df = pivoted_df.astype(str)
     pivoted_df = pivoted_df.rename(columns=column_rename_map)
-
     ordered_columns = [c for c in column_rename_map.values() if c in pivoted_df.columns]
     pivoted_df = pivoted_df[ordered_columns]
 
