@@ -178,7 +178,7 @@ def process_sheet(ws, sheetname, skip_rows):
     total_rows = len(df)
     data_start_row = skip_rows + 1
     df["Sheet_Cd"] = [None] + [sheetname] * (total_rows - 1)
-    df["__Excel_Row"] = [None] + list(range(data_start_row, data_start_row + total_rows - 1))
+    df["__Excel_Row"] = list(range(data_start_row, data_start_row + total_rows))
 
     df.set_index("__Excel_Row", inplace=True)
     return df
