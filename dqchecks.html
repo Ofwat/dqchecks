@@ -1643,6 +1643,29 @@ data remains in wide format. Defaults to True.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.build_headers">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">build_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">header_cells</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.build_headers" title="Link to this definition">¶</a></dt>
+<dd><p>Builds standardized headers and corresponding Excel column letters from a list of header cells.</p>
+<ul class="simple">
+<li><p>Strips whitespace and converts header values to strings.</p></li>
+<li><p>Replaces blank or None headers with placeholders like “__EMPTY_COL_1”, “__EMPTY_COL_2”, etc.</p></li>
+<li><p>Retrieves Excel-style column letters (e.g., ‘A’, ‘B’, ‘C’) for each header cell.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>header_cells</strong> (<em>list</em>) – A list of openpyxl Cell objects representing the header row.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>headers (list of str): Cleaned or placeholder header names.
+col_letters (list of str): Corresponding Excel column letters for each header.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.check_column_headers">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">check_column_headers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheet_names</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.check_column_headers" title="Link to this definition">¶</a></dt>
 <dd><p>Validates that each sheet has the required columns in the correct order starting from row 2.</p>
@@ -1709,6 +1732,27 @@ data remains in wide format. Defaults to True.</p>
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">clean_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df_list</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.clean_data" title="Link to this definition">¶</a></dt>
 <dd><p>Drops rows with NaN values in all data columns (ignores tech columns),
 and checks if any dataframe is empty.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.extract_data_rows">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">extract_data_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.extract_data_rows" title="Link to this definition">¶</a></dt>
+<dd><p>Extracts non-empty rows from an Excel data iterator, padding or trimming
+each row to a fixed width.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data_iter</strong> (<em>iterator</em>) – An iterator of Excel rows (each a list of Cell objects).</p></li>
+<li><p><strong>width</strong> (<em>int</em>) – The target number of columns for each row.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A list of padded row values, excluding fully empty rows.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[list]</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -1800,9 +1844,56 @@ renaming or standardizing columns in a DataFrame related to quarterly data.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.process_df">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_df</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">observation_patterns</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.process_df" title="Link to this definition">¶</a></dt>
-<dd><p>Processes a single dataframe by melting it and adding context columns.
-Also computes Cell_Cd (A1 address) from the year header column and the
-original Excel row captured in __Excel_Row.</p>
+<dd><p>Transform a wide-format DataFrame extracted from Excel into a normalized long-format DataFrame.</p>
+<p>This function:
+- Assumes the first row contains Excel column letters (e.g., ‘G’, ‘H’, ‘J’, …) corresponding</p>
+<blockquote>
+<div><p>to each data column.</p>
+</div></blockquote>
+<ul class="simple">
+<li><p>Removes that first row and stores the column letters for cell reference computations.</p></li>
+<li><p>Resets the DataFrame index to capture the original Excel row numbers as a column ‘__Excel_Row’.</p></li>
+<li><p>Identifies observation period columns based on given patterns.</p></li>
+<li><p>Melts the DataFrame to long format with one row per observation period per ID.</p></li>
+<li><p>Computes the Excel-style cell address (Cell_Cd) combining the column letter and row number.</p></li>
+<li><p>Adds context metadata columns from the provided ProcessingContext.</p></li>
+<li><p>Renames and reorders columns according to the provided mapping.</p></li>
+</ul>
+<section id="parameters">
+<h3>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>Input DataFrame representing Excel sheet data, with the first row containing Excel column letters.
+The DataFrame index is expected to represent the original Excel row numbers.</p>
+</dd>
+<dt>context<span class="classifier">ProcessingContext</span></dt><dd><p>An object containing metadata to be appended to each row (e.g., organisation code, submission period).</p>
+</dd>
+<dt>observation_patterns<span class="classifier">list[str]</span></dt><dd><p>A list of string patterns used to identify observation period columns (e.g., [‘2024’, ‘2025’]).</p>
+</dd>
+<dt>column_rename_map<span class="classifier">dict[str, str]</span></dt><dd><p>Mapping of original column names to desired output column names.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h3>Returns:<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>A long-format DataFrame with melted observations, calculated ‘Cell_Cd’ Excel addresses,
+added context columns, and columns renamed and reordered as specified.</p>
+</dd>
+</dl>
+</section>
+<section id="raises">
+<h3>Raises:<a class="headerlink" href="#raises" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If no observation period columns matching the patterns are found.</p>
+</dd>
+</dl>
+</section>
+<section id="example">
+<h3>Example:<a class="headerlink" href="#example" title="Link to this heading">¶</a></h3>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">processed_df</span> <span class="o">=</span> <span class="n">process_df</span><span class="p">(</span><span class="n">raw_df</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;2024&#39;</span><span class="p">,</span> <span class="s1">&#39;2025&#39;</span><span class="p">],</span> <span class="p">{</span><span class="s1">&#39;Measure_Value&#39;</span><span class="p">:</span> <span class="s1">&#39;Value&#39;</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
 </dd></dl>
 
 <dl class="py function">
@@ -1819,11 +1910,46 @@ transforming and normalizing their data into a consolidated DataFrame.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.process_sheet">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">process_sheet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ws</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sheetname</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.process_sheet" title="Link to this definition">¶</a></dt>
+<dd><p>Processes a single Excel worksheet into a pandas DataFrame with metadata.</p>
+<ul class="simple">
+<li><p>Extracts and canonicalizes headers from the specified header row.</p></li>
+<li><p>Handles missing or blank headers by inserting placeholder names.</p></li>
+<li><p>Inserts a first row containing Excel column letters for Cell_Cd generation.</p></li>
+<li><p>Reads and pads data rows to match header width.</p></li>
+<li><p>Adds metadata columns: ‘Sheet_Cd’ and ‘__Excel_Row’.</p></li>
+<li><p>Sets ‘__Excel_Row’ as the DataFrame index to preserve original Excel row numbers.</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ws</strong> (<em>Worksheet</em>) – An openpyxl worksheet object.</p></li>
+<li><p><strong>sheetname</strong> (<em>str</em>) – The name of the worksheet being processed (used for metadata).</p></li>
+<li><p><strong>skip_rows</strong> (<em>int</em>) – Number of rows to skip before the header row.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A DataFrame containing the processed sheet data with metadata.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.read_sheets_data">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">read_sheets_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fout_sheets</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_rows</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.read_sheets_data" title="Link to this definition">¶</a></dt>
-<dd><p>Reads data from the sheets into pandas DataFrames and tags the original Excel row index.
-- Header row is at <cite>skip_rows</cite> (e.g. row 2 in APR)
-- First data row is Excel row <cite>skip_rows + 1</cite> (row 3), which APR often leaves empty.</p>
+<dd><p>Reads data from the sheets into pandas DataFrames and tags the original Excel row index.</p>
+<ul class="simple">
+<li><p>Handles data starting in arbitrary columns (e.g., column G)</p></li>
+<li><p>Handles gaps in headers (blank columns)</p></li>
+<li><p>Inserts actual Excel column letters (e.g., G, H, J, …) as the FIRST ROW of the DataFrame</p></li>
+<li><p>Header row is at <cite>skip_rows</cite></p></li>
+<li><p>First data row is Excel row <cite>skip_rows + 1</cite></p></li>
+<li><p>Sets __Excel_Row as the DataFrame index</p></li>
+</ul>
 </dd></dl>
 
 <dl class="py function">
@@ -1864,7 +1990,7 @@ pd.DataFrame: A pandas DataFrame with one row and all predefined columns.</p>
 <p>Raises:
 ValueError: If any of the supplied kwargs do not match the predefined column names.</p>
 <p>Example:
-&gt;&gt;&gt; create_validation_event_row_dataframe(Event_Id=123, Error_Desc=”Invalid format”)</p>
+&gt;&gt;&gt; create_validation_event_row_datFaframe(Event_Id=123, Error_Desc=”Invalid format”)</p>
 <blockquote>
 <div><p>Event_Id Batch_Id Validation_Processing_Stage … Error_Desc</p>
 </div></blockquote>
