@@ -79,6 +79,7 @@ def test_load_bronze_success(setup_file_structure):
     assert metadata.template_version == template_path.name
     assert metadata.md5_hash is not None
     assert isinstance(metadata.last_modified, datetime)
+    assert metadata.template_path.endswith("org1_process_cd=abc_submission_period_cd=202501.xlsx")
 
 def test_strict_validation_error_multiple_templates(tmp_path):
     """Setup with two templates to trigger strict validation error"""
