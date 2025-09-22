@@ -446,6 +446,33 @@ def get_default_column_rename_map() -> dict[str, str]:
         "Cell_Cd": "Cell_Cd",
     }
 
+def compute_cell_cd(pivoted_df: pd.DataFrame, col_letter_map: dict[str, str]) -> pd.Series:
+    """
+    Compute Excel-style cell addresses (Cell_Cd) for each observation row.
+
+    Parameters:
+    -----------
+    pivoted_df : pd.DataFrame
+        The long-format DataFrame with columns "Observation_Period_Cd" and "__Excel_Row".
+    col_letter_map : dict[str, str]
+        Mapping from observation period column names to Excel column letters.
+
+    Returns:
+    --------
+    pd.Series
+        A Series containing the computed Cell_Cd values.
+    """
+    obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
+    col_letters_for_obs = obs_norm.map(col_letter_map)
+    row_idx = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
+    has_both = col_letters_for_obs.notna() & row_idx.notna()
+
+    cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
+    cell_cd.loc[has_both] = [
+        f"{col}{int(ri)}" for col, ri in zip(col_letters_for_obs[has_both], row_idx[has_both])
+    ]
+    return cell_cd
+
 def process_df(
     df: pd.DataFrame,
     context: ProcessingContext,
@@ -522,16 +549,7 @@ def process_df(
     )
 
     # Compute Cell_Cd (e.g. G15) from Excel column letters and row numbers
-    obs_norm = pivoted_df["Observation_Period_Cd"].astype(str).str.strip()
-    col_letters_for_obs = obs_norm.map(col_letter_map)
-    row_idx = pd.to_numeric(pivoted_df["__Excel_Row"], errors="coerce")
-    has_both = col_letters_for_obs.notna() & row_idx.notna()
-
-    cell_cd = pd.Series(["--placeholder--"] * len(pivoted_df), index=pivoted_df.index)
-    cell_cd.loc[has_both] = [
-        f"{col}{int(ri)}" for col, ri in zip(col_letters_for_obs[has_both], row_idx[has_both])
-    ]
-    pivoted_df["Cell_Cd"] = cell_cd
+    pivoted_df["Cell_Cd"] = compute_cell_cd(pivoted_df, col_letter_map)
 
     # Drop the technical __Excel_Row column
     pivoted_df.drop(columns=["__Excel_Row"], inplace=True, errors="ignore")

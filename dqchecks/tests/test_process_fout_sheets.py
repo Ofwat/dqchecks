@@ -97,6 +97,7 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
     ]
     assert all(col in result_df.columns for col in expected_columns)
     assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
+    assert result_df["Cell_Cd"].to_list() == ["H4", "H5", "H6"]
 
     # Patch the logging to capture the warning message
     with patch("logging.warning") as mock_warning:
