@@ -1848,7 +1848,7 @@ def create_same_desc_diff_boncode_validation_event(
 
             # pylint: disable=C0301
             Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", missing_text_string),
-            Rule_Cd='Rule 1 - Boncode-Description Consistency',
+            Rule_Cd='Boncode-Description Consistency',
             Error_Category='Same description, different boncodes',
             Error_Severity_Cd='soft',
             Error_Desc=error_desc,
@@ -1937,7 +1937,7 @@ def create_same_boncode_diff_desc_validation_event(
             Cell_Cd=row["Cell_Cd"],
             # pylint: disable=C0301
             Validation_Processing_Stage=metadata.get("Validation_Processing_Stage", missing_text_string),
-            Rule_Cd='Rule 1 - Boncode-Description Consistency',
+            Rule_Cd='Boncode-Description Consistency',
             Error_Category='Same boncode, different description',
             Error_Severity_Cd='soft',
             Error_Desc=error_desc,
