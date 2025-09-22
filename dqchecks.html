@@ -1735,6 +1735,28 @@ and checks if any dataframe is empty.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.transforms.compute_cell_cd">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">compute_cell_cd</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pivoted_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">col_letter_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Series</span></span></span><a class="headerlink" href="#dqchecks.transforms.compute_cell_cd" title="Link to this definition">¶</a></dt>
+<dd><p>Compute Excel-style cell addresses (Cell_Cd) for each observation row.</p>
+<section id="parameters">
+<h3>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>pivoted_df<span class="classifier">pd.DataFrame</span></dt><dd><p>The long-format DataFrame with columns “Observation_Period_Cd” and “__Excel_Row”.</p>
+</dd>
+<dt>col_letter_map<span class="classifier">dict[str, str]</span></dt><dd><p>Mapping from observation period column names to Excel column letters.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h3>Returns:<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h3>
+<dl class="simple">
+<dt>pd.Series</dt><dd><p>A Series containing the computed Cell_Cd values.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.extract_data_rows">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">extract_data_rows</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data_iter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">width</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.transforms.extract_data_rows" title="Link to this definition">¶</a></dt>
 <dd><p>Extracts non-empty rows from an Excel data iterator, padding or trimming
@@ -1859,8 +1881,8 @@ renaming or standardizing columns in a DataFrame related to quarterly data.</p>
 <li><p>Adds context metadata columns from the provided ProcessingContext.</p></li>
 <li><p>Renames and reorders columns according to the provided mapping.</p></li>
 </ul>
-<section id="parameters">
-<h3>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading">¶</a></h3>
+<section id="id23">
+<h3>Parameters:<a class="headerlink" href="#id23" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>Input DataFrame representing Excel sheet data, with the first row containing Excel column letters.
 The DataFrame index is expected to represent the original Excel row numbers.</p>
@@ -1873,8 +1895,8 @@ The DataFrame index is expected to represent the original Excel row numbers.</p>
 </dd>
 </dl>
 </section>
-<section id="returns">
-<h3>Returns:<a class="headerlink" href="#returns" title="Link to this heading">¶</a></h3>
+<section id="id24">
+<h3>Returns:<a class="headerlink" href="#id24" title="Link to this heading">¶</a></h3>
 <dl class="simple">
 <dt>pd.DataFrame</dt><dd><p>A long-format DataFrame with melted observations, calculated ‘Cell_Cd’ Excel addresses,
 added context columns, and columns renamed and reordered as specified.</p>
@@ -1981,7 +2003,7 @@ transforming and normalizing their data into a consolidated DataFrame.</p>
 <p>All known columns are initialized. Columns for which values are not supplied
 will be set to None.</p>
 <p>Parameters:
-<a href="#id23"><span class="problematic" id="id24">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
+<a href="#id25"><span class="problematic" id="id26">**</span></a>kwargs: Arbitrary keyword arguments corresponding to the column-value pairs</p>
 <blockquote>
 <div><p>to populate in the DataFrame. Only predefined column names are allowed.</p>
 </div></blockquote>
