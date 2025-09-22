@@ -35,12 +35,14 @@ class FileMetadata:
         last_modified (datetime): Last modified timestamp.
         md5_hash (str | None): MD5 hash of the file contents.
         template_version (str | None): Version identifier, typically from template filename.
+        template_path (str | None): Absolute path to the template.
     """
     path: str
     filename: str
     last_modified: datetime.datetime
     md5_hash: str | None
     template_version: str | None = None
+    template_path: str | None = None
 
 # Configure logging
 logging.basicConfig(
@@ -332,4 +334,5 @@ class FileLoader:
             last_modified=last_modified,
             md5_hash=md5_hash,
             template_version=template_version,
+            template_path = matched_templates[0],
         )
