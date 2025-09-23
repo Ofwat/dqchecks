@@ -473,6 +473,12 @@ def compute_cell_cd(pivoted_df: pd.DataFrame, col_letter_map: dict[str, str]) ->
     ]
     return cell_cd
 
+def extract_column_letters_from_top_row(df):
+    """Extract Excel column letters from first row and remove that row"""
+    col_letter_map = df.iloc[0].to_dict()
+    df = df.iloc[1:].copy()
+    return (df, col_letter_map)
+
 def process_df(
     df: pd.DataFrame,
     context: ProcessingContext,
@@ -526,8 +532,7 @@ def process_df(
     """
 
     # Extract Excel column letters from first row and remove that row
-    col_letter_map = df.iloc[0].to_dict()
-    df = df.iloc[1:].copy()
+    df, col_letter_map = extract_column_letters_from_top_row(df)
 
     # Move original index (Excel row number) into a column
     df = df.reset_index().rename(columns={"index": "__Excel_Row"})
@@ -609,6 +614,9 @@ def process_fout_sheets(
         # Reshape + compute Cell_Cd (done inside process_df)
         if config.reshape:
             df = process_df(df, context, config.observation_patterns, column_rename_map)
+        else:
+            # Extract Excel column letters from first row and remove that row
+            df, _col_letter_map = extract_column_letters_from_top_row(df)
 
         # Finalize types / names / order
         processed_df = finalize_dataframe(df, context, column_rename_map)

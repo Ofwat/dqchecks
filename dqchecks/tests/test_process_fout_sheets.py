@@ -1,3 +1,4 @@
+# pylint: disable=C0302
 """
 Tests for the transforms.py file
 """
@@ -60,6 +61,22 @@ def workbook_with_data():
     sheet.append(["a", "a", "a", "a", "a", "a", "a", "a"])
     return wb
 
+@pytest.fixture
+def workbook_with_data_cell_cd():
+    """
+    Fixture for workbook with data in 'fOut_*' sheets
+    """
+    wb = Workbook()
+    sheet = wb.create_sheet("fOut_Sheet1")
+    sheet.append(["", "", "", "", "", "", "", ""])
+    sheet.append(["Acronym", "Reference", "Item description", "Unit", "Model",
+                  "Description_input", "Constant", "Cell_Cd", "2020-21"])
+    sheet.append(["", "", "", "", "", "", "", "a8"])
+    sheet.append(["a", "a", "a", "a", "a", "a", "a", "a9"])
+    sheet.append(["a", "a", "a", "a", "a", "a", "a", "a10"])
+    sheet.append(["a", "a", "a", "a", "a", "a", "a", "a11"])
+    return wb
+
 # pylint: disable=W0621
 def test_process_fout_sheets_valid(workbook_with_data, valid_context):
     """
@@ -69,6 +86,7 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
         observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
         fout_patterns=["^fOut_"],
         run_validations=True,
+        reshape=True,
         column_rename_map=None  # or provide custom if desired
     )
 
@@ -104,6 +122,79 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
         # Call the function (this will trigger the warning if wb.data_only is False)
         process_fout_sheets(
             workbook_with_data,
+            valid_context,
+            config
+        )
+
+        mock_warning.assert_called_with(
+            "Reading in non data_only mode. Some data may not be accessible.")
+
+# pylint: disable=W0621
+def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_context):
+    """
+    Test valid processing of a workbook using FoutProcessConfig for config parameters.
+    """
+    config = FoutProcessConfig(
+        observation_patterns=[r'^\s*2[0-9]{3}-[1-9][0-9]\s*$'],
+        fout_patterns=["^fOut_"],
+        run_validations=False,
+        skip_rows=2,
+        reshape=False,
+        column_rename_map=None  # or provide custom if desired
+    )
+
+    result_df = process_fout_sheets(
+        workbook_with_data_cell_cd,
+        valid_context,
+        config
+    )
+
+    top_row = result_df.iloc[0]
+
+    expected_top_row = pd.DataFrame(
+        {
+            "Organisation_Cd": ["ORG001"],
+            "Submission_Period_Cd": ["2025Q1"],
+            "Process_Cd": ["PROCESS01"],
+            "Template_Version": ["1.0"],
+            "Sheet_Cd": ["fOut_Sheet1"],
+            "Measure_Cd": [""],
+            "Measure_Desc": [""],
+            "Measure_Unit": [""],
+            "Model_Cd": [""],
+            "Submission_Date": ["2025-03-03"],
+            "Section_Cd": ["--placeholder--"],
+            "Cell_Cd": ["a8"],
+        }
+    ).iloc[0]
+
+    assert isinstance(result_df, pd.DataFrame)
+    assert not result_df.empty
+    assert top_row.equals(expected_top_row)
+    assert top_row.shape == (12, )
+
+    expected_columns = [
+        "Organisation_Cd",
+        "Submission_Period_Cd",
+        "Process_Cd",
+        "Template_Version",
+        "Sheet_Cd",
+        "Measure_Cd",
+        "Measure_Unit",
+        "Model_Cd",
+        "Submission_Date",
+        "Section_Cd",
+        "Cell_Cd",
+    ]
+    assert all(col in result_df.columns for col in expected_columns)
+    assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
+    assert result_df["Cell_Cd"].to_list() == ["a8", "a9", "a10", "a11"]
+
+    # Patch the logging to capture the warning message
+    with patch("logging.warning") as mock_warning:
+        # Call the function (this will trigger the warning if wb.data_only is False)
+        process_fout_sheets(
+            workbook_with_data_cell_cd,
             valid_context,
             config
         )
