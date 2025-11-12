@@ -1218,6 +1218,13 @@ with multiple Measure_Cd values. Each row has a unique Event_Id.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="dqchecks.panacea.extract_formula_text">
+<span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">extract_formula_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cell</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#dqchecks.panacea.extract_formula_text" title="Link to this definition">¶</a></dt>
+<dd><p>Safely extract the formula text (for both normal and array formulas).
+Returns None if the cell has no formula.</p>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.panacea.find_formula_differences">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.panacea.</span></span><span class="sig-name descname"><span class="pre">find_formula_differences</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">wb_template</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">wb_company</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Workbook</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.panacea.find_formula_differences" title="Link to this definition">¶</a></dt>
 <dd><p>Compares the formulas between two workbooks (template and company) and identifies discrepancies.</p>
