@@ -2,8 +2,10 @@
 Tests for find_formula_differences functions
 found in the panacea.py file
 """
+import sys
 import pytest
 from openpyxl import Workbook
+from openpyxl.worksheet.formula import ArrayFormula
 from dqchecks.panacea import (
     create_dataframe_formula_differences,
     find_formula_differences,
@@ -231,3 +233,71 @@ def test_find_formula_differences_formula_vs_value():
     assert "Value: 3" in error_desc
     assert "Template:" in error_desc
     assert "Company" in error_desc
+
+# pylint: disable=W0613
+def test_find_formula_differences_array_formula_detected(monkeypatch):
+    """Detects differences between array formulas correctly"""
+    # Create template workbook with an array formula
+    wb_template = Workbook()
+    ws_template = wb_template.active
+    ws_template.title = "DPWW2"
+
+    # Mock array formula in cell A1
+    ws_template["A1"].value = ArrayFormula(ref="A1:A2", text="=TRANSPOSE(B1:B2)")
+
+    # Create company workbook with a different array formula
+    wb_company = Workbook()
+    ws_company = wb_company.active
+    ws_company.title = "DPWW2"
+    ws_company["A1"].value = ArrayFormula(ref="A1:A2", text="=TRANSPOSE(B1:B3)")
+
+    # Compare the two workbooks
+    result_df = find_formula_differences(wb_template, wb_company)
+
+    # Expect a difference in the array formula text
+    assert not result_df.empty
+    assert result_df.shape[0] == 1
+    desc = result_df.loc[result_df["Cell_Cd"] == "A1", "Error_Desc"].iloc[0]
+    assert "=TRANSPOSE(B1:B2)" in desc
+    assert "=TRANSPOSE(B1:B3)" in desc
+
+
+def test_find_formula_differences_array_formula_equal():
+    """Confirms identical array formulas are not flagged"""
+    wb_template = Workbook()
+    ws_template = wb_template.active
+    ws_template.title = "DPWW2"
+    ws_template["A1"].value = ArrayFormula(ref="A1:A2", text="=TRANSPOSE(B1:B2)")
+
+    wb_company = Workbook()
+    ws_company = wb_company.active
+    ws_company.title = "DPWW2"
+    ws_company["A1"].value = ArrayFormula(ref="A1:A2", text="=TRANSPOSE(B1:B2)")
+
+    result_df = find_formula_differences(wb_template, wb_company)
+
+    assert result_df.empty, "Identical array formulas should not produce differences"
+
+# pylint: disable=W0613
+def test_find_formula_differences_no_arrayformula_class(monkeypatch):
+    """Ensures backward compatibility when ArrayFormula is missing (simulates older openpyxl)"""
+
+    # Temporarily remove ArrayFormula from the import path
+    sys.modules["openpyxl.worksheet.formula"].ArrayFormula = None
+
+    wb_template = Workbook()
+    ws_template = wb_template.active
+    ws_template.title = "DPWW2"
+    ws_template["A1"] = "=SUM(B1:B2)"
+
+    wb_company = Workbook()
+    ws_company = wb_company.active
+    ws_company.title = "DPWW2"
+    ws_company["A1"] = "=SUM(B1:B3)"
+
+    result_df = find_formula_differences(wb_template, wb_company)
+
+    # It should still work and detect the formula difference
+    assert not result_df.empty
+    assert "=SUM(B1:B2)" in result_df["Error_Desc"].iloc[0]
+    assert "=SUM(B1:B3)" in result_df["Error_Desc"].iloc[0]

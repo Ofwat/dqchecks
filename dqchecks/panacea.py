@@ -13,6 +13,7 @@ from collections import namedtuple
 from openpyxl import (Workbook, load_workbook)
 from openpyxl.worksheet.worksheet import Worksheet
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.formula import ArrayFormula
 import pandas as pd
 from dqchecks.utils import create_validation_event_row_dataframe
 
@@ -421,6 +422,19 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_numbe
         "errors": {}
     }
 
+def extract_formula_text(cell):
+    """
+    Safely extract the formula text (for both normal and array formulas).
+    Returns None if the cell has no formula.
+    """
+    val = cell.value
+    if isinstance(val, str) and val.startswith("="):
+        return val
+    if isinstance(val, ArrayFormula):
+        return val.text
+    return None
+
+
 def compare_formulas(sheet1, sheet2):
     """
     Compares the formulas between two openpyxl worksheet objects.
@@ -436,8 +450,8 @@ def compare_formulas(sheet1, sheet2):
     shape2 = get_used_area(sheet2)
     shape2.validate()
 
-    if (shape1.last_used_row, shape1.last_used_column) !=\
-        (shape2.last_used_row, shape2.last_used_column):
+    if (shape1.last_used_row, shape1.last_used_column) != \
+       (shape2.last_used_row, shape2.last_used_column):
         return {
             "status": "Error",
             "description": (
@@ -453,18 +467,21 @@ def compare_formulas(sheet1, sheet2):
 
     for row in range(1, shape1.last_used_row + 1):
         for col in range(1, shape1.last_used_column + 1):
-            c1, c2 = sheet1.cell(row=row, column=col), sheet2.cell(row=row, column=col)
+            c1 = sheet1.cell(row=row, column=col)
+            c2 = sheet2.cell(row=row, column=col)
 
-            is_f1, is_f2 = c1.data_type == "f", c2.data_type == "f"
+            f1 = extract_formula_text(c1)
+            f2 = extract_formula_text(c2)
 
-            if is_f1 and is_f2 and c1.value != c2.value:
+            # Compare only if one or both have formulas
+            if f1 and f2 and f1 != f2:
                 differing_cells.setdefault(f"{get_column_letter(col)}{row}", []).append(
-                    f"Template: {sheet1.title}!{get_column_letter(col)}{row} ({c1.value}) "
-                    f"!= {sheet2.title}!{get_column_letter(col)}{row} ({c2.value}) :Company"
+                    f"Template: {sheet1.title}!{get_column_letter(col)}{row} ({f1}) "
+                    f"!= {sheet2.title}!{get_column_letter(col)}{row} ({f2}) :Company"
                 )
-            elif is_f1 != is_f2:
-                val1 = f"Formula: {c1.value}" if is_f1 else f"Value: {c1.value}"
-                val2 = f"Formula: {c2.value}" if is_f2 else f"Value: {c2.value}"
+            elif bool(f1) != bool(f2):  # one is a formula, the other is not
+                val1 = f"Formula: {f1}" if f1 else f"Value: {c1.value}"
+                val2 = f"Formula: {f2}" if f2 else f"Value: {c2.value}"
                 differing_cells.setdefault(f"{get_column_letter(col)}{row}", []).append(
                     f"Template: {sheet1.title}!{get_column_letter(col)}{row} ({val1}) "
                     f"!= {sheet2.title}!{get_column_letter(col)}{row} ({val2}) :Company"
