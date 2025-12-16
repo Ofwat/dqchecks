@@ -1,4 +1,4 @@
-name: Publish Python 🐍 distribution 📦 to PyPI
+name: Publish Python 🐍 distribution 📦 and Java JAR
 
 on: [push]
 
@@ -6,7 +6,7 @@ permissions: {}
 
 jobs:
   build:
-    name: Build distribution 📦
+    name: Build Java JAR and Python package
     runs-on: ubuntu-latest
 
     steps:
@@ -27,7 +27,7 @@ jobs:
           cd java
           mvn clean package -DskipTests
 
-      - name: Find the JAR to copy
+      - name: Find Java JAR
         id: find-jar
         run: |
           jar_file=$(ls java/target/*.jar | grep -v sources | grep -v javadoc | head -n1)
@@ -37,12 +37,12 @@ jobs:
           fi
           echo "JAR=$jar_file" >> $GITHUB_ENV
 
-      - name: Copy JAR into Python package and dist/
+      - name: Copy Java JAR for Python package and GitHub Release
         run: |
           mkdir -p pythonpkg/_jar
           cp "$JAR" pythonpkg/_jar/mytool.jar
-          mkdir -p dist
-          cp "$JAR" dist/mytool.jar
+          mkdir -p release-artifacts
+          cp "$JAR" release-artifacts/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
@@ -50,17 +50,24 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install pypa/build
-        run: python3 -m pip install build --user
+      - name: Install build tools
+        run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
         run: python3 -m build .
 
-      - name: Store the distribution packages and JAR
+      # ---------- Upload artifacts ----------
+      - name: Upload Python distributions for PyPI
         uses: actions/upload-artifact@v4
         with:
-          name: dist-artifacts
+          name: python-dists
           path: dist/
+
+      - name: Upload Java JAR for GitHub Release
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-jar
+          path: release-artifacts/
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -75,37 +82,45 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all dist artifacts
+      - name: Download Python distributions
         uses: actions/download-artifact@v4
         with:
-          name: dist-artifacts
+          name: python-dists
           path: dist/
 
-      - name: Publish distribution 📦 to PyPI
+      - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
-    name: Sign and upload distributions to GitHub Release
+    name: Sign and upload Python packages + Java JAR to GitHub Release
     needs:
       - publish-to-pypi
     runs-on: ubuntu-latest
-
     permissions:
       contents: write
       id-token: write
 
     steps:
-      - name: Download all dist artifacts
+      # Download all artifacts
+      - name: Download Python distributions
         uses: actions/download-artifact@v4
         with:
-          name: dist-artifacts
+          name: python-dists
           path: dist/
 
-      - name: Sign the dists with Sigstore
+      - name: Download Java JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: java-jar
+          path: release-artifacts/
+
+      # Sign Python distributions with Sigstore
+      - name: Sign Python distributions
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
           inputs: ./dist/*
 
+      # Create GitHub Release
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -114,9 +129,10 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --notes ""
 
-      - name: Upload all artifacts to GitHub Release
+      # Upload all artifacts to GitHub Release (Python + JAR)
+      - name: Upload artifacts to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" dist/** \
+          gh release upload "$GITHUB_REF_NAME" dist/** release-artifacts/** \
             --repo "$GITHUB_REPOSITORY"
