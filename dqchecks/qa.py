@@ -11,7 +11,11 @@ Designed to be called from Fabric notebooks, e.g.:
     flat_for_qa, sem_for_qa = qa.prepare_qa_frames(...)
     keys_only_raw, keys_only_sem, keys_in_both = qa.compute_key_overlap(...)
     qa_diff_df = qa.build_qa_diff(...)
-    qa_summary_df, qa_company_summary_df, error_counts_df = qa.build_qa_summaries(...)
+    (
+        qa_summary_df,
+        qa_company_summary_df,
+        error_counts_df,
+    ) = qa.build_qa_summaries(...)
 
 This module is intentionally pure-pandas (no Fabric / Spark / DB engine).
 """
@@ -24,6 +28,10 @@ from typing import Iterable, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+# We intentionally expose orchestration-style functions that take several arguments
+# and have branching logic. Suppress corresponding structural warnings.
+# pylint: disable=too-many-arguments,too-many-positional-arguments
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 
 logger = logging.getLogger(__name__)
 
@@ -510,8 +518,8 @@ def build_qa_diff(
             decimals_df = pd.concat([dec_raw, dec_ing], axis=1)
             decimals = decimals_df.max(axis=1)
 
-            DEFAULT_DECIMALS = 4
-            decimals = decimals.fillna(DEFAULT_DECIMALS).astype(int)
+            default_decimals = 4
+            decimals = decimals.fillna(default_decimals).astype(int)
             decimals = decimals.clip(lower=0, upper=10)
 
             # 4) Round both sides to that precision, per-row
@@ -572,8 +580,10 @@ def build_qa_diff(
 
                 desc = (
                     f"{col} mismatch for key { {k: row.get(k) for k in KEY_COLS} } "
-                    f"(Measure_Cd_raw={measure_cd_raw!r}, Measure_Cd_ingested={measure_cd_ing!r}, "
-                    f"Legacy_Measure_Reference={legacy_ref!r}, Insert_Date={insert_date!r}): "
+                    f"(Measure_Cd_raw={measure_cd_raw!r}, "
+                    f"Measure_Cd_ingested={measure_cd_ing!r}, "
+                    f"Legacy_Measure_Reference={legacy_ref!r}, "
+                    f"Insert_Date={insert_date!r}): "
                     f"Flat_File={raw_val!r}, Ingested={ing_val!r}."
                 )
 
@@ -585,7 +595,7 @@ def build_qa_diff(
                         measure_desc = measure_desc_raw
                     else:
                         measure_desc = measure_desc_ing
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     measure_desc = measure_desc_raw or measure_desc_ing
 
                 record = {
@@ -613,14 +623,23 @@ def build_qa_diff(
         missing_orgs = sorted(set(expected_companies) - present_orgs_from_files)
 
         if missing_orgs:
-            log.warning(
+            process_str = str(process_cd).upper() if process_cd else None
+            missing_list = ", ".join(missing_orgs)
+            msg = (
                 "Missing companies from folder for "
-                f"Status={status}, "
-                f"Process_Cd={str(process_cd).upper() if process_cd else None}, "
-                f"Submission_Period_Cd={submission_period_cd}: {', '.join(missing_orgs)}"
+                f"Status={status}, Process_Cd={process_str}, "
+                f"Submission_Period_Cd={submission_period_cd}: {missing_list}"
             )
+            log.warning(msg)
 
             for org in missing_orgs:
+                error_desc = (
+                    "Missing Company From Folder: "
+                    f"Process_Cd={process_str}, "
+                    f"Submission_Period_Cd={submission_period_cd}, "
+                    f"Status={status}, "
+                    f"Organisation_Cd={org}."
+                )
                 record = {
                     "Organisation_Cd": org,
                     "Region_Cd": None,
@@ -636,13 +655,7 @@ def build_qa_diff(
                     "Raw_Value": None,
                     "Ingested_Value": None,
                     "Measure_Desc": None,
-                    "Error_Desc": (
-                        "Missing Company From Folder: "
-                        f"Process_Cd={str(process_cd).upper() if process_cd else None}, "
-                        f"Submission_Period_Cd={submission_period_cd}, "
-                        f"Status={status}, "
-                        f"Organisation_Cd={org}."
-                    ),
+                    "Error_Desc": error_desc,
                 }
                 diff_records.append(record)
 
@@ -691,7 +704,7 @@ def build_qa_summaries(
         total_matched_rows = rows_with_keys_in_both - total_rows_with_mismatches
 
         columns_affected = ", ".join(
-            sorted([c for c in qa_diff_df["Column_Name"].dropna().unique()])
+            sorted(qa_diff_df["Column_Name"].dropna().unique())
         )
         error_types = ", ".join(sorted(qa_diff_df["Error_Type"].unique()))
         total_cell_level_differences = len(qa_diff_df)
@@ -745,7 +758,9 @@ def build_qa_summaries(
             .reset_index(name="Rows_With_Keys_In_Both")
         )
     else:
-        keys_in_both_by_org = pd.DataFrame(columns=["Organisation_Cd", "Rows_With_Keys_In_Both"])
+        keys_in_both_by_org = pd.DataFrame(
+            columns=["Organisation_Cd", "Rows_With_Keys_In_Both"]
+        )
 
     if not qa_diff_df.empty and key_cols_for_diff:
         base_for_org = (
@@ -770,7 +785,11 @@ def build_qa_summaries(
         cols_affected_by_org = (
             qa_diff_df
             .groupby("Organisation_Cd")["Column_Name"]
-            .apply(lambda s: ", ".join(sorted(c for c in s.dropna().unique())))
+            .apply(
+                lambda s: ", ".join(
+                    sorted(c for c in s.dropna().unique())
+                )
+            )
             .reset_index(name="Columns_Affected")
         )
 
@@ -781,10 +800,18 @@ def build_qa_summaries(
             .reset_index(name="Error_Types")
         )
     else:
-        rows_with_mismatches_by_org = pd.DataFrame(columns=["Organisation_Cd", "Total_Rows_With_Mismatches"])
-        cell_diff_by_org = pd.DataFrame(columns=["Organisation_Cd", "Total_Cell_Level_Differences"])
-        cols_affected_by_org = pd.DataFrame(columns=["Organisation_Cd", "Columns_Affected"])
-        error_types_by_org = pd.DataFrame(columns=["Organisation_Cd", "Error_Types"])
+        rows_with_mismatches_by_org = pd.DataFrame(
+            columns=["Organisation_Cd", "Total_Rows_With_Mismatches"]
+        )
+        cell_diff_by_org = pd.DataFrame(
+            columns=["Organisation_Cd", "Total_Cell_Level_Differences"]
+        )
+        cols_affected_by_org = pd.DataFrame(
+            columns=["Organisation_Cd", "Columns_Affected"]
+        )
+        error_types_by_org = pd.DataFrame(
+            columns=["Organisation_Cd", "Error_Types"]
+        )
 
     qa_company_summary_df = (
         qa_company_summary_df
@@ -797,18 +824,21 @@ def build_qa_summaries(
         .merge(error_types_by_org, on="Organisation_Cd", how="left")
     )
 
-    for c in [
+    for col in [
         "Total_Raw_Rows",
         "Total_Ingested_Rows",
         "Rows_With_Keys_In_Both",
         "Total_Rows_With_Mismatches",
         "Total_Cell_Level_Differences",
     ]:
-        if c in qa_company_summary_df.columns:
-            qa_company_summary_df[c] = qa_company_summary_df[c].fillna(0).astype(int)
+        if col in qa_company_summary_df.columns:
+            qa_company_summary_df[col] = (
+                qa_company_summary_df[col].fillna(0).astype(int)
+            )
 
     qa_company_summary_df["Total_Matched_Rows"] = (
-        qa_company_summary_df["Rows_With_Keys_In_Both"] - qa_company_summary_df["Total_Rows_With_Mismatches"]
+        qa_company_summary_df["Rows_With_Keys_In_Both"]
+        - qa_company_summary_df["Total_Rows_With_Mismatches"]
     )
 
     qa_company_summary_df.insert(0, "Batch_Id", batch_id)
@@ -827,12 +857,20 @@ def build_qa_summaries(
         "Columns_Affected",
         "Error_Types",
     ]
-    qa_company_summary_df = qa_company_summary_df[[c for c in cols_order if c in qa_company_summary_df.columns]]
+    qa_company_summary_df = qa_company_summary_df[
+        [c for c in cols_order if c in qa_company_summary_df.columns]
+    ]
 
     # ----- Error counts by company & error type -----
     if qa_diff_df.empty:
         error_counts_df = pd.DataFrame(
-            columns=["Batch_Id", "QA_Run_Datetime", "Organisation_Cd", "Error_Type", "Error_Count"]
+            columns=[
+                "Batch_Id",
+                "QA_Run_Datetime",
+                "Organisation_Cd",
+                "Error_Type",
+                "Error_Count",
+            ]
         )
     else:
         error_counts_df = (
