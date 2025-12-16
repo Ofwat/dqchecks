@@ -37,11 +37,16 @@ jobs:
           fi
           echo "JAR=$jar_file" >> $GITHUB_ENV
 
-      - name: Copy Java JAR into Python package (_jar) for inclusion in wheel
+      - name: Copy Java JAR into Python package (_jar)
         run: |
           mkdir -p pythonpkg/dqchecks/_jar
           cp "$JAR" pythonpkg/dqchecks/_jar/mytool.jar
           touch pythonpkg/dqchecks/_jar/__init__.py
+
+      - name: Prepare release-artifacts folder
+        run: |
+          mkdir -p release-artifacts
+          cp "$JAR" release-artifacts/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
@@ -53,20 +58,20 @@ jobs:
         run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
-        run: python3 -m build pythonpkg
+        run: python3 -m build .
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
         uses: actions/upload-artifact@v4
         with:
           name: python-dists
-          path: pythonpkg/dist/
+          path: dist/
 
       - name: Upload Java JAR for GitHub Release
         uses: actions/upload-artifact@v4
         with:
           name: java-jar
-          path: pythonpkg/dqchecks/_jar/mytool.jar
+          path: release-artifacts/
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -111,7 +116,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-jar
-          path: dist/
+          path: release-artifacts/
 
       # Sign Python distributions with Sigstore
       - name: Sign Python distributions
@@ -133,5 +138,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$GITHUB_REF_NAME" dist/** \
+          gh release upload "$GITHUB_REF_NAME" dist/** release-artifacts/** \
             --repo "$GITHUB_REPOSITORY"
