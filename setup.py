@@ -8,7 +8,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="ofwat-dqchecks",
-    version="0.0.87",
+    version="0.0.88",
     author="Ofwat",
     description='Excel validations',
     long_description=long_description,
@@ -21,8 +21,8 @@ setup(
         'Tracker': 'https://github.com/Ofwat/dqchecks/issues',
     },
     install_requires=[
-        "pandas",
-        "openpyxl",
+        "openpyxl>=3.1.2",
+        "pandas>=1.5.0",
         "numpy"
     ],
 )
