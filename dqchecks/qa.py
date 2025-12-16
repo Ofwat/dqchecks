@@ -30,8 +30,10 @@ import pandas as pd
 
 # We intentionally expose orchestration-style functions that take several arguments
 # and have branching logic. Suppress corresponding structural warnings.
+# Also relax line length and superfluous-parens for readability in f-strings.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+# pylint: disable=line-too-long,superfluous-parens
 
 logger = logging.getLogger(__name__)
 
@@ -584,7 +586,7 @@ def build_qa_diff(
                     f"Measure_Cd_ingested={measure_cd_ing!r}, "
                     f"Legacy_Measure_Reference={legacy_ref!r}, "
                     f"Insert_Date={insert_date!r}): "
-                    f"Flat_File={raw_val!r}, Ingested={ing_val!r}."
+                    f"Flat_File={raw_val!r}, Ingested={Ing_val!r}."
                 )
 
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
