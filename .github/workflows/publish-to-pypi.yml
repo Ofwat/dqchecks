@@ -1,6 +1,10 @@
-name: Build Python 🐍 + Java JAR and Release
+name: Build and Publish Python 🐍 + Java JAR
 
-on: [push]
+on:
+  push:
+    # Optional: only build on tags for publishing
+    # tags:
+    #   - 'v*'
 
 permissions: {}
 
@@ -39,8 +43,10 @@ jobs:
 
       - name: Copy Java JAR into Python package
         run: |
-          mkdir -p pythonpkg/dqchecks/_jar
-          cp "$JAR" pythonpkg/dqchecks/_jar/mytool.jar
+          mkdir -p dqchecks/_jar
+          cp "$JAR" dqchecks/_jar/mytool.jar
+          # Ensure __init__.py exists so setuptools includes _jar as a package
+          touch dqchecks/_jar/__init__.py
 
       # ---------- Python ----------
       - name: Set up Python
@@ -52,29 +58,30 @@ jobs:
         run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
-        run: python3 -m build .  # build from root where setup.py exists
+        run: python3 -m build .
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
         uses: actions/upload-artifact@v4
         with:
           name: python-dists
-          path: pythonpkg/dist/
+          path: dist/
 
       - name: Upload Java JAR for GitHub Release
         uses: actions/upload-artifact@v4
         with:
           name: java-jar
-          path: pythonpkg/dqchecks/_jar/mytool.jar
+          path: dqchecks/_jar/mytool.jar
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
     if: startsWith(github.ref, 'refs/tags/')
-    needs: build
+    needs:
+      - build
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/ofwat-dqchecks
+      url: https://pypi.org/project/ofwat-dqchecks
     permissions:
       id-token: write
 
@@ -90,7 +97,8 @@ jobs:
 
   github-release:
     name: Sign and upload Python packages + Java JAR to GitHub Release
-    needs: publish-to-pypi
+    needs:
+      - publish-to-pypi
     runs-on: ubuntu-latest
     permissions:
       contents: write
