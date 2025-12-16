@@ -1,4 +1,4 @@
-name: Publish Python 🐍 distribution 📦 and Java JAR
+name: Build Python 🐍 + Java JAR and Release
 
 on: [push]
 
@@ -37,15 +37,10 @@ jobs:
           fi
           echo "JAR=$jar_file" >> $GITHUB_ENV
 
-      # ---------- Copy JAR ----------
-      - name: Copy JAR into Python package and release folder
+      - name: Copy Java JAR into Python package
         run: |
-          # For Python package
           mkdir -p pythonpkg/dqchecks/_jar
           cp "$JAR" pythonpkg/dqchecks/_jar/mytool.jar
-          # For GitHub Release
-          mkdir -p release-artifacts
-          cp "$JAR" release-artifacts/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
@@ -57,7 +52,7 @@ jobs:
         run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
-        run: python3 -m build .
+        run: python3 -m build pythonpkg  # build from pythonpkg folder
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
@@ -70,13 +65,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-jar
-          path: release-artifacts/
+          path: pythonpkg/dqchecks/_jar/mytool.jar
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
     if: startsWith(github.ref, 'refs/tags/')
-    needs:
-      - build
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: pypi
@@ -96,8 +90,7 @@ jobs:
 
   github-release:
     name: Sign and upload Python packages + Java JAR to GitHub Release
-    needs:
-      - publish-to-pypi
+    needs: publish-to-pypi
     runs-on: ubuntu-latest
     permissions:
       contents: write
