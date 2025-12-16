@@ -43,8 +43,8 @@ jobs:
 
       - name: Copy JAR into Python package
         run: |
-          mkdir -p pythonpkg/pythonpkg/_jar
-          cp "$JAR" pythonpkg/pythonpkg/_jar/mytool.jar
+          mkdir -p pythonpkg/_jar
+          cp "$JAR" pythonpkg/_jar/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
@@ -56,13 +56,13 @@ jobs:
         run: python3 -m pip install build --user
 
       - name: Build Python package
-        run: python3 -m build pythonpkg   # <-- fixed: point to project root
+        run: python3 -m build .
 
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
         with:
           name: python-package-distributions
-          path: pythonpkg/dist/
+          path: dist/
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -115,16 +115,14 @@ jobs:
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release create
-          "$GITHUB_REF_NAME"
-          --repo "$GITHUB_REPOSITORY"
-          --notes ""
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --notes ""
 
       - name: Upload artifact signatures to GitHub Release
         env:
           GITHUB_TOKEN: ${{ github.token }}
-        run: >-
-          gh release upload
-          "$GITHUB_REF_NAME" dist/**
-          --repo "$GITHUB_REPOSITORY"
+        run: |
+          gh release upload "$GITHUB_REF_NAME" dist/** \
+            --repo "$GITHUB_REPOSITORY"
