@@ -37,14 +37,13 @@ jobs:
           fi
           echo "JAR=$jar_file" >> $GITHUB_ENV
 
-      - name: Copy Java JAR into Python package (_jar)
+      # ---------- Copy JAR ----------
+      - name: Copy JAR into Python package and release folder
         run: |
+          # For Python package
           mkdir -p pythonpkg/dqchecks/_jar
           cp "$JAR" pythonpkg/dqchecks/_jar/mytool.jar
-          touch pythonpkg/dqchecks/_jar/__init__.py
-
-      - name: Prepare release-artifacts folder
-        run: |
+          # For GitHub Release
           mkdir -p release-artifacts
           cp "$JAR" release-artifacts/mytool.jar
 
@@ -58,14 +57,14 @@ jobs:
         run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
-        run: python3 -m build .
+        run: python3 -m build pythonpkg
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
         uses: actions/upload-artifact@v4
         with:
           name: python-dists
-          path: dist/
+          path: pythonpkg/dist/
 
       - name: Upload Java JAR for GitHub Release
         uses: actions/upload-artifact@v4
