@@ -586,7 +586,7 @@ def build_qa_diff(
                     f"Measure_Cd_ingested={measure_cd_ing!r}, "
                     f"Legacy_Measure_Reference={legacy_ref!r}, "
                     f"Insert_Date={insert_date!r}): "
-                    f"Flat_File={raw_val!r}, Ingested={Ing_val!r}."
+                    f"Flat_File={raw_val!r}, Ingested={ing_val!r}."
                 )
 
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
