@@ -8,7 +8,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="ofwat-dqchecks",
-    version="0.0.90",
+    version="0.0.91",
     author="Ofwat",
     description='Excel validations',
     long_description=long_description,
@@ -25,4 +25,8 @@ setup(
         "pandas>=1.5.0",
         "numpy"
     ],
+    include_package_data=True,
+    package_data={
+        "dqchecks._jar": ["mytool.jar"],
+    },
 )
