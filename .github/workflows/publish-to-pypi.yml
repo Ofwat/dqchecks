@@ -1,6 +1,5 @@
 name: Publish Python 🐍 distribution 📦 to PyPI
 
-# on: push
 on: [push]
 
 permissions: {}
@@ -23,11 +22,11 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Build shaded Java JAR
+      - name: Build Java JAR with Maven
         run: |
           cd java
           mvn clean package -DskipTests
-      
+
       - name: List Java target directory
         run: |
           ls -l java/target
@@ -56,10 +55,8 @@ jobs:
       - name: Install pypa/build
         run: python3 -m pip install build --user
 
-      - name: Build a binary wheel and a source tarball
-        run: |
-          cd pythonpkg
-          python3 -m build
+      - name: Build Python package
+        run: python3 -m build pythonpkg   # <-- fixed: point to project root
 
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
