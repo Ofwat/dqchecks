@@ -1,6 +1,7 @@
 name: Publish Python 🐍 distribution 📦 to PyPI
 
-on: push
+# on: push
+on: commit
 
 permissions: {}
 
@@ -26,11 +27,25 @@ jobs:
         run: |
           cd java
           mvn clean package -DskipTests
+      
+      - name: List Java target directory
+        run: |
+          ls -l java/target
+
+      - name: Find the JAR to copy
+        id: find-jar
+        run: |
+          jar_file=$(ls java/target/*.jar | grep -v sources | grep -v javadoc | head -n1)
+          if [ ! -f "$jar_file" ]; then
+            echo "ERROR: No JAR found in java/target. Did the shade plugin run?"
+            exit 1
+          fi
+          echo "JAR=$jar_file" >> $GITHUB_ENV
 
       - name: Copy JAR into Python package
         run: |
           mkdir -p pythonpkg/pythonpkg/_jar
-          cp java/target/*-shaded.jar pythonpkg/pythonpkg/_jar/mytool.jar
+          cp "$JAR" pythonpkg/pythonpkg/_jar/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
