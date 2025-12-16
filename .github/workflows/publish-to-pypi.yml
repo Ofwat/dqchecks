@@ -52,7 +52,7 @@ jobs:
         run: python3 -m pip install --upgrade build --user
 
       - name: Build Python package
-        run: python3 -m build pythonpkg  # build from pythonpkg folder
+        run: python3 -m build .  # build from root where setup.py exists
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
