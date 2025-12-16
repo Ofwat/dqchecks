@@ -27,24 +27,22 @@ jobs:
           cd java
           mvn clean package -DskipTests
 
-      - name: List Java target directory
-        run: |
-          ls -l java/target
-
       - name: Find the JAR to copy
         id: find-jar
         run: |
           jar_file=$(ls java/target/*.jar | grep -v sources | grep -v javadoc | head -n1)
           if [ ! -f "$jar_file" ]; then
-            echo "ERROR: No JAR found in java/target. Did the shade plugin run?"
+            echo "ERROR: No JAR found in java/target."
             exit 1
           fi
           echo "JAR=$jar_file" >> $GITHUB_ENV
 
-      - name: Copy JAR into Python package
+      - name: Copy JAR into Python package and dist/
         run: |
           mkdir -p pythonpkg/_jar
           cp "$JAR" pythonpkg/_jar/mytool.jar
+          mkdir -p dist
+          cp "$JAR" dist/mytool.jar
 
       # ---------- Python ----------
       - name: Set up Python
@@ -58,17 +56,11 @@ jobs:
       - name: Build Python package
         run: python3 -m build .
 
-      - name: Store the distribution packages
+      - name: Store the distribution packages and JAR
         uses: actions/upload-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist-artifacts
           path: dist/
-
-      - name: Store the Java JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: java-jar
-          path: "$JAR"
 
   publish-to-pypi:
     name: Publish Python 🐍 distribution 📦 to PyPI
@@ -83,19 +75,17 @@ jobs:
       id-token: write
 
     steps:
-      - name: Download all the dists
+      - name: Download all dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
+          name: dist-artifacts
           path: dist/
 
       - name: Publish distribution 📦 to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
-    name: >-
-      Sign the Python 🐍 distribution 📦 with Sigstore
-      and upload them to GitHub Release
+    name: Sign and upload distributions to GitHub Release
     needs:
       - publish-to-pypi
     runs-on: ubuntu-latest
@@ -105,25 +95,16 @@ jobs:
       id-token: write
 
     steps:
-      # Download Python packages and Java JAR
-      - name: Download Python dists
+      - name: Download all dist artifacts
         uses: actions/download-artifact@v4
         with:
-          name: python-package-distributions
-          path: dist/
-
-      - name: Download Java JAR
-        uses: actions/download-artifact@v4
-        with:
-          name: java-jar
+          name: dist-artifacts
           path: dist/
 
       - name: Sign the dists with Sigstore
         uses: sigstore/gh-action-sigstore-python@v3.0.0
         with:
-          inputs: >-
-            ./dist/*.tar.gz
-            ./dist/*.whl
+          inputs: ./dist/*
 
       - name: Create GitHub Release
         env:
