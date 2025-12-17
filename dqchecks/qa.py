@@ -835,8 +835,11 @@ def build_qa_summaries(
     ]:
         if col in qa_company_summary_df.columns:
             qa_company_summary_df[col] = (
-                qa_company_summary_df[col].fillna(0).astype(int)
+                pd.to_numeric(qa_company_summary_df[col], errors="coerce")
+                .fillna(0)
+                .astype(int)
             )
+
 
     qa_company_summary_df["Total_Matched_Rows"] = (
         qa_company_summary_df["Rows_With_Keys_In_Both"]

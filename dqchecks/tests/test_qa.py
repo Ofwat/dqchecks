@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import pandas as pd
+import pytest
 
 from dqchecks import qa
 
@@ -882,3 +883,92 @@ def test_build_qa_summaries_multiple_organisations():
     assert set(error_counts_df["Organisation_Cd"].unique()) == {"ORG2"}
     assert error_counts_df["Error_Type"].unique().tolist() == ["MEASURE_VALUE_MISMATCH"]
     assert error_counts_df["Error_Count"].iloc[0] == 1
+
+# pylint: disable=protected-access
+def test_normalise_keys_with_measure_raises_if_measure_col_missing():
+    """_normalise_keys_with_measure should error if the measure column is absent."""
+    df = pd.DataFrame({"Organisation_Cd": ["ORG1"]})
+    with pytest.raises(ValueError, match="Measure_Cd not found when building Measure_Key"):
+        qa._normalise_keys_with_measure(df, measure_col="Measure_Cd")
+
+
+def test_normalise_measure_value_without_unit_series():
+    """_normalise_measure_value should work when unit_series is None."""
+    series = pd.Series(["10%", "2.5", "bad", None])
+    result = qa._normalise_measure_value(series)
+
+    # No unit series -> '%' is *stripped* but not scaled by 1/100.
+    assert result.iloc[0] == 10.0
+    assert result.iloc[1] == 2.5
+    assert pd.isna(result.iloc[2])
+    assert pd.isna(result.iloc[3])
+
+
+def test_build_qa_diff_uses_fallback_measure_desc_on_exception(monkeypatch):
+    """Force the Measure_Desc selection to go through the defensive except branch."""
+    combined_df = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Measure_Cd": "M_DESC",
+                "Measure_Desc": "BOOM",  # this will trigger our patched pd.notna
+                "Measure_Unit": "%",
+                "Measure_Decimals": 2,
+                "Measure_Value": "10%",
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+    ingested_df_flat = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Legacy_Measure_Reference": "M_DESC",
+                "Measure_Name": "Different desc",
+                "Unit": "%",
+                "Decimal_Point": 2,
+                "Measure_Value": "10",
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    # Capture original notna before patch
+    original_notna = pd.notna
+
+    # Patch qa.pd.notna so it explodes on "BOOM" and triggers the except branch.
+    def bad_notna(value):
+        if value == "BOOM":
+            raise RuntimeError("boom")
+        return original_notna(value)
+
+    monkeypatch.setattr(qa.pd, "notna", bad_notna)
+
+    flat_for_qa, sem_for_qa = qa.prepare_qa_frames(
+        combined_df=combined_df,
+        ingested_df_flat=ingested_df_flat,
+        target_submission_period="2025Q1",
+    )
+    keys_only_raw, keys_only_sem, keys_in_both = qa.compute_key_overlap(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+    )
+
+    qa_diff_df = qa.build_qa_diff(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+        keys_only_raw=keys_only_raw,
+        keys_only_sem=keys_only_sem,
+        keys_in_both=keys_in_both,
+        batch_id="BATCH_DESC",
+        qa_run_datetime="2025-01-01T00:00:00",
+    )
+
+    # If the fallback branch ran, Measure_Desc should still be "BOOM" rather than exploding.
+    assert "BOOM" in qa_diff_df["Measure_Desc"].unique()
