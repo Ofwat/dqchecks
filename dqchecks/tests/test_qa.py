@@ -1,10 +1,9 @@
-"""
-Tests for dqchecks.qa reusable QA logic.
-"""
+"""Tests for dqchecks.qa reusable QA logic."""
+# pylint: disable=line-too-long
+
 
 from datetime import datetime
 import pandas as pd
-import pytest
 
 from dqchecks import qa
 
