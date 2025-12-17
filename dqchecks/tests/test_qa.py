@@ -884,6 +884,223 @@ def test_build_qa_summaries_multiple_organisations():
     assert error_counts_df["Error_Type"].unique().tolist() == ["MEASURE_VALUE_MISMATCH"]
     assert error_counts_df["Error_Count"].iloc[0] == 1
 
+
+def test_build_qa_diff_handles_missing_decimals_columns():
+    """
+    build_qa_diff should still work if Measure_Decimals columns are missing.
+    This exercises the fallback branches where Measure_Decimals_* are absent.
+    """
+    combined_df = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Measure_Cd": "M_NO_DEC",
+                "Measure_Desc": "No decimals col",
+                "Measure_Unit": "%",      # keep unit so % normalisation still happens
+                # NOTE: deliberately no Measure_Decimals column
+                "Measure_Value": "10%",
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    ingested_df_flat = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Legacy_Measure_Reference": "M_NO_DEC",
+                "Measure_Name": "No decimals col",
+                "Unit": "%",              # maps to Measure_Unit
+                # NOTE: deliberately no Decimal_Point column
+                "Measure_Value": "10",    # logically same as 10%
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    flat_for_qa, sem_for_qa = qa.prepare_qa_frames(
+        combined_df=combined_df,
+        ingested_df_flat=ingested_df_flat,
+        target_submission_period="2025Q1",
+    )
+
+    keys_only_raw, keys_only_sem, keys_in_both = qa.compute_key_overlap(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+    )
+
+    # We have one overlapping key
+    assert not keys_in_both.empty
+
+    qa_diff_df = qa.build_qa_diff(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+        keys_only_raw=keys_only_raw,
+        keys_only_sem=keys_only_sem,
+        keys_in_both=keys_in_both,
+        batch_id="BATCH_NO_DEC",
+        qa_run_datetime="2025-01-01T00:00:00",
+    )
+
+    # Values are logically equivalent -> no diffs, but the missing-decimals branches are executed
+    assert qa_diff_df.empty
+
+
+def test_build_qa_diff_uses_ingested_measure_desc_when_raw_missing():
+    """
+    When Measure_Desc_raw is missing but Measure_Desc_ingested is present,
+    build_qa_diff should use the ingested description (exercise the `else` branch).
+    """
+    combined_df = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Measure_Cd": "M_NO_DESC",
+                "Measure_Desc": None,         # raw desc missing
+                "Measure_Unit": "%",
+                "Measure_Decimals": 2,
+                "Measure_Value": "10%",       # <- raw value
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    ingested_df_flat = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Legacy_Measure_Reference": "M_NO_DESC",
+                "Measure_Name": "Ingested desc",  # <- this should be picked
+                "Unit": "%",
+                "Decimal_Point": 2,
+                "Measure_Value": "20",            # different -> force a diff
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    flat_for_qa, sem_for_qa = qa.prepare_qa_frames(
+        combined_df=combined_df,
+        ingested_df_flat=ingested_df_flat,
+        target_submission_period="2025Q1",
+    )
+    keys_only_raw, keys_only_sem, keys_in_both = qa.compute_key_overlap(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+    )
+
+    qa_diff_df = qa.build_qa_diff(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+        keys_only_raw=keys_only_raw,
+        keys_only_sem=keys_only_sem,
+        keys_in_both=keys_in_both,
+        batch_id="BATCH_DESC_FALLBACK",
+        qa_run_datetime="2025-01-01T00:00:00",
+    )
+
+    assert not qa_diff_df.empty
+    row = qa_diff_df.iloc[0]
+    # We expect a MEASURE_VALUE_MISMATCH and that Measure_Desc is taken from ingested
+    assert row["Error_Type"] == "MEASURE_VALUE_MISMATCH"
+    assert row["Measure_Desc"] == "Ingested desc"
+
+
+def test_build_qa_summaries_when_no_keys_in_both_any_org():
+    """
+    build_qa_summaries should handle the case where there are no shared keys
+    (keys_in_both empty), exercising the fallback `keys_in_both_by_org` branch.
+    """
+    # ORG1 only in flat, ORG2 only in semantic -> no overlap
+    combined_df = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG1",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Measure_Cd": "M_RAW_ONLY",
+                "Measure_Desc": "Raw only",
+                "Measure_Unit": "%",
+                "Measure_Decimals": 2,
+                "Measure_Value": "10%",
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+    ingested_df_flat = pd.DataFrame(
+        [
+            {
+                "Organisation_Cd": "ORG2",
+                "Region_Cd": "",
+                "Submission_Period_Cd": "2025Q1",
+                "Observation_Period_Cd": "202501",
+                "Legacy_Measure_Reference": "M_SEM_ONLY",
+                "Measure_Name": "Sem only",
+                "Unit": "%",
+                "Decimal_Point": 2,
+                "Measure_Value": "20",
+                "Sheet_Cd": "Sheet1",
+            },
+        ]
+    )
+
+    flat_for_qa, sem_for_qa = qa.prepare_qa_frames(
+        combined_df=combined_df,
+        ingested_df_flat=ingested_df_flat,
+        target_submission_period="2025Q1",
+    )
+
+    keys_only_raw, keys_only_sem, keys_in_both = qa.compute_key_overlap(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+    )
+
+    assert keys_in_both.empty  # sanity
+
+    qa_diff_df = qa.build_qa_diff(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+        keys_only_raw=keys_only_raw,
+        keys_only_sem=keys_only_sem,
+        keys_in_both=keys_in_both,
+        batch_id="BATCH_NO_KEYS_IN_BOTH",
+        qa_run_datetime="2025-01-01T00:00:00",
+    )
+
+    qa_summary_df, qa_company_summary_df, error_counts_df = qa.build_qa_summaries(
+        flat_for_qa=flat_for_qa,
+        sem_for_qa=sem_for_qa,
+        keys_in_both=keys_in_both,
+        qa_diff_df=qa_diff_df,
+        batch_id="BATCH_NO_KEYS_IN_BOTH",
+        qa_run_datetime="2025-01-01T00:00:00",
+    )
+
+    # Global summary: zero rows with keys in both
+    assert qa_summary_df.iloc[0]["Rows_With_Keys_In_Both"] == 0
+
+    # Per-company summary: both orgs appear, and the 'Rows_With_Keys_In_Both' col exists
+    assert set(qa_company_summary_df["Organisation_Cd"].unique()) == {"ORG1", "ORG2"}
+    assert "Rows_With_Keys_In_Both" in qa_company_summary_df.columns
+    assert (qa_company_summary_df["Rows_With_Keys_In_Both"] == 0).all()
+
+    # Error counts table should be non-empty and not crash
+    assert not error_counts_df.empty
+
+
 # pylint: disable=protected-access
 def test_normalise_keys_with_measure_raises_if_measure_col_missing():
     """_normalise_keys_with_measure should error if the measure column is absent."""
@@ -949,6 +1166,9 @@ def test_build_qa_diff_uses_fallback_measure_desc_on_exception(monkeypatch):
         return original_notna(value)
 
     monkeypatch.setattr(qa.pd, "notna", bad_notna)
+
+    # --- Hit the non-error branch at least once so coverage sees `return original_notna` ---
+    assert qa.pd.notna("SAFE") is True
 
     flat_for_qa, sem_for_qa = qa.prepare_qa_frames(
         combined_df=combined_df,
