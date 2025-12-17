@@ -1012,10 +1012,15 @@ def test_build_qa_diff_uses_ingested_measure_desc_when_raw_missing():
     )
 
     assert not qa_diff_df.empty
-    row = qa_diff_df.iloc[0]
-    # We expect a MEASURE_VALUE_MISMATCH and that Measure_Desc is taken from ingested
-    assert row["Error_Type"] == "MEASURE_VALUE_MISMATCH"
-    assert row["Measure_Desc"] == "Ingested desc"
+
+    # We expect both a description mismatch and a measure value mismatch
+    error_types = set(qa_diff_df["Error_Type"].unique())
+    assert "MEASURE_VALUE_MISMATCH" in error_types
+    assert "DESCRIPTION_MISMATCH" in error_types
+
+    # Specifically check the MEASURE_VALUE_MISMATCH row uses the ingested description
+    mv_row = qa_diff_df[qa_diff_df["Error_Type"] == "MEASURE_VALUE_MISMATCH"].iloc[0]
+    assert mv_row["Measure_Desc"] == "Ingested desc"
 
 
 def test_build_qa_summaries_when_no_keys_in_both_any_org():
