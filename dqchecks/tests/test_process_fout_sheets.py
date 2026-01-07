@@ -33,6 +33,7 @@ def valid_context():
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        filename="myfile",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -156,6 +157,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Organisation_Cd": ["ORG001"],
             "Submission_Period_Cd": ["2025Q1"],
             "Process_Cd": ["PROCESS01"],
+            "Filename": ["myfile"],
             "Template_Version": ["1.0"],
             "Sheet_Cd": ["fOut_Sheet1"],
             "Measure_Cd": [""],
@@ -171,12 +173,13 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
     assert top_row.equals(expected_top_row)
-    assert top_row.shape == (12, )
+    assert top_row.shape == (13, )
 
     expected_columns = [
         "Organisation_Cd",
         "Submission_Period_Cd",
         "Process_Cd",
+        "Filename",
         "Template_Version",
         "Sheet_Cd",
         "Measure_Cd",
@@ -293,6 +296,7 @@ def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
         org_cd="",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        filename="myfile",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -318,6 +322,7 @@ def test_process_fout_sheets_invalid_context_submission_period(workbook_with_dat
         org_cd="ORG001",
         submission_period_cd=None,
         process_cd="PROCESS01",
+        filename="myfile",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -344,6 +349,7 @@ def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        filename="myfilen",
         template_version="1.0",
         last_modified="invalid"  # Should be a datetime object
     )
@@ -433,6 +439,7 @@ def test_different_observation_periods():
         org_cd="ORG123",
         submission_period_cd="2025Q1",
         process_cd="process_1",
+        filename="myfile",
         template_version="v1.0",
         last_modified=datetime(2025, 2, 11),
     )
@@ -481,6 +488,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="",  # Invalid: empty string
+        filename="myfile",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -497,6 +505,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd=1234,  # Invalid: integer
+        filename="myfile",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -528,6 +537,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        filename="myfile",
         template_version="",  # Invalid: empty string
         last_modified=datetime(2025, 3, 3)
     )
@@ -545,6 +555,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        filename="filename",
         template_version=1.0,  # Invalid: not a string
         last_modified=datetime(2025, 3, 3)
     )
@@ -975,7 +986,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 14
+    expected_length = 15
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
 
 @pytest.fixture
@@ -985,6 +996,7 @@ def context():
         org_cd="ORG1",
         submission_period_cd="2024Q4",
         process_cd="PROC123",
+        filename="myfile",
         template_version="v1.0",
         last_modified="2025-06-23"
     )

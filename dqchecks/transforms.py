@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 # Define namedtuple for context
 ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
-                          'template_version', 'last_modified']
+                          'filename','template_version', 'last_modified']
 )
 
 @dataclass
@@ -80,6 +80,9 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.process_cd, str) or not context.process_cd:
         raise ValueError("The 'process_cd' argument must be a non-empty string.")
+    
+    if not isinstance(context.filename, str) or not context.filename:
+        raise ValueError("The 'filename' argument must be a non-empty string.")
 
     if not isinstance(context.template_version, str) or not context.template_version:
         raise ValueError("The 'template_version' argument must be a non-empty string.")
@@ -373,6 +376,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
         "Submission_Period_Cd": "Submission_Period_Cd",
         "Observation_Period_Cd": "Observation_Period_Cd",
         "Process_Cd": "Process_Cd",
+        "Filename": "Filename",
         "Template_Version": "Template_Version",
         "Sheet_Cd": "Sheet_Cd",
         "Measure_Cd": "Measure_Cd",
@@ -404,6 +408,7 @@ def finalize_dataframe(
     df["Organisation_Cd"] = context.org_cd
     df["Submission_Period_Cd"] = context.submission_period_cd
     df["Process_Cd"] = context.process_cd
+    df["Filename"] = context.filename
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
     if "Cell_Cd" not in df.columns:
@@ -434,6 +439,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Submission_Period_Cd': 'Submission_Period_Cd',
         'Observation_Period_Cd': 'Observation_Period_Cd',
         'Process_Cd': 'Process_Cd',
+        'Filename': 'Filename',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Reference': 'Measure_Cd',
@@ -563,6 +569,7 @@ def process_df(
     pivoted_df["Organisation_Cd"] = context.org_cd
     pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
     pivoted_df["Process_Cd"] = context.process_cd
+    pivoted_df["Filename"] = context.filename
     pivoted_df["Template_Version"] = context.template_version
     pivoted_df["Submission_Date"] = context.last_modified
     if "Section_Cd" not in pivoted_df.columns:
