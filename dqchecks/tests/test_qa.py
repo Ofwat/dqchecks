@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """Tests for dqchecks.qa reusable QA logic."""
 # pylint: disable=line-too-long
 

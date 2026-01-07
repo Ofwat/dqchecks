@@ -80,7 +80,7 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.process_cd, str) or not context.process_cd:
         raise ValueError("The 'process_cd' argument must be a non-empty string.")
-    
+
     if not isinstance(context.filename, str) or not context.filename:
         raise ValueError("The 'filename' argument must be a non-empty string.")
 
