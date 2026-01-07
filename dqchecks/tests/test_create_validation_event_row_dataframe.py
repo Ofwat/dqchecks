@@ -7,7 +7,7 @@ def test_all_none_when_no_input():
     """test_all_none_when_no_input"""
     df = create_validation_event_row_dataframe()
     assert isinstance(df, pd.DataFrame)
-    assert df.shape == (1, 19)
+    assert df.shape == (1, 20)
     assert df.isnull().all().all()
 
 def test_partial_input():
@@ -17,7 +17,7 @@ def test_partial_input():
     assert df.loc[0, "Error_Desc"] == "Missing value"
     # Ensure others are None
     assert df.loc[0, "Batch_Id"] is None
-    assert df.shape == (1, 19)
+    assert df.shape == (1, 20)
 
 def test_full_input():
     """test_full_input"""
@@ -45,7 +45,7 @@ def test_full_input():
     df = create_validation_event_row_dataframe(**input_data)
     for key, val in input_data.items():
         assert df.loc[0, key] == val
-    assert df.shape == (1, 19)
+    assert df.shape == (1, 20)
 
 def test_invalid_column_name_raises_error():
     """test_invalid_column_name_raises_error"""

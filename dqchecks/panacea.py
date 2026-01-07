@@ -1781,6 +1781,7 @@ def create_nulls_in_measure_validation_event(
         Process_Cd=metadata.get("Process_Cd", missing_text_string),
         Template_Version=metadata.get("Template_Version", missing_text_string),
         Organisation_Cd=metadata.get("Organisation_Cd", missing_text_string),
+        Filename=metadata.get("Filename", missing_text_string),
         Cell_Cd="",
         Validation_Processing_Stage=
             metadata.get("Validation_Processing_Stage", missing_text_string),

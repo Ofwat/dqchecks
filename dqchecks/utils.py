@@ -86,6 +86,7 @@ def create_validation_event_row_dataframe(**kwargs):
         "Batch_Id",
         "Validation_Processing_Stage",
         "Sheet_Cd",
+        "Filename",
         "Template_Version",
         "Rule_Cd",
         "Organisation_Cd",
