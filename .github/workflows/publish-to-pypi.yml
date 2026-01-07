@@ -14,13 +14,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8
         with:
           persist-credentials: false
 
       # ---------- Java ----------
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@f2beeb24e141e01a676f977032f5a29d81c9e27e
         with:
           distribution: temurin
           java-version: 17
@@ -50,7 +50,7 @@ jobs:
 
       # ---------- Python ----------
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548
         with:
           python-version: "3.x"
 
@@ -62,13 +62,13 @@ jobs:
 
       # ---------- Upload artifacts ----------
       - name: Upload Python distributions for PyPI
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: python-dists
           path: dist/
 
       - name: Upload Java JAR for GitHub Release
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: java-jar
           path: dqchecks/_jar/mytool.jar
@@ -87,13 +87,13 @@ jobs:
 
     steps:
       - name: Download Python distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: python-dists
           path: dist/
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
 
   github-release:
     name: Sign and upload Python packages + Java JAR to GitHub Release
@@ -107,20 +107,20 @@ jobs:
     steps:
       # Download all artifacts
       - name: Download Python distributions
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: python-dists
           path: dist/
 
       - name: Download Java JAR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
         with:
           name: java-jar
           path: release-artifacts/
 
       # Sign Python distributions with Sigstore
       - name: Sign Python distributions
-        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        uses: sigstore/gh-action-sigstore-python@a5caf349bc536fbef3668a10ed7f5cd309a4b53d
         with:
           inputs: ./dist/*
 
