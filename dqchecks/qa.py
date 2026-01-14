@@ -499,45 +499,20 @@ def build_qa_diff(
             raw_num = _normalise_measure_value(df[col_raw], unit_raw)
             ing_num = _normalise_measure_value(df[col_ing], unit_ing)
 
-            # Optional debug
+            # Optional debug: keep the raw numeric values if you like
             df[col_raw + "_num_original"] = raw_num
             df[col_ing + "_num_original"] = ing_num
 
             # 2) Handle rows where both sides are effectively missing
             both_na = raw_num.isna() & ing_num.isna()
 
-            # 3) Work out how many decimals to use (take the larger of raw/ingested)
-            if "Measure_Decimals_raw" in df.columns:
-                dec_raw = pd.to_numeric(df["Measure_Decimals_raw"], errors="coerce")
-            else:
-                dec_raw = pd.Series(np.nan, index=df.index)
+            # 3) Like-for-like comparison: *no* rounding based on Measure_Decimals
+            equal_values = raw_num == ing_num
 
-            if "Measure_Decimals_ingested" in df.columns:
-                dec_ing = pd.to_numeric(df["Measure_Decimals_ingested"], errors="coerce")
-            else:
-                dec_ing = pd.Series(np.nan, index=df.index)
-
-            decimals_df = pd.concat([dec_raw, dec_ing], axis=1)
-            decimals = decimals_df.max(axis=1)
-
-            default_decimals = 4
-            decimals = decimals.fillna(default_decimals).astype(int)
-            decimals = decimals.clip(lower=0, upper=10)
-
-            # 4) Round both sides to that precision, per-row
-            factor = np.power(10.0, decimals)
-            raw_rounded = (raw_num * factor).round().div(factor)
-            ing_rounded = (ing_num * factor).round().div(factor)
-
-            df[col_raw + "_num"] = raw_rounded
-            df[col_ing + "_num"] = ing_rounded
-
-            equal_rounded = raw_rounded == ing_rounded
-
-            # 5) A diff exists only where:
-            #    - not both NaN
-            #    - AND rounded values are not equal
-            mask = ~(both_na | equal_rounded)
+            # A diff exists only where:
+            #   - not both NaN
+            #   - AND numeric values are not equal
+            mask = ~(both_na | equal_values)
             return mask
 
         for col in common_cols:
