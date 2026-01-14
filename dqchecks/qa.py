@@ -25,7 +25,6 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Optional, Tuple
 
-import numpy as np
 import pandas as pd
 
 # We intentionally expose orchestration-style functions that take several arguments
