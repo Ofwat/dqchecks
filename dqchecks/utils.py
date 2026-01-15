@@ -81,9 +81,6 @@ def create_validation_event_row_dataframe(**kwargs):
     0         123     None                      None     ... Invalid format
     """
 
-
-    
-
     columns = [
         "Event_Id",
         "Batch_Id",

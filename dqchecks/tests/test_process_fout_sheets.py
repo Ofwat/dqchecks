@@ -986,7 +986,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 15
+    expected_length = 26
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
 
 @pytest.fixture
