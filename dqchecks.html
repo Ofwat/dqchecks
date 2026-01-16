@@ -1828,23 +1828,7 @@ each row to a fixed width.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.finalize_dataframe">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">finalize_dataframe</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">context</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><span class="pre">ProcessingContext</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_rename_map</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.finalize_dataframe" title="Link to this definition">¶</a></dt>
-<dd><p>Adds context columns, renames columns based on the mapping, and reorders columns.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<em>pd.DataFrame</em>) – The DataFrame to finalize.</p></li>
-<li><p><strong>context</strong> (<a class="reference internal" href="#dqchecks.transforms.ProcessingContext" title="dqchecks.transforms.ProcessingContext"><em>ProcessingContext</em></a>) – Context metadata to embed into the DataFrame.</p></li>
-<li><p><strong>column_rename_map</strong> (<em>dict</em><em>[</em><em>str</em><em>, </em><em>str</em><em>]</em>) – Mapping from original to standardized column names.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Finalized and standardized DataFrame.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>pd.DataFrame</p>
-</dd>
-</dl>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.get_default_column_rename_map">
@@ -1891,9 +1875,7 @@ renaming or standardizing columns in a DataFrame related to quarterly data.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.normalize_to_string">
 <span class="sig-prename descclassname"><span class="pre">dqchecks.transforms.</span></span><span class="sig-name descname"><span class="pre">normalize_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blank</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#dqchecks.transforms.normalize_to_string" title="Link to this definition">¶</a></dt>
-<dd><p>Convert DataFrame values to strings while preserving missing values
-as a single canonical blank representation.</p>
-</dd></dl>
+<dd></dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="dqchecks.transforms.process_df">
