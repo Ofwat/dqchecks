@@ -64,19 +64,64 @@ def workbook_with_data():
     return wb
 
 @pytest.fixture
+def workbook_with_numeric_and_blank_columns():
+    """
+    Workbook fixture designed to expose stringified NaN / None issues.
+
+    Contains:
+    - Numeric observation column with missing values
+    - An always-blank column
+    - Normal string columns
+    - Proper fOut_* structure with header on row 2
+    """
+
+    wb = Workbook()
+    sheet = wb.create_sheet("fOut_Sheet1")
+
+    # Row 1: top row (expected empty)
+    sheet.append(["", "", "", "", "", "", "", "", ""])
+
+    # Row 2: header row (skip_rows=2)
+    sheet.append([
+        "Acronym",
+        "Reference",
+        "Item description",
+        "Unit",
+        "Model",
+        "Always_Blank",
+        "Numeric_Value",
+        "Cell_Cd",
+        "2024-25",
+    ])
+
+    # Row 3: under-header row (expected empty except Cell_Cd)
+    sheet.append(["", "", "", "", "", None, None, "a8", None])
+
+    # Row 4+: data rows
+    sheet.append(["a", "ref1", "desc1", "kg", "M1", None, 1.23, "a9", 100])
+    sheet.append(["b", "ref2", "desc2", "kg", "M2", None, None, "a10", None])
+    sheet.append(["c", "ref3", "desc3", "kg", "M3", None, 4.56, "a11", None])
+
+    return wb
+
+@pytest.fixture
 def workbook_with_data_cell_cd():
     """
     Fixture for workbook with data in 'fOut_*' sheets
     """
     wb = Workbook()
     sheet = wb.create_sheet("fOut_Sheet1")
+
     sheet.append(["", "", "", "", "", "", "", ""])
-    sheet.append(["Acronym", "Reference", "Item description", "Unit", "Model",
-                  "Description_input", "Constant", "Cell_Cd", "2020-21"])
+    sheet.append([
+        "Acronym", "Reference", "Item description", "Unit", "Model",
+        "Description_input", "Constant", "Cell_Cd", "2020-21"
+    ])
     sheet.append(["", "", "", "", "", "", "", "a8"])
     sheet.append(["a", "a", "a", "a", "a", "a", "a", "a9"])
     sheet.append(["a", "a", "a", "a", "a", "a", "a", "a10"])
     sheet.append(["a", "a", "a", "a", "a", "a", "a", "a11"])
+
     return wb
 
 # pylint: disable=W0621
@@ -166,7 +211,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Measure_Desc": [""],
             "Measure_Unit": [""],
             "Model_Cd": [""],
-            "Submission_Date": ["2025-03-03"],
+            "Submission_Date": ["2025-03-03 00:00:00"],
             "Section_Cd": ["--placeholder--"],
             "Cell_Cd": ["a8"],
             "Run_Date": ["2025-03-03 00:00:00.000"],
@@ -210,6 +255,56 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
 
         mock_warning.assert_called_with(
             "Reading in non data_only mode. Some data may not be accessible.")
+
+# pylint: disable=W0621
+def test_process_fout_sheets_normalizes_missing_values(
+    workbook_with_numeric_and_blank_columns,
+    valid_context,
+):
+    """
+    Ensure missing values (None, NaN, NaT) are consistently normalized
+    and never appear as string literals like 'nan' or 'None' in output.
+    """
+
+    config = FoutProcessConfig(
+        observation_patterns=[r".*"],  # match all obs columns
+        fout_patterns=["^fOut_"],
+        run_validations=False,
+        skip_rows=2,
+        reshape=True,
+    )
+
+    result_df = process_fout_sheets(
+        workbook_with_numeric_and_blank_columns,
+        valid_context,
+        config,
+    )
+
+    # Sanity checks
+    assert isinstance(result_df, pd.DataFrame)
+    assert not result_df.empty
+
+    # 1️⃣ No pandas-missing values should remain
+    assert not result_df.isna().any().any()
+
+    # 2️⃣ No stringified missing values should exist
+    forbidden_literals = {"nan", "none", "nat", "na"}
+
+    found_bad_values = set(
+        val.strip().lower()
+        for val in result_df.to_numpy().ravel()
+        if isinstance(val, str) and val.strip().lower() in forbidden_literals
+    )
+
+    assert not found_bad_values, (
+        f"Found stringified missing values in output: {found_bad_values}"
+    )
+
+    # 3️⃣ Explicitly assert canonical blank representation
+    # (empty string in this pipeline)
+    blank_cells = (result_df == "").any(axis=None)
+    assert blank_cells, "Expected empty-string blanks to be present"
+
 
 # pylint: disable=W0621
 def test_process_fout_sheets_invalid_workbook(valid_context):

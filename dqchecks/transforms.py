@@ -407,10 +407,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
     }
 
 def normalize_to_string(df: pd.DataFrame, blank: str = "") -> pd.DataFrame:
-    """
-    Convert DataFrame values to strings while preserving missing values
-    as a single canonical blank representation.
-    """
+    df = df.astype(object)
     df = df.where(df.notna(), blank)
     return df.astype(str)
 
@@ -419,38 +416,29 @@ def finalize_dataframe(
     context: ProcessingContext,
     column_rename_map: dict[str, str]
 ) -> pd.DataFrame:
-    """
-    Adds context columns, renames columns based on the mapping, and reorders columns.
-
-    Args:
-        df (pd.DataFrame): The DataFrame to finalize.
-        context (ProcessingContext): Context metadata to embed into the DataFrame.
-        column_rename_map (dict[str, str]): Mapping from original to standardized column names.
-
-    Returns:
-        pd.DataFrame: Finalized and standardized DataFrame.
-    """
     df["Organisation_Cd"] = context.org_cd
     df["Submission_Period_Cd"] = context.submission_period_cd
     df["Process_Cd"] = context.process_cd
-    df["file_hash_md5"] = context.file_hash_md5
     df["Filename"] = context.filename
     df["file_hash_md5"] = context.file_hash_md5
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
     df["Run_Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+
     if "Cell_Cd" not in df.columns:
         df["Cell_Cd"] = "--placeholder--"
     if "Section_Cd" not in df.columns:
         df["Section_Cd"] = "--placeholder--"
 
-    # Normalize missing values and stringify ONCE
-    df = normalize_to_string(df)
+    # Rename first (keeps missing semantics intact)
     df = df.rename(columns=column_rename_map)
 
-    # Keep only columns in the final output, in the specified order
+    # The ONE place missing → string conversion is allowed
+    df = normalize_to_string(df)
+
     ordered_columns = [col for col in column_rename_map.values() if col in df.columns]
     return df[ordered_columns]
+
 
 def get_default_column_rename_map() -> dict[str, str]:
     """
@@ -607,11 +595,11 @@ def process_df(
     if "Section_Cd" not in pivoted_df.columns:
         pivoted_df["Section_Cd"] = "--placeholder--"
 
-    # Normalize types, rename columns, and reorder as per mapping
-    pivoted_df = pivoted_df.astype(str)
-    pivoted_df = pivoted_df.rename(columns=column_rename_map)
-    ordered_columns = [c for c in column_rename_map.values() if c in pivoted_df.columns]
-    pivoted_df = pivoted_df[ordered_columns]
+    # # Normalize types, rename columns, and reorder as per mapping
+    # pivoted_df = pivoted_df.astype(str)
+    # pivoted_df = pivoted_df.rename(columns=column_rename_map)
+    # ordered_columns = [c for c in column_rename_map.values() if c in pivoted_df.columns]
+    # pivoted_df = pivoted_df[ordered_columns]
 
     return pivoted_df
 
