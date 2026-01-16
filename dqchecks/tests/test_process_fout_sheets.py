@@ -169,13 +169,9 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Submission_Date": ["2025-03-03"],
             "Section_Cd": ["--placeholder--"],
             "Cell_Cd": ["a8"],
+            "Run_Date": ["2025-03-03 00:00:00.000"],
         }
     ).iloc[0]
-
-    assert isinstance(result_df, pd.DataFrame)
-    assert not result_df.empty
-    assert top_row.equals(expected_top_row)
-    assert top_row.shape == (14, )
 
     expected_columns = [
         "Organisation_Cd",
@@ -190,10 +186,18 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
         "Submission_Date",
         "Section_Cd",
         "Cell_Cd",
+        "Run_Date",
     ]
     assert all(col in result_df.columns for col in expected_columns)
     assert result_df["Sheet_Cd"].iloc[0] == "fOut_Sheet1"
     assert result_df["Cell_Cd"].to_list() == ["a8", "a9", "a10", "a11"]
+
+    expected_top_row["Run_Date"] = top_row["Run_Date"]
+
+    assert isinstance(result_df, pd.DataFrame)
+    assert not result_df.empty
+    assert top_row.equals(expected_top_row)
+    assert top_row.shape == (15, )
 
     # Patch the logging to capture the warning message
     with patch("logging.warning") as mock_warning:
@@ -996,7 +1000,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 27
+    expected_length = 28
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
 
 @pytest.fixture

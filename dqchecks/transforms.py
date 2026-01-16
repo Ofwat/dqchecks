@@ -402,7 +402,8 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Observation_Coverage_Desc': 'Observation_Coverage_Desc',
         'Observation_Desc': 'Observation_Desc',
         'Region_Cd': 'Region_Cd',
-        'Security_Mark': 'Security_Mark'
+        'Security_Mark': 'Security_Mark',
+        'Run_Date': 'Run_Date',
     }
 
 def finalize_dataframe(
@@ -429,6 +430,7 @@ def finalize_dataframe(
     df["file_hash_md5"] = context.file_hash_md5
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
+    df["Run_Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
     if "Cell_Cd" not in df.columns:
         df["Cell_Cd"] = "--placeholder--"
     if "Section_Cd" not in df.columns:
@@ -469,6 +471,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Submission_Date': 'Submission_Date',
         "Section_Cd": "Section_Cd",
         "Cell_Cd": "Cell_Cd",
+        "Run_Date": "Run_Date",
     }
 
 def compute_cell_cd(pivoted_df: pd.DataFrame, col_letter_map: dict[str, str]) -> pd.Series:
