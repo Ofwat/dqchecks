@@ -406,6 +406,14 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Run_Date': 'Run_Date',
     }
 
+def normalize_to_string(df: pd.DataFrame, blank: str = "") -> pd.DataFrame:
+    """
+    Convert DataFrame values to strings while preserving missing values
+    as a single canonical blank representation.
+    """
+    df = df.where(df.notna(), blank)
+    return df.astype(str)
+
 def finalize_dataframe(
     df: pd.DataFrame,
     context: ProcessingContext,
@@ -436,7 +444,8 @@ def finalize_dataframe(
     if "Section_Cd" not in df.columns:
         df["Section_Cd"] = "--placeholder--"
 
-    df = df.astype(str)
+    # Normalize missing values and stringify ONCE
+    df = normalize_to_string(df)
     df = df.rename(columns=column_rename_map)
 
     # Keep only columns in the final output, in the specified order
