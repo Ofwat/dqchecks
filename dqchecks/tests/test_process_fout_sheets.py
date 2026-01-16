@@ -34,6 +34,7 @@ def valid_context():
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -158,6 +159,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Submission_Period_Cd": ["2025Q1"],
             "Process_Cd": ["PROCESS01"],
             "Filename": ["myfile"],
+            "file_hash_md5": ["file_hash_md5"],
             "Template_Version": ["1.0"],
             "Sheet_Cd": ["fOut_Sheet1"],
             "Measure_Cd": [""],
@@ -173,7 +175,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
     assert top_row.equals(expected_top_row)
-    assert top_row.shape == (13, )
+    assert top_row.shape == (14, )
 
     expected_columns = [
         "Organisation_Cd",
@@ -297,6 +299,7 @@ def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -323,6 +326,7 @@ def test_process_fout_sheets_invalid_context_submission_period(workbook_with_dat
         submission_period_cd=None,
         process_cd="PROCESS01",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -350,6 +354,7 @@ def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfilen",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified="invalid"  # Should be a datetime object
     )
@@ -440,6 +445,7 @@ def test_different_observation_periods():
         submission_period_cd="2025Q1",
         process_cd="process_1",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="v1.0",
         last_modified=datetime(2025, 2, 11),
     )
@@ -489,6 +495,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="",  # Invalid: empty string
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -506,6 +513,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd=1234,  # Invalid: integer
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
     )
@@ -538,6 +546,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="",  # Invalid: empty string
         last_modified=datetime(2025, 3, 3)
     )
@@ -556,6 +565,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="filename",
+        file_hash_md5="file_hash_md5",
         template_version=1.0,  # Invalid: not a string
         last_modified=datetime(2025, 3, 3)
     )
@@ -986,7 +996,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 26
+    expected_length = 27
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
 
 @pytest.fixture
@@ -997,6 +1007,7 @@ def context():
         submission_period_cd="2024Q4",
         process_cd="PROC123",
         filename="myfile",
+        file_hash_md5="file_hash_md5",
         template_version="v1.0",
         last_modified="2025-06-23"
     )
