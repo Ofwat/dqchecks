@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
                           'filename','template_version', 'last_modified',
-                          'file_hash_md5']
+                          'file_hash_md5', 'Batch_Id']
 )
 
 @dataclass
@@ -84,6 +84,9 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.filename, str) or not context.filename:
         raise ValueError("The 'filename' argument must be a non-empty string.")
+
+    if not isinstance(context.Batch_Id, str) or not context.Batch_Id:
+        raise ValueError("The 'Batch_Id' argument must be a non-empty string.")
 
     if not isinstance(context.file_hash_md5, str) or not context.file_hash_md5:
         raise ValueError("The 'file_hash_md5' argument must be a non-empty string.")
@@ -404,9 +407,14 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Region_Cd': 'Region_Cd',
         'Security_Mark': 'Security_Mark',
         'Run_Date': 'Run_Date',
+        'Batch_Id': 'Batch_Id',
     }
 
 def normalize_to_string(df: pd.DataFrame, blank: str = "") -> pd.DataFrame:
+    """
+    Convert all columns to string
+    NA, None, nan etc -> "" 
+    """
     df = df.astype(object)
     df = df.where(df.notna(), blank)
     return df.astype(str)
@@ -416,10 +424,22 @@ def finalize_dataframe(
     context: ProcessingContext,
     column_rename_map: dict[str, str]
 ) -> pd.DataFrame:
+    """Unified function which adds all the metadata with castings
+
+    :param df: Dataframe after load
+    :type df: pd.DataFrame
+    :param context: Collection of contextual parameters
+    :type context: ProcessingContext
+    :param column_rename_map: Custom rename of the selected columns
+    :type column_rename_map: dict[str, str]
+    :return: Final dataframe with all the columns in correct types
+    :rtype: pd.DataFrame
+    """
     df["Organisation_Cd"] = context.org_cd
     df["Submission_Period_Cd"] = context.submission_period_cd
     df["Process_Cd"] = context.process_cd
     df["Filename"] = context.filename
+    df["Batch_Id"] = context.Batch_Id
     df["file_hash_md5"] = context.file_hash_md5
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
@@ -457,6 +477,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Observation_Period_Cd': 'Observation_Period_Cd',
         'Process_Cd': 'Process_Cd',
         'Filename': 'Filename',
+        'Batch_Id': 'Batch_Id',
         'file_hash_md5': 'file_hash_md5',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
@@ -508,7 +529,6 @@ def process_df(
     df: pd.DataFrame,
     context: ProcessingContext,
     observation_patterns: list[str],
-    column_rename_map: dict[str, str],
 ) -> pd.DataFrame:
     # pylint: disable=C0301
     """
@@ -536,9 +556,6 @@ def process_df(
     
     observation_patterns : list[str]
         A list of string patterns used to identify observation period columns (e.g., ['2024', '2025']).
-    
-    column_rename_map : dict[str, str]
-        Mapping of original column names to desired output column names.
 
     Returns:
     --------
@@ -553,7 +570,7 @@ def process_df(
 
     Example:
     --------
-    >>> processed_df = process_df(raw_df, context, ['2024', '2025'], {'Measure_Value': 'Value'})
+    >>> processed_df = process_df(raw_df, context)
     """
 
     # Extract Excel column letters from first row and remove that row
@@ -589,6 +606,7 @@ def process_df(
     pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
     pivoted_df["Process_Cd"] = context.process_cd
     pivoted_df["Filename"] = context.filename
+    pivoted_df["Batch_Id"] = context.Batch_Id
     pivoted_df["file_hash_md5"] = context.file_hash_md5
     pivoted_df["Template_Version"] = context.template_version
     pivoted_df["Submission_Date"] = context.last_modified
@@ -640,7 +658,7 @@ def process_fout_sheets(
     for df in df_list:
         # Reshape + compute Cell_Cd (done inside process_df)
         if config.reshape:
-            df = process_df(df, context, config.observation_patterns, column_rename_map)
+            df = process_df(df, context, config.observation_patterns)
         else:
             # Extract Excel column letters from first row and remove that row
             df, _col_letter_map = extract_column_letters_from_top_row(df)

@@ -34,6 +34,7 @@ def valid_context():
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
@@ -204,6 +205,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Submission_Period_Cd": ["2025Q1"],
             "Process_Cd": ["PROCESS01"],
             "Filename": ["myfile"],
+            "Batch_Id": ["someid"],
             "file_hash_md5": ["file_hash_md5"],
             "Template_Version": ["1.0"],
             "Sheet_Cd": ["fOut_Sheet1"],
@@ -223,6 +225,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
         "Submission_Period_Cd",
         "Process_Cd",
         "Filename",
+        "Batch_Id",
         "Template_Version",
         "Sheet_Cd",
         "Measure_Cd",
@@ -242,7 +245,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
     assert top_row.equals(expected_top_row)
-    assert top_row.shape == (15, )
+    assert top_row.shape == (16, )
 
     # Patch the logging to capture the warning message
     with patch("logging.warning") as mock_warning:
@@ -284,10 +287,10 @@ def test_process_fout_sheets_normalizes_missing_values(
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
 
-    # 1️⃣ No pandas-missing values should remain
+    # No pandas-missing values should remain
     assert not result_df.isna().any().any()
 
-    # 2️⃣ No stringified missing values should exist
+    # No stringified missing values should exist
     forbidden_literals = {"nan", "none", "nat", "na"}
 
     found_bad_values = set(
@@ -300,7 +303,7 @@ def test_process_fout_sheets_normalizes_missing_values(
         f"Found stringified missing values in output: {found_bad_values}"
     )
 
-    # 3️⃣ Explicitly assert canonical blank representation
+    # Explicitly assert canonical blank representation
     # (empty string in this pipeline)
     blank_cells = (result_df == "").any(axis=None)
     assert blank_cells, "Expected empty-string blanks to be present"
@@ -398,6 +401,7 @@ def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
@@ -425,6 +429,7 @@ def test_process_fout_sheets_invalid_context_submission_period(workbook_with_dat
         submission_period_cd=None,
         process_cd="PROCESS01",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
@@ -453,6 +458,7 @@ def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfilen",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified="invalid"  # Should be a datetime object
@@ -544,6 +550,7 @@ def test_different_observation_periods():
         submission_period_cd="2025Q1",
         process_cd="process_1",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="v1.0",
         last_modified=datetime(2025, 2, 11),
@@ -594,6 +601,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd="",  # Invalid: empty string
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
@@ -612,6 +620,7 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         submission_period_cd="2025Q1",
         process_cd=1234,  # Invalid: integer
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
         last_modified=datetime(2025, 3, 3)
@@ -645,6 +654,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="",  # Invalid: empty string
         last_modified=datetime(2025, 3, 3)
@@ -664,6 +674,7 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
         filename="filename",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version=1.0,  # Invalid: not a string
         last_modified=datetime(2025, 3, 3)
@@ -1095,7 +1106,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 28
+    expected_length = 29
     assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
 
 @pytest.fixture
@@ -1106,6 +1117,7 @@ def context():
         submission_period_cd="2024Q4",
         process_cd="PROC123",
         filename="myfile",
+        Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="v1.0",
         last_modified="2025-06-23"
