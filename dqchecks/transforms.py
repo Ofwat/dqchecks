@@ -433,6 +433,7 @@ def get_ccp_column_rename_map() -> dict[str, str]:
         "Assurance_Cd": "Assurance_Cd",
         "Observation_Cd": "Observation_Cd",
         "Sensitivity_Cd": "Sensitivity_Cd",
+        'Process_Cd': 'Process_Cd',
         "Data_Source_Cd": "Data_Source_Cd",
         "Measure_Cd": "Measure_Cd",
         "Measure_Value": "Measure_Value",
