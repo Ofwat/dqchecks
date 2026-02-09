@@ -1108,7 +1108,9 @@ def test_get_qd_column_rename_map_types_and_length():
 
     # Check expected number of keys (should match the number of entries)
     expected_length = 29
-    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items got {len(rename_map)}"
+    assert len(rename_map) == expected_length, (
+        f"Dictionary should have {expected_length} items got {len(rename_map)}"
+    )
 
 def test_get_ccp_column_rename_map_types_and_length():
     """Simple test of the get_ccp_column_rename_map function"""
@@ -1124,7 +1126,9 @@ def test_get_ccp_column_rename_map_types_and_length():
 
     # Check expected number of keys (should match the number of entries)
     expected_length = 31
-    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items got {len(rename_map)}"
+    assert len(rename_map) == expected_length, (
+        f"Dictionary should have {expected_length} items got {len(rename_map)}"
+    )
 
 @pytest.fixture
 def context():
