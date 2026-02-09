@@ -301,13 +301,21 @@ def check_empty_rows(wb: Workbook, sheet_names: list[str]):
     under_header_bad_sheet_names = []
     top_row_bad_sheet_names = []
 
+    def is_empty_cell(value) -> bool:
+        """Treat None, blank strings, and NaN-like values as empty."""
+        if value is None:
+            return True
+        if isinstance(value, str):
+            return value.strip() == ""
+        return bool(pd.isna(value))
+
     for sheet_name in sheet_names:
         sheet = wb[sheet_name]
 
         # Check under header row (row 3)
         under_header_row = sheet.iter_rows(min_row=3, values_only=True)
         under_header_row_vals = list(next(under_header_row, []))
-        if set(under_header_row_vals) not in [{None}, {"", None}, {""}]:
+        if not under_header_row_vals or not all(is_empty_cell(value) for value in under_header_row_vals):
             under_header_bad_sheet_names.append(sheet_name)
 
         # Check top row (row 1), with 3rd and 2nd element removed
@@ -316,7 +324,7 @@ def check_empty_rows(wb: Workbook, sheet_names: list[str]):
         if len(top_row_vals) > 2:
             del top_row_vals[2] # Remove C1
             del top_row_vals[1] # Remove B1
-        if set(top_row_vals) not in [{None}, {"", None}, {""}]:
+        if not top_row_vals or not all(is_empty_cell(value) for value in top_row_vals):
             top_row_bad_sheet_names.append(sheet_name)
 
     if under_header_bad_sheet_names or top_row_bad_sheet_names:
@@ -406,6 +414,52 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Observation_Desc': 'Observation_Desc',
         'Region_Cd': 'Region_Cd',
         'Security_Mark': 'Security_Mark',
+        'Run_Date': 'Run_Date',
+        'Batch_Id': 'Batch_Id',
+    }
+
+def get_ccp_column_rename_map() -> dict[str, str]:
+    """
+    Returns a dictionary mapping column names to themselves for use in 
+    renaming or standardizing columns in a DataFrame related to quarterly data.
+
+    This mapping ensures consistent column naming conventions across processing steps.
+
+    Returns:
+        dict[str, str]: A dictionary where keys and values are column names.
+    """
+    return {
+        "Organisation_Cd": "Organisation_Cd",
+        "Assurance_Cd": "Assurance_Cd",
+        "Observation_Cd": "Observation_Cd",
+        "Sensitivity_Cd": "Sensitivity_Cd",
+        "Data_Source_Cd": "Data_Source_Cd",
+        "Measure_Cd": "Measure_Cd",
+        "Measure_Value": "Measure_Value",
+        "Submission_Period_Cd": "Submission_Period_Cd",
+        "Observation_Period_Cd": "Observation_Period_Cd",
+        "Observation_Coverage_Cd": "Observation_Coverage_Cd",
+        "Audit_Comment": "Audit_Comment",
+        "Adjustment_Period_Cd": "Adjustment_Period_Cd",
+        "Gated_Scheme_Cd": "Gated_Scheme_Cd",
+        "Major_Project_Cd": "Major_Project_Cd",
+        "Asset_Class_Cd": "Asset_Class_Cd",
+        "Site_Cd": "Site_Cd",
+        "Cost_Change_Category_Cd": "Cost_Change_Category_Cd",
+        "Inflation_Observation_Cd": "Inflation_Observation_Cd",
+        "Price_Index_Cd": "Price_Index_Cd",
+        "Price_Index_Coverage_Cd": "Price_Index_Coverage_Cd",
+        "Cost_Claim_Change_Cd": "Cost_Claim_Change_Cd",
+        "Business_Unit_Cd": "Business_Unit_Cd",
+
+        'Cell_Cd': 'Cell_Cd',
+        'Section_Cd': 'Section_Cd',
+
+        'Filename': 'Filename',
+        'file_hash_md5': 'file_hash_md5',
+        'Template_Version': 'Template_Version',
+        'Sheet_Cd': 'Sheet_Cd',
+        'Submission_Date': 'Submission_Date',
         'Run_Date': 'Run_Date',
         'Batch_Id': 'Batch_Id',
     }

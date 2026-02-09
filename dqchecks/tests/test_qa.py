@@ -309,7 +309,7 @@ def test_build_qa_diff_missing_extra_and_value_mismatch():
 
     extra_row = qa_diff_df[qa_diff_df["Error_Type"] == "EXTRA_IN_INGESTED"].iloc[0]
     assert extra_row["Measure_Key"] == "M4"
-    assert extra_row["Raw_Value"] is None
+    assert pd.isna(extra_row["Raw_Value"])
     assert extra_row["Ingested_Value"] == "40"
 
     mismatch_row = qa_diff_df[qa_diff_df["Error_Type"] == "MEASURE_VALUE_MISMATCH"].iloc[0]
