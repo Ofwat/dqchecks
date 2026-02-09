@@ -18,6 +18,7 @@ from dqchecks.transforms import (
     clean_data,
     check_column_headers,
     get_qd_column_rename_map,
+    get_ccp_column_rename_map,
     finalize_dataframe,)
 from dqchecks.exceptions import (
     EmptyRowsPatternCheckError,
@@ -1107,7 +1108,23 @@ def test_get_qd_column_rename_map_types_and_length():
 
     # Check expected number of keys (should match the number of entries)
     expected_length = 29
-    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items"
+    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items got {len(rename_map)}"
+
+def test_get_ccp_column_rename_map_types_and_length():
+    """Simple test of the get_ccp_column_rename_map function"""
+    rename_map = get_ccp_column_rename_map()
+
+    # Check that the return type is a dict
+    assert isinstance(rename_map, dict), "Return value should be a dictionary"
+
+    # Check all keys and values are strings
+    for key, value in rename_map.items():
+        assert isinstance(key, str), f"Key {key} is not a string"
+        assert isinstance(value, str), f"Value for key {key} is not a string"
+
+    # Check expected number of keys (should match the number of entries)
+    expected_length = 31
+    assert len(rename_map) == expected_length, f"Dictionary should have {expected_length} items got {len(rename_map)}"
 
 @pytest.fixture
 def context():
