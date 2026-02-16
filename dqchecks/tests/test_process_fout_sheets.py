@@ -38,7 +38,8 @@ def valid_context():
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
 
 @pytest.fixture
@@ -208,6 +209,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Filename": ["myfile"],
             "Batch_Id": ["someid"],
             "file_hash_md5": ["file_hash_md5"],
+            "status": ["complete"],
             "Template_Version": ["1.0"],
             "Sheet_Cd": ["fOut_Sheet1"],
             "Measure_Cd": [""],
@@ -246,7 +248,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
     assert top_row.equals(expected_top_row)
-    assert top_row.shape == (16, )
+    assert top_row.shape == (17, )
 
     # Patch the logging to capture the warning message
     with patch("logging.warning") as mock_warning:
@@ -405,7 +407,8 @@ def test_process_fout_sheets_invalid_context_org_cd(workbook_with_data):
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
     config = FoutProcessConfig(
         observation_patterns=observation_patterns,
@@ -433,7 +436,8 @@ def test_process_fout_sheets_invalid_context_submission_period(workbook_with_dat
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
     config = FoutProcessConfig(
         observation_patterns=observation_patterns,
@@ -462,7 +466,8 @@ def test_process_fout_sheets_invalid_context_last_modified(workbook_with_data):
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified="invalid"  # Should be a datetime object
+        last_modified="invalid",  # Should be a datetime object
+        status="complete",
     )
     config = FoutProcessConfig(
         observation_patterns=observation_patterns,
@@ -555,6 +560,7 @@ def test_different_observation_periods():
         file_hash_md5="file_hash_md5",
         template_version="v1.0",
         last_modified=datetime(2025, 2, 11),
+        status="complete",
     )
 
     config = FoutProcessConfig(
@@ -605,7 +611,8 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
 
     with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
@@ -624,7 +631,8 @@ def test_process_fout_sheets_invalid_context_process_cd(workbook_with_data):
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="1.0",
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
 
     with pytest.raises(ValueError, match="The 'process_cd' argument must be a non-empty string."):
@@ -658,7 +666,8 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="",  # Invalid: empty string
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
 
     with pytest.raises(ValueError,
@@ -678,7 +687,8 @@ def test_process_fout_sheets_invalid_context_template_version(workbook_with_data
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version=1.0,  # Invalid: not a string
-        last_modified=datetime(2025, 3, 3)
+        last_modified=datetime(2025, 3, 3),
+        status="complete",
     )
 
     with pytest.raises(ValueError,
@@ -1107,7 +1117,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 29
+    expected_length = 30
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1125,7 +1135,7 @@ def test_get_ccp_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 32
+    expected_length = 33
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1141,7 +1151,8 @@ def context():
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
         template_version="v1.0",
-        last_modified="2025-06-23"
+        last_modified="2025-06-23",
+        status="complete",
     )
 
 @pytest.fixture

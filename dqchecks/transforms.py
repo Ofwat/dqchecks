@@ -23,7 +23,7 @@ logging.basicConfig(level=logging.INFO)
 ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
                           'filename','template_version', 'last_modified',
-                          'file_hash_md5', 'Batch_Id']
+                          'file_hash_md5', 'Batch_Id', "status"]
 )
 
 @dataclass
@@ -90,6 +90,9 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.file_hash_md5, str) or not context.file_hash_md5:
         raise ValueError("The 'file_hash_md5' argument must be a non-empty string.")
+    
+    if not isinstance(context.status, str) or not context.status:
+        raise ValueError("The 'status' argument must be a non-empty string.")
 
     if not isinstance(context.template_version, str) or not context.template_version:
         raise ValueError("The 'template_version' argument must be a non-empty string.")
@@ -393,6 +396,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Process_Cd': 'Process_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
+        'status': 'status',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Measure_Cd': 'Measure_Cd',
@@ -458,6 +462,7 @@ def get_ccp_column_rename_map() -> dict[str, str]:
 
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
+        'status': 'status',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Submission_Date': 'Submission_Date',
@@ -496,6 +501,7 @@ def finalize_dataframe(
     df["Filename"] = context.filename
     df["Batch_Id"] = context.Batch_Id
     df["file_hash_md5"] = context.file_hash_md5
+    df["status"] = context.status
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
     df["Run_Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -534,6 +540,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Filename': 'Filename',
         'Batch_Id': 'Batch_Id',
         'file_hash_md5': 'file_hash_md5',
+        "status": "status",
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Reference': 'Measure_Cd',
@@ -663,6 +670,7 @@ def process_df(
     pivoted_df["Filename"] = context.filename
     pivoted_df["Batch_Id"] = context.Batch_Id
     pivoted_df["file_hash_md5"] = context.file_hash_md5
+    pivoted_df["status"] = context.status
     pivoted_df["Template_Version"] = context.template_version
     pivoted_df["Submission_Date"] = context.last_modified
     if "Section_Cd" not in pivoted_df.columns:
