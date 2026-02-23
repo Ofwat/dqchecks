@@ -2086,7 +2086,7 @@ def clean_formula_spaces_in_workbook(wb):
         max_row = used_area.last_used_row
         max_col = used_area.last_used_column
 
-        for row in ws.iter_rows(min_row=min_row, max_row=max_row,
+        for row in ws.iter_rows(min_row=1, max_row=max_row,
                                 min_col=min_col, max_col=max_col):
             for cell in row:
                 if cell.data_type == 'f' and isinstance(cell.value, str):
