@@ -391,9 +391,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
     """
     return {
         'Organisation_Cd': 'Organisation_Cd',
-        'Submission_Period_Cd': 'Submission_Period_Cd',
         'Observation_Period_Cd': 'Observation_Period_Cd',
-        'Process_Cd': 'Process_Cd',
         'Measure_Cd': 'Measure_Cd',
         'Measure_Value': 'Measure_Value',
         'Measure_Desc': 'Measure_Desc',
@@ -413,6 +411,8 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Region_Cd': 'Region_Cd',
         'Security_Mark': 'Security_Mark',
 
+        'Submission_Period_Cd': 'Submission_Period_Cd',
+        'Process_Cd': 'Process_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
@@ -450,6 +450,8 @@ def get_mex_column_rename_map() -> dict[str, str]:
         "Measure_Decimals": "Measure_Decimals",
         "Measure_Value": "Measure_Value",
 
+        'Submission_Period_Cd': 'Submission_Period_Cd',
+        'Process_Cd': 'Process_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
