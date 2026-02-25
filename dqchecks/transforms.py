@@ -422,6 +422,34 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Batch_Id': 'Batch_Id',
     }
 
+def get_mex_column_rename_map() -> dict[str, str]:
+    """
+    Returns a dictionary mapping column names to themselves for use in 
+    renaming or standardizing columns in a DataFrame related to MeX data.
+
+    This mapping ensures consistent column naming conventions across processing steps.
+
+    Returns:
+        dict[str, str]: A dictionary where keys and values are column names.
+    """
+    return {
+        "Organisation_Cd": "Organisation_Cd",
+        "Region_Cd": "Region_Cd",
+        "Assured_Cd": "Assured_Cd",
+        "Security_Mark": "Security_Mark",
+        "Data_Source": "Data_Source",
+        "Measure_Name": "Measure_Name",
+        "Measure_Desc": "Measure_Desc",
+        "Obervation_Coverage_Desc": "Obervation_Coverage_Desc",
+        "Observation_Desc": "Observation_Desc",
+        "Year_Type": "Year_Type",
+        "Submission_Period_Cd": "Submission_Period_Cd",
+        "Observation_Period_Cd": "Observation_Period_Cd",
+        "Measure_Units": "Measure_Units",
+        "Measure_Decimals": "Measure_Decimals",
+        "Measure_Value": "Measure_Value",
+    }
+
 def get_ccp_column_rename_map() -> dict[str, str]:
     """
     Returns a dictionary mapping column names to themselves for use in 
