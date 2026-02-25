@@ -394,17 +394,11 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Submission_Period_Cd': 'Submission_Period_Cd',
         'Observation_Period_Cd': 'Observation_Period_Cd',
         'Process_Cd': 'Process_Cd',
-        'Filename': 'Filename',
-        'file_hash_md5': 'file_hash_md5',
-        'status': 'status',
-        'Template_Version': 'Template_Version',
-        'Sheet_Cd': 'Sheet_Cd',
         'Measure_Cd': 'Measure_Cd',
         'Measure_Value': 'Measure_Value',
         'Measure_Desc': 'Measure_Desc',
         'Measure_Unit': 'Measure_Unit',
         'Model_Cd': 'Model_Cd',
-        'Submission_Date': 'Submission_Date',
         'Section_Cd': 'Section_Cd',
         'Cell_Cd': 'Cell_Cd',
         'Year_Type': 'Year_Type',
@@ -418,6 +412,13 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Observation_Desc': 'Observation_Desc',
         'Region_Cd': 'Region_Cd',
         'Security_Mark': 'Security_Mark',
+
+        'Filename': 'Filename',
+        'file_hash_md5': 'file_hash_md5',
+        'Submission_Date': 'Submission_Date',
+        'status': 'status',
+        'Template_Version': 'Template_Version',
+        'Sheet_Cd': 'Sheet_Cd',
         'Run_Date': 'Run_Date',
         'Batch_Id': 'Batch_Id',
     }
@@ -448,6 +449,15 @@ def get_mex_column_rename_map() -> dict[str, str]:
         "Measure_Units": "Measure_Units",
         "Measure_Decimals": "Measure_Decimals",
         "Measure_Value": "Measure_Value",
+
+        'Filename': 'Filename',
+        'file_hash_md5': 'file_hash_md5',
+        'Submission_Date': 'Submission_Date',
+        'status': 'status',
+        'Template_Version': 'Template_Version',
+        'Sheet_Cd': 'Sheet_Cd',
+        'Run_Date': 'Run_Date',
+        'Batch_Id': 'Batch_Id',
     }
 
 def get_ccp_column_rename_map() -> dict[str, str]:
