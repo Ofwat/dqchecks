@@ -194,17 +194,24 @@ def _normalise_measure_value(
     numeric_pct = numeric / 100.0
     numeric = numeric.where(~is_pct, numeric_pct)
     return numeric
-
+    
 
 def _normalise_string(s: pd.Series) -> pd.Series:
     """
     Normalise strings for comparison:
       - cast to str
       - fill NaN with ''
+      - replace zero width space
       - strip spaces
       - lowercase
     """
-    return s.astype(str).fillna("").str.strip().str.lower()
+    return (
+        s.astype(str)
+         .fillna("")
+         .str.replace("\u200b", "", regex=False)
+         .str.strip()
+         .str.lower()
+    )
 
 
 # --------------------------------------------------------------------------------------
