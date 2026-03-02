@@ -201,14 +201,13 @@ def _normalise_string(s: pd.Series) -> pd.Series:
     Normalise strings for comparison:
       - cast to str
       - fill NaN with ''
-      - replace zero width space
+      - remove zero width space (U+200B)
       - strip spaces
       - lowercase
     """
     return (
-        s.astype(str)
-         .fillna("")
-         .str.replace("\u200b", "", regex=False)
+        s.fillna("")
+         .map(lambda x: str(x).replace("\u200b", ""))
          .str.strip()
          .str.lower()
     )
