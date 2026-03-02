@@ -199,18 +199,34 @@ def _normalise_measure_value(
 def _normalise_string(s: pd.Series) -> pd.Series:
     """
     Normalise strings for comparison:
-      - cast to str
       - fill NaN with ''
       - remove zero width space (U+200B)
+      - normalise unicode hyphens/dashes to ASCII '-'
       - strip spaces
       - lowercase
     """
-    return (
-        s.fillna("")
-         .map(lambda x: str(x).replace("\u200b", ""))
-         .str.strip()
-         .str.lower()
-    )
+    dash_map = {
+        "\u2010": "-",  # hyphen
+        "\u2011": "-",  # non-breaking hyphen  (your screenshot)
+        "\u2012": "-",  # figure dash
+        "\u2013": "-",  # en dash
+        "\u2014": "-",  # em dash
+        "\u2212": "-",  # minus sign
+    }
+
+    def clean(x) -> str:
+        txt = "" if x is None else str(x)
+
+        # remove real ZWSP + (optional) literal "\u200b" text
+        txt = txt.replace("\u200b", "").replace(r"\u200b", "")
+
+        # normalise dash-like chars
+        for k, v in dash_map.items():
+            txt = txt.replace(k, v)
+
+        return txt.strip().lower()
+
+    return s.fillna("").map(clean)
 
 
 # --------------------------------------------------------------------------------------
