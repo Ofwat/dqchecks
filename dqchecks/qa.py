@@ -194,7 +194,7 @@ def _normalise_measure_value(
     numeric_pct = numeric / 100.0
     numeric = numeric.where(~is_pct, numeric_pct)
     return numeric
-    
+
 
 def _normalise_string(s: pd.Series) -> pd.Series:
     """
