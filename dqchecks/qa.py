@@ -32,6 +32,7 @@ import pandas as pd
 
 # We intentionally expose orchestration-style functions that take several arguments
 # and have branching logic. Suppress corresponding structural warnings.
+# Also relax line length and superfluous-parens for readability in f-strings.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
 # pylint: disable=line-too-long,superfluous-parens
@@ -39,7 +40,7 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------------------
-# QD COLUMN CONSTANTS (unchanged)
+# QD COLUMN CONSTANTS (kept compatible with existing tests + QD notebooks)
 # --------------------------------------------------------------------------------------
 
 COMPARE_COLS: list[str] = [
@@ -67,14 +68,19 @@ COMPARE_COLS: list[str] = [
     "Comment",
 ]
 
+# Composite key to define "same row" for QD
+# NOTE: we join using Measure_Key, which is:
+#   - Flat_File: Measure_Cd
+#   - Semantic:  Legacy_Measure_Reference
 KEY_COLS: list[str] = [
     "Organisation_Cd",
     "Region_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
-    "Measure_Key",   # canonical join key
+    "Measure_Key",
 ]
 
+# Context columns shown in the diff output (only if present)
 CONTEXT_COLS: list[str] = [
     "Organisation_Cd",
     "Region_Cd",
@@ -87,6 +93,9 @@ CONTEXT_COLS: list[str] = [
     "Cell_Cd",
 ]
 
+# Mapping from semantic model column names -> Flat_File names
+# Important mapping:
+#   - Flat_File Measure_Desc  <->  Semantic Measure_Name
 SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
     "Data_Source_Desc": "Data_Source",
     "Measure_Name": "Measure_Desc",       # semantic Measure_Name -> Measure_Desc
@@ -140,7 +149,6 @@ CCP_KEY_COLS: list[str] = [
 ]
 
 CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
-
 
 # --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
@@ -219,7 +227,12 @@ def _normalise_key_cols(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
     df = df.copy()
     for c in key_cols:
         if c in df.columns:
-            df[c] = df[c].astype(str).str.strip().str.replace(r"\.0$", "", regex=True)
+            df[c] = (
+                df[c]
+                .astype(str)
+                .str.strip()
+                .str.replace(r"\.0$", "", regex=True)
+            )
     return df
 
 
@@ -254,7 +267,7 @@ def _normalise_string(s: pd.Series) -> pd.Series:
     Normalise strings for comparison:
       - fill NaN with ''
       - remove zero width space (U+200B)
-      - remove literal "\u200b" text (sometimes appears when pasted/escaped)
+      - remove literal "\\u200b" text (sometimes appears when pasted/escaped)
       - normalise unicode hyphens/dashes to ASCII '-'
       - strip spaces
       - lowercase
@@ -335,14 +348,13 @@ def prepare_qa_frames(
     """
     log = logger_ or logger
     p = _profile_name(profile)
-    compare_cols, key_cols, _context_cols = _get_profile_cols(p)
+    _compare_cols, key_cols, _context_cols = _get_profile_cols(p)
 
     # 1) Prepare semantic + raw copies
     if p == "QD":
         col_map = semantic_to_flat_map or SEMANTIC_TO_FLAT_COL_MAP
         sem_for_qa = ingested_df_flat.rename(columns=col_map).copy()
     else:
-        # CCP (and future profiles): start with raw semantic, then apply CCP renames
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
 
     flat_for_qa = combined_df.copy()
@@ -374,7 +386,6 @@ def prepare_qa_frames(
         flat_for_qa = _normalise_keys_with_measure(flat_for_qa, measure_col="Measure_Cd")
         sem_for_qa = _normalise_keys_with_measure(sem_for_qa, measure_col="Legacy_Measure_Reference")
     else:
-        # CCP: normalise key columns only
         flat_for_qa = _normalise_key_cols(flat_for_qa, key_cols)
         sem_for_qa = _normalise_key_cols(sem_for_qa, key_cols)
 
@@ -392,9 +403,6 @@ def prepare_qa_frames(
         sem_for_qa = sem_for_qa.drop(columns=["_Insert_Date_ts"])
 
     log.info("Semantic rows AFTER dedupe: %d", len(sem_for_qa))
-
-    # Optional: keep only columns relevant to comparisons if present (but do not drop key cols)
-    # We keep all columns to avoid breaking downstream consumer notebooks.
 
     return flat_for_qa, sem_for_qa
 
@@ -597,7 +605,16 @@ def build_qa_diff(
                 left_norm = _normalise_string(both[col_raw])
                 right_norm = _normalise_string(both[col_ing])
                 mask_diff = left_norm != right_norm
-                err_type = f"{col.upper()}_MISMATCH"
+
+                # Keep QD test expectations intact
+                if col == "Measure_Desc":
+                    err_type = "DESCRIPTION_MISMATCH"
+                elif col == "Measure_Unit":
+                    err_type = "UNIT_DATATYPE_MISMATCH"
+                elif col == "Comment":
+                    err_type = "COMMENT_MISMATCH"
+                else:
+                    err_type = f"{col.upper()}_MISMATCH"
 
             diff_rows = both[mask_diff]
             for _, row in diff_rows.iterrows():
@@ -621,7 +638,15 @@ def build_qa_diff(
 
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
                 measure_desc_ing = row.get("Measure_Desc_ingested", None)
-                measure_desc = measure_desc_raw if pd.notna(measure_desc_raw) else measure_desc_ing
+
+                # IMPORTANT: keep defensive behavior for unit tests (monkeypatched pd.notna)
+                try:
+                    if pd.notna(measure_desc_raw):
+                        measure_desc = measure_desc_raw
+                    else:
+                        measure_desc = measure_desc_ing
+                except Exception:  # defensive fallback
+                    measure_desc = measure_desc_raw or measure_desc_ing
 
                 record = {
                     **context,
