@@ -1136,7 +1136,7 @@ def test_get_mex_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 24
+    expected_length = 32
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1154,7 +1154,7 @@ def test_get_ccp_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 52
+    expected_length = 51
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )

@@ -437,20 +437,27 @@ def get_mex_column_rename_map() -> dict[str, str]:
         "Organisation_Cd": "Organisation_Cd",
         "Region_Cd": "Region_Cd",
         "Assured_Cd": "Assured_Cd",
+        "Assurance_Cd": "Assurance_Cd",
+        "Sensitivity_Cd": "Sensitivity_Cd",
         "Security_Mark": "Security_Mark",
         "Data_Source": "Data_Source",
         "Measure_Name": "Measure_Name",
+        "Measure_Cd": "Measure_Cd",
         "Measure_Desc": "Measure_Desc",
         "Obervation_Coverage_Desc": "Obervation_Coverage_Desc",
         "Observation_Desc": "Observation_Desc",
         "Year_Type": "Year_Type",
         "Submission_Period_Cd": "Submission_Period_Cd",
         "Observation_Period_Cd": "Observation_Period_Cd",
-        "Measure_Units": "Measure_Units",
-        "Measure_Decimals": "Measure_Decimals",
+        "Unit": "Unit",
+        "Decimal_Point": "Decimal_Point",
         "Measure_Value": "Measure_Value",
+        "Observation_Coverage_Cd": "Observation_Coverage_Cd",
+        "Data_Source_Cd": "Data_Source_Cd",
+        "Observation_Cd": "Observation_Cd",
+        "DMeX_Metric_Cd": "DMeX_Metric_Cd",
+        "Comment": "Comment",
 
-        'Submission_Period_Cd': 'Submission_Period_Cd',
         'Process_Cd': 'Process_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
@@ -459,7 +466,8 @@ def get_mex_column_rename_map() -> dict[str, str]:
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Run_Date': 'Run_Date',
-        'Batch_Id': 'Batch_Id',
+        'Batch_Id': 'Batch_Id'
+
     }
 
 def get_ccp_column_rename_map() -> dict[str, str]:
@@ -491,7 +499,6 @@ def get_ccp_column_rename_map() -> dict[str, str]:
         "Gated_Scheme_Cd": "Gated_Scheme_Cd",
         "Major_Project_Cd": "Major_Project_Cd",
         "Asset_Class_Cd": "Asset_Class_Cd",
-        "Site_Cd": "Site_Cd",
         "Cost_Change_Category_Cd": "Cost_Change_Category_Cd",
         "Cost_Change_Claim_Cd": "Cost_Change_Claim_Cd",
         "Inflation_Observation_Cd": "Inflation_Observation_Cd",
