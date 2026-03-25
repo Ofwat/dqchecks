@@ -368,11 +368,11 @@ def check_sheet_structure(sheet1: Worksheet, sheet2: Worksheet, header_row_numbe
     else:
         # Add error for sheet1 if it's empty (either 1 row or 1 column)
         if sheet1.max_row == 1 or sheet1.max_column == 1:
-            errors.setdefault("Empty Sheet", []).append(sheet1.title)
+            errors.setdefault("Empty Sheet", []).append(f"Template sheet '{sheet1.title}' is empty")
 
         # Add error for sheet2 if it's empty (either 1 row or 1 column)
         if sheet2.max_row == 1 or sheet2.max_column == 1:
-            errors.setdefault("Empty Sheet", []).append(sheet2.title)
+            errors.setdefault("Empty Sheet", []).append(f"Company sheet '{sheet2.title}' is empty")
 
     # Get used area for both sheets
     shape1 = get_used_area(sheet1)

@@ -82,14 +82,14 @@ def test_check_sheet_structure_empty_sheet1(empty_sheet, sheet2):
     empty_sheet.title = "Sheet1"
     result = check_sheet_structure(empty_sheet, sheet2)
     assert result["status"] == "Error"
-    assert "Sheet1" in result["errors"]["Empty Sheet"]
+    assert "Template sheet 'Sheet1' is empty" in result["errors"]["Empty Sheet"]
 
 def test_check_sheet_structure_empty_sheet2(sheet1, empty_sheet):
     """Test that an empty sheet returns False and provides the correct message."""
     empty_sheet.title = "Sheet2"
     result = check_sheet_structure(sheet1, empty_sheet)
     assert result["status"] == "Error"
-    assert "Sheet2" in result["errors"]["Empty Sheet"]
+    assert "Company sheet 'Sheet2' is empty" in result["errors"]["Empty Sheet"]
 
 def test_check_sheet_structure_different_size(sheet1, sheet_with_different_headers):
     """Test that two sheets with different sizes (number of rows/columns) return False."""
