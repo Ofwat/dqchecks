@@ -8,7 +8,8 @@ Supports multiple "profiles" so we can reuse the same orchestration
 across datasets with different grains/keys/column sets.
 
 Profiles:
-- "QD"  (default): original Quarterly Data logic (Measure_Key / Region_Cd / Legacy_Measure_Reference)
+- "QD"  (default): original Quarterly Data logic 
+(Measure_Key / Region_Cd / Legacy_Measure_Reference)
 - "CCP": Cost Change Process logic (multi-attribute natural key, no Measure_Key)
 - "MEX": DMeX / MEX logic (multi-attribute natural key, no Measure_Key)
 
@@ -715,18 +716,21 @@ def build_qa_diff(
                     f"Legacy_Measure_Reference={legacy_ref!r}, Insert_Date={insert_date!r}): "
                     f"Flat_File={raw_val!r}, Ingested={ing_val!r}."
                 )
-
+                
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
                 measure_desc_ing = row.get("Measure_Desc_ingested", None)
 
-                # IMPORTANT: keep defensive behavior for unit tests (monkeypatched pd.notna)
                 try:
-                    if pd.notna(measure_desc_raw):
-                        measure_desc = measure_desc_raw
-                    else:
-                        measure_desc = measure_desc_ing
-                except Exception:  # defensive fallback
-                    measure_desc = measure_desc_raw or measure_desc_ing
+                    raw_has_value = bool(pd.notna(measure_desc_raw))
+                except (TypeError, ValueError):
+                    raw_has_value = measure_desc_raw is not None
+
+                measure_desc = measure_desc_raw if raw_has_value else measure_desc_ing
+
+                if raw_has_value:
+                    measure_desc = measure_desc_raw
+                else:
+                    measure_desc = measure_desc_ing
 
                 record = {
                     **context,
@@ -944,3 +948,4 @@ def build_qa_summaries(
         error_counts_df.insert(1, "QA_Run_Datetime", qa_run_datetime)
 
     return qa_summary_df, qa_company_summary_df, error_counts_df
+    
