@@ -947,4 +947,3 @@ def build_qa_summaries(
         error_counts_df.insert(1, "QA_Run_Datetime", qa_run_datetime)
 
     return qa_summary_df, qa_company_summary_df, error_counts_df
-    
