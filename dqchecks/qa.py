@@ -720,12 +720,11 @@ def build_qa_diff(
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
                 measure_desc_ing = row.get("Measure_Desc_ingested", None)
 
+                # IMPORTANT: keep defensive behavior for unit tests / odd scalar values
                 try:
                     raw_has_value = bool(pd.notna(measure_desc_raw))
-                except (TypeError, ValueError):
+                except (TypeError, ValueError, RuntimeError):
                     raw_has_value = measure_desc_raw is not None
-
-                measure_desc = measure_desc_raw if raw_has_value else measure_desc_ing
 
                 if raw_has_value:
                     measure_desc = measure_desc_raw
