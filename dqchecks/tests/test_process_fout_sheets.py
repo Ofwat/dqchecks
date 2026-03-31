@@ -1235,3 +1235,21 @@ def test_renamed_and_ordered_columns(context, rename_map):
     expected_cols = ["event_id", "cell_code", "section_code", "org_code"]
     actual_cols = list(result.columns)
     assert actual_cols == expected_cols
+
+def test_finalize_load_as_is_with_empty_rename_map(context):
+    """An empty rename map preserves all loaded columns without renaming."""
+    df = pd.DataFrame({
+        "Event_Id": ["E1"],
+        "Raw_Column": [123],
+    })
+
+    result = finalize_dataframe(df.copy(), context, {})
+
+    assert "Event_Id" in result.columns
+    assert "Raw_Column" in result.columns
+    assert "Organisation_Cd" in result.columns
+    assert "Cell_Cd" in result.columns
+    assert "Section_Cd" in result.columns
+    assert result.loc[0, "Event_Id"] == "E1"
+    assert result.loc[0, "Raw_Column"] == "123"
+    assert result.loc[0, "Organisation_Cd"] == "ORG1"

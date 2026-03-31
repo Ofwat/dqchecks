@@ -38,7 +38,8 @@ class FoutProcessConfig:
             that should be processed.
         column_rename_map (Optional[dict[str, str]]): Optional mapping dictionary to rename
             columns from their source names to standardized output names.
-            If None, a default mapping will be used.
+            If None, a default mapping will be used. If {}, all loaded columns
+            are preserved as-is without renaming or schema filtering.
         run_validations (bool): Flag to determine whether to run validation checks on
             sheets (e.g., empty row checks, header validations). Defaults to True.
         skip_rows (int): Number of rows to skip from the sheet when loading. Defaults to 2.
@@ -578,10 +579,14 @@ def finalize_dataframe(
         df["Section_Cd"] = "--placeholder--"
 
     # Rename first (keeps missing semantics intact)
-    df = df.rename(columns=column_rename_map)
+    if column_rename_map:
+        df = df.rename(columns=column_rename_map)
 
     # The ONE place missing → string conversion is allowed
     df = normalize_to_string(df)
+
+    if not column_rename_map:
+        return df
 
     ordered_columns = [col for col in column_rename_map.values() if col in df.columns]
     return df[ordered_columns]
@@ -781,7 +786,11 @@ def process_fout_sheets(
     df_list = clean_data(df_list)
 
     # Column mapping to the final schema
-    column_rename_map = config.column_rename_map or get_default_column_rename_map()
+    column_rename_map = (
+        get_default_column_rename_map()
+        if config.column_rename_map is None
+        else config.column_rename_map
+    )
 
     processed_dfs = []
     for df in df_list:
