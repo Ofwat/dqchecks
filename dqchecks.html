@@ -1538,7 +1538,8 @@ that should be processed.</p>
 <span class="sig-name descname"><span class="pre">column_rename_map</span></span><a class="headerlink" href="#dqchecks.transforms.FoutProcessConfig.column_rename_map" title="Link to this definition">¶</a></dt>
 <dd><p>Optional mapping dictionary to rename
 columns from their source names to standardized output names.
-If None, a default mapping will be used.</p>
+If None, a default mapping will be used. If {}, all loaded columns
+are preserved as-is without renaming or schema filtering.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Optional[dict[str, str]]</p>
