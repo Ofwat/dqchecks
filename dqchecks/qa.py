@@ -10,6 +10,7 @@ across datasets with different grains/keys/column sets.
 Profiles:
 - "QD"  (default): original Quarterly Data logic (Measure_Key / Region_Cd / Legacy_Measure_Reference)
 - "CCP": Cost Change Process logic (multi-attribute natural key, no Measure_Key)
+- "MEX": DMeX / MEX logic (multi-attribute natural key, no Measure_Key)
 
 Designed to be called from Fabric notebooks, e.g.:
 
@@ -105,7 +106,7 @@ SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
 }
 
 # --------------------------------------------------------------------------------------
-# CCP COLUMN CONSTANTS (new)
+# CCP COLUMN CONSTANTS
 # --------------------------------------------------------------------------------------
 
 CCP_COMPARE_COLS: list[str] = [
@@ -151,6 +152,56 @@ CCP_KEY_COLS: list[str] = [
 CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
 
 # --------------------------------------------------------------------------------------
+# MEX COLUMN CONSTANTS
+# --------------------------------------------------------------------------------------
+
+MEX_COMPARE_COLS: list[str] = [
+    "Organisation_Cd",
+    "Assurance_Cd",
+    "Measure_Cd",
+    "Measure_Value",
+    "Submission_Period_Cd",
+    "Observation_Period_Cd",
+    "Sensitivity_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "DMeX_Metric_Cd",
+    "Comment",
+    "Process_Cd",
+    "Filename",
+    "Template_Version",
+    "Sheet_Cd",
+    "Submission_Date",
+]
+
+MEX_KEY_COLS: list[str] = [
+    "Organisation_Cd",
+    "Submission_Period_Cd",
+    "Observation_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Sensitivity_Cd",
+    "DMeX_Metric_Cd",
+]
+
+MEX_CONTEXT_COLS: list[str] = [
+    "Organisation_Cd",
+    "Submission_Period_Cd",
+    "Observation_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Sensitivity_Cd",
+    "DMeX_Metric_Cd",
+    "Filename",
+    "Sheet_Cd",
+]
+
+# --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
 # --------------------------------------------------------------------------------------
 
@@ -165,6 +216,8 @@ def _get_profile_cols(profile: str | None):
     p = _profile_name(profile)
     if p == "CCP":
         return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
+    if p == "MEX":
+        return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
     # default: QD
     return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
 
@@ -222,7 +275,7 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
 
 def _normalise_key_cols(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
     """
-    CCP-style: Normalise key columns only (string trim), no Measure_Key building.
+    CCP/MEX-style: Normalise key columns only (string trim), no Measure_Key building.
     """
     df = df.copy()
     for c in key_cols:
@@ -310,6 +363,22 @@ def _apply_ccp_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
 
+def _apply_mex_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make MEX semantic output align with MEX raw naming conventions.
+    Safe: only renames columns if present.
+    """
+    df = df.copy()
+    rename_map = {
+        "measure_value": "Measure_Value",
+        "Measure_Comment": "Comment",
+        "measure_comment": "Comment",
+        "FileName": "Filename",
+        "file_name": "Filename",
+    }
+    return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+
+
 # --------------------------------------------------------------------------------------
 # 1) PREPARE DATAFRAMES FOR QA
 # --------------------------------------------------------------------------------------
@@ -342,6 +411,13 @@ def prepare_qa_frames(
       - Normalises CCP_KEY_COLS only (no Measure_Key / no Legacy_Measure_Reference).
       - Dedupes semantic by latest Insert_Date per CCP_KEY_COLS.
 
+    MEX:
+      - Applies MEX semantic renames (measure_value -> Measure_Value etc.)
+      - Normalises period codes.
+      - Filters by Submission_Period_Cd (and optionally Organisation_Cd).
+      - Normalises MEX_KEY_COLS only (no Measure_Key / no Legacy_Measure_Reference).
+      - Dedupes semantic by latest Insert_Date per MEX_KEY_COLS.
+
     Returns
     -------
     (flat_for_qa, sem_for_qa)
@@ -354,8 +430,12 @@ def prepare_qa_frames(
     if p == "QD":
         col_map = semantic_to_flat_map or SEMANTIC_TO_FLAT_COL_MAP
         sem_for_qa = ingested_df_flat.rename(columns=col_map).copy()
-    else:
+    elif p == "CCP":
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
+    elif p == "MEX":
+        sem_for_qa = _apply_mex_semantic_renames(ingested_df_flat)
+    else:
+        raise ValueError(f"Unsupported profile: {p}")
 
     flat_for_qa = combined_df.copy()
 
@@ -496,7 +576,7 @@ def build_qa_diff(
         for _, row in missing_raw_rows.iterrows():
             context = {k: row.get(k) for k in context_cols if k in missing_raw_rows.columns}
             raw_measure = row.get("Measure_Value")
-            measure_desc = row.get("Measure_Desc")  # may be None for CCP
+            measure_desc = row.get("Measure_Desc")  # may be None for CCP/MEX
 
             context.update({
                 "Error_Type": "MISSING_IN_INGESTED",
@@ -624,7 +704,7 @@ def build_qa_diff(
 
                 insert_date = row.get("Insert_Date", None)
 
-                # QD has these; CCP may not
+                # QD has these; CCP/MEX may not
                 measure_cd_raw = row.get("Measure_Cd_raw", None)
                 measure_cd_ing = row.get("Measure_Cd_ingested", None)
                 legacy_ref = row.get("Legacy_Measure_Reference", None)
