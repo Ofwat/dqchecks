@@ -70,7 +70,7 @@ class FileLoader:
                  load_template: bool,
                  one_company_one_template: bool = False,
                  strict: bool = True,
-                 file_extensions: Iterable[str] = (".xlsx",),
+                 file_extensions: Iterable[str] = (".xlsx", ".xlsm",),
                  **filters: str):
         # pylint: disable=C0301
         """
