@@ -347,3 +347,27 @@ def test_template_version_missing_for_bronze(tmp_path):
     # pylint: disable=C0301
     with pytest.raises(FileNotFoundError, match="No matching template files found for the bronze file."):
         loader.run()
+
+def test_load_template_with_multiple_extensions(tmp_path):
+    """Loader should pick up files that match any configured extension."""
+    templates_dir = tmp_path / "Files" / "templates"
+    data_dir = tmp_path / "Files" / "data collections"
+    templates_dir.mkdir(parents=True)
+    data_dir.mkdir(parents=True)
+
+    template_path = templates_dir / "org1_process_cd=abc_submission_period_cd=202501.xlsm"
+    create_file(template_path)
+
+    loader = FileLoader(
+        source_data_path=str(tmp_path),
+        load_template=True,
+        organisation_cd="org1",
+        process_cd="abc",
+        submission_period_cd="202501",
+        file_extensions=(".xlsx", ".xlsm"),
+    )
+
+    metadata = loader.run()
+
+    assert metadata.path == str(template_path)
+    assert metadata.filename.endswith(".xlsm")

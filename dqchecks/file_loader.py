@@ -20,6 +20,7 @@ import datetime
 import logging
 import hashlib
 from dataclasses import dataclass
+from collections.abc import Iterable
 
 TEMPLATE_KEYS = {"submission_period_cd", "process_cd"}
 BRONZE_KEYS = {"submission_period_cd", "process_cd", "status"}
@@ -69,6 +70,7 @@ class FileLoader:
                  load_template: bool,
                  one_company_one_template: bool = False,
                  strict: bool = True,
+                 file_extensions: Iterable[str] = (".xlsx",),
                  **filters: str):
         # pylint: disable=C0301
         """
@@ -79,12 +81,22 @@ class FileLoader:
             load_template (bool): Load template if True, otherwise bronze.
             one_company_one_template (bool): If True, restrict template filtering to organisation_cd.
             strict (bool): If True, expects exactly one matching file or raises error.
+            file_extensions (Iterable[str]): File extensions to search for, e.g. (".xlsx", ".xlsm").
             filters (dict): Filtering parameters like organisation_cd, process_cd, etc.
         """
         self.source_data_path = source_data_path
         self.load_template = load_template
         self.one_company_one_template = one_company_one_template
         self.strict = strict
+        self.file_extensions = tuple(
+            dict.fromkeys(
+                ext.lower().strip() if ext.startswith(".") else f".{ext.lower().strip()}"
+                for ext in file_extensions
+                if ext and ext.strip()
+            )
+        )
+        if not self.file_extensions:
+            raise ValueError("file_extensions must contain at least one extension.")
 
         self.filters = {
             k: v.lower().strip()
@@ -130,19 +142,24 @@ class FileLoader:
             except Exception as e:
                 logging.warning("- %s | Could not get file stats: %s", os.path.basename(f), e)
 
-    def find_files(self, base_path, pattern="*.xlsx"):
+    def find_files(self, base_path, extensions=None):
         """
-        Finds all files matching the pattern recursively under the base path.
+        Finds all files matching the configured extensions recursively under the base path.
 
         Args:
             base_path (str): Directory to search in.
-            pattern (str): Glob pattern to match (default: '*.xlsx').
+            extensions (Iterable[str] | None): Extensions to match. Defaults to the loader's configured
+                extensions.
 
         Returns:
             list[str]: List of matching file paths.
         """
-        search_path = os.path.join(base_path, "**", pattern)
-        return glob.glob(search_path, recursive=True)
+        extensions = tuple(extensions or self.file_extensions)
+        matches = []
+        for extension in extensions:
+            search_path = os.path.join(base_path, "**", f"*{extension}")
+            matches.extend(glob.glob(search_path, recursive=True))
+        return sorted(set(matches))
 
     def filter_files_by_org(self, files, restrict_to_org=False):
         """
