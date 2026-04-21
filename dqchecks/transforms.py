@@ -91,7 +91,7 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.file_hash_md5, str) or not context.file_hash_md5:
         raise ValueError("The 'file_hash_md5' argument must be a non-empty string.")
-    
+
     if not isinstance(context.status, str) or not context.status:
         raise ValueError("The 'status' argument must be a non-empty string.")
 
@@ -113,11 +113,11 @@ def validate_observation_patterns(observation_patterns: list[str]):
 def extract_fout_sheets(wb: Workbook, fout_patterns: list[str]):
     """
     Extracts sheets from the workbook whose names match any of the given regex patterns.
-    
+
     Args:
         wb (Workbook): The Excel workbook object.
         fout_patterns (list[str]): A list of regex patterns to match sheet names.
-    
+
     Returns:
         List[str]: A list of matching sheet names.
 
@@ -382,7 +382,7 @@ def check_column_headers(wb: Workbook, sheet_names: list[str]):
 
 def get_qd_column_rename_map() -> dict[str, str]:
     """
-    Returns a dictionary mapping column names to themselves for use in 
+    Returns a dictionary mapping column names to themselves for use in
     renaming or standardizing columns in a DataFrame related to quarterly data.
 
     This mapping ensures consistent column naming conventions across processing steps.
@@ -426,7 +426,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
 
 def get_mex_column_rename_map() -> dict[str, str]:
     """
-    Returns a dictionary mapping column names to themselves for use in 
+    Returns a dictionary mapping column names to themselves for use in
     renaming or standardizing columns in a DataFrame related to MeX data.
 
     This mapping ensures consistent column naming conventions across processing steps.
@@ -473,7 +473,7 @@ def get_mex_column_rename_map() -> dict[str, str]:
 
 def get_ccp_column_rename_map() -> dict[str, str]:
     """
-    Returns a dictionary mapping column names to themselves for use in 
+    Returns a dictionary mapping column names to themselves for use in
     renaming or standardizing columns in a DataFrame related to quarterly data.
 
     This mapping ensures consistent column naming conventions across processing steps.
@@ -540,7 +540,7 @@ def get_ccp_column_rename_map() -> dict[str, str]:
 def normalize_to_string(df: pd.DataFrame, blank: str = "") -> pd.DataFrame:
     """
     Convert all columns to string
-    NA, None, nan etc -> "" 
+    NA, None, nan etc -> ""
     """
     df = df.astype(object)
     df = df.where(df.notna(), blank)
@@ -582,7 +582,7 @@ def finalize_dataframe(
     if column_rename_map:
         df = df.rename(columns=column_rename_map)
 
-    # The ONE place missing → string conversion is allowed
+    # The ONE place missing â†’ string conversion is allowed
     df = normalize_to_string(df)
 
     if not column_rename_map:
@@ -683,10 +683,10 @@ def process_df(
     df : pd.DataFrame
         Input DataFrame representing Excel sheet data, with the first row containing Excel column letters.
         The DataFrame index is expected to represent the original Excel row numbers.
-    
+
     context : ProcessingContext
         An object containing metadata to be appended to each row (e.g., organisation code, submission period).
-    
+
     observation_patterns : list[str]
         A list of string patterns used to identify observation period columns (e.g., ['2024', '2025']).
 

@@ -8,7 +8,7 @@ Supports multiple "profiles" so we can reuse the same orchestration
 across datasets with different grains/keys/column sets.
 
 Profiles:
-- "QD"  (default): original Quarterly Data logic 
+- "QD"  (default): original Quarterly Data logic
 (Measure_Key / Region_Cd / Legacy_Measure_Reference)
 - "CCP": Cost Change Process logic (multi-attribute natural key, no Measure_Key)
 - "MEX": DMeX / MEX logic (multi-attribute natural key, no Measure_Key)
@@ -716,7 +716,7 @@ def build_qa_diff(
                     f"Legacy_Measure_Reference={legacy_ref!r}, Insert_Date={insert_date!r}): "
                     f"Flat_File={raw_val!r}, Ingested={ing_val!r}."
                 )
-                
+
                 measure_desc_raw = row.get("Measure_Desc_raw", None)
                 measure_desc_ing = row.get("Measure_Desc_ingested", None)
 

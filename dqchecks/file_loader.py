@@ -52,7 +52,7 @@ logging.basicConfig(
 )
 
 class FileLoader:
-    # pylint: disable=C0301
+    # pylint: disable=C0301,R0902
     """
     Loads and filters data files (template or bronze) from a directory structure
     based on filename metadata.
@@ -65,6 +65,7 @@ class FileLoader:
         filters (dict): Dictionary of filter criteria like process_cd, organisation_cd, etc.
     """
 
+    # pylint: disable=R0913,R0917
     def __init__(self,
                  source_data_path: str,
                  load_template: bool,
@@ -221,7 +222,7 @@ class FileLoader:
         """
         if len(files) != expected_count:
             raise ValueError(
-                f"❌ Expected exactly {expected_count} {file_type} file(s)"
+                f"âŒ Expected exactly {expected_count} {file_type} file(s)"
                 # pylint: disable=C0301
                 f"{f' for [{self.organisation_cd}]' if self.organisation_cd else ''}, found {len(files)}.\n"
                 f"Files found:\n" + "\n".join(files)
@@ -297,9 +298,9 @@ class FileLoader:
         bronze_conditions = {k: v for k, v in self.filters.items() if k in BRONZE_KEYS}
 
         if not template_conditions:
-            logging.warning("⚠️ No filters applied to template file search.")
+            logging.warning("âš ï¸ No filters applied to template file search.")
         if not bronze_conditions:
-            logging.warning("⚠️ No filters applied to bronze file search.")
+            logging.warning("âš ï¸ No filters applied to bronze file search.")
 
         matched_templates = self.filter_files_by_conditions(all_templates, template_conditions)
         matched_bronze = self.filter_files_by_conditions(all_bronze, bronze_conditions)

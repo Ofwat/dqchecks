@@ -1974,7 +1974,7 @@ def create_process_model_mapping_validation_event(
     metadata: dict,
 ) -> pd.DataFrame:
     """
-    Validates that there is exactly one unique Process_Cd → Model_Cd mapping,
+    Validates that there is exactly one unique Process_Cd â†’ Model_Cd mapping,
     and that it matches the expected mapping in the provided dictionary.
 
     Parameters:
@@ -2086,7 +2086,7 @@ def clean_formula_spaces_in_workbook(wb):
         max_row = used_area.last_used_row
         max_col = used_area.last_used_column
 
-        for row in ws.iter_rows(min_row=1, max_row=max_row,
+        for row in ws.iter_rows(min_row=min_row, max_row=max_row,
                                 min_col=min_col, max_col=max_col):
             for cell in row:
                 if cell.data_type == 'f' and isinstance(cell.value, str):
