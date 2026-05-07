@@ -139,7 +139,7 @@ CCP_KEY_COLS: list[str] = [
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
-    "Measure_Key",
+    "Measure_Cd",
     "Observation_Cd",
     "Data_Source_Cd",
     "Adjustment_Period_Cd",
