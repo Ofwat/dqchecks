@@ -143,6 +143,7 @@ CCP_KEY_COLS: list[str] = [
     "Adjustment_Period_Cd",
     "Gated_Scheme_Cd",
     "Major_Project_Cd",
+    "Asset_Class_Cd",
     "Cost_Change_Category_Cd",
     "Cost_Change_Claim_Cd",
     "Business_Unit_Cd",
