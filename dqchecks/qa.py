@@ -88,8 +88,6 @@ CONTEXT_COLS: list[str] = [
     "Region_Cd",
     "Sheet_Cd",
     "Measure_Cd",                # original Excel measure code
-    "Legacy_Measure_Reference",  # semantic legacy code
-    "Measure_Key",               # join key
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Cell_Cd",
@@ -131,7 +129,7 @@ CCP_COMPARE_COLS: list[str] = [
     "Inflation_Observation_Cd",
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
-    "Cost_Claim_Change_Cd",
+    "Cost_Change_Claim_Cd",
     "Business_Unit_Cd",
 ]
 
@@ -146,7 +144,7 @@ CCP_KEY_COLS: list[str] = [
     "Gated_Scheme_Cd",
     "Major_Project_Cd",
     "Cost_Change_Category_Cd",
-    "Cost_Claim_Change_Cd",
+    "Cost_Change_Claim_Cd",
     "Business_Unit_Cd",
 ]
 
@@ -358,7 +356,6 @@ def _apply_ccp_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     rename_map = {
         "measure_value": "Measure_Value",
-        "Cost_Change_Claim_Cd": "Cost_Claim_Change_Cd",
         "Audit_Comment": "Comment",
     }
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
