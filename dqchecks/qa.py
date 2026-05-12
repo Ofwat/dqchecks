@@ -146,7 +146,6 @@ CCP_KEY_COLS: list[str] = [
     "Asset_Class_Cd",
     "Cost_Change_Category_Cd",
     "Cost_Change_Claim_Cd",
-    "Business_Unit_Cd",
 ]
 
 CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
