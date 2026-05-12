@@ -138,14 +138,41 @@ CCP_KEY_COLS: list[str] = [
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Measure_Cd",
+
     "Observation_Cd",
+    "Sensitivity_Cd",
+    "Observation_Coverage_Cd",
     "Data_Source_Cd",
-    "Adjustment_Period_Cd",
-    "Gated_Scheme_Cd",
-    "Major_Project_Cd",
-    "Asset_Class_Cd",
+    "Assurance_Cd",
+
     "Cost_Change_Category_Cd",
     "Cost_Change_Claim_Cd",
+    "Adjustment_Period_Cd",
+
+    "Business_Unit_Cd",
+    "WTW_Cd",
+    "Asset_Class_Cd",
+    "Gated_Scheme_Cd",
+    "Growth_Subcategory_Cd",
+    "WWTW_Cd",
+    "WWTW_Scheme_Cd",
+    "WRZ_Cd",
+    "WRMP_Planning_Scenario_Cd",
+    "WRMP_Scheme_Cd",
+    "WRMP_Scheme_Status_Cd",
+    "WRMP_Scheme_Classification_Cd",
+    "WRMP_Scheme_Option_Cd",
+    "STC_Cd",
+    "Network_Reinforcement_Scheme_Cd",
+    "Major_Project_Cd",
+    "Gated_Scheme_Item_Cd",
+    "WINEP_NR_Scheme_Cd",
+    "WINEP_SO_Scheme_Cd",
+
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
 ]
 
 CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
@@ -274,17 +301,28 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
 
 def _normalise_key_cols(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
     """
-    CCP/MEX-style: Normalise key columns only (string trim), no Measure_Key building.
+    CCP/MEX-style: Normalise key columns only (no Measure_Key building).
+
+    Normalisation applied:
+    - fill nulls with 'NA'
+    - cast to string
+    - trim whitespace
+    - remove trailing '.0'
+    - replace blank strings with 'NA'
     """
     df = df.copy()
+
     for c in key_cols:
         if c in df.columns:
             df[c] = (
                 df[c]
+                .fillna("NA")
                 .astype(str)
                 .str.strip()
                 .str.replace(r"\.0$", "", regex=True)
+                .replace("", "NA")
             )
+
     return df
 
 
