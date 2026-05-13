@@ -31,6 +31,7 @@ import logging
 from typing import Iterable, Optional, Tuple
 
 import pandas as pd
+import os
 
 # We intentionally expose orchestration-style functions that take several arguments
 # and have branching logic. Suppress corresponding structural warnings.
@@ -782,18 +783,32 @@ def build_qa_diff(
     # ------------------------------------------------------------------
     if filtered_excel_files is not None and expected_companies is not None:
         present_orgs_from_files: set[str] = set()
+
         for path in filtered_excel_files:
-            fname = path.split("/")[-1]
-            company_prefix = fname.split(" ", 1)[0].strip().upper()
+            fname = os.path.basename(path)
+
+            if process_cd and process_cd.upper() == "CCP":
+                # CCP format:
+                # ANH_001 Flat File S1 V1.xlsx
+                first_token = fname.split(" ", 1)[0].strip().upper()
+                company_prefix = first_token.split("_", 1)[0].strip()
+            else:
+                # QD / MEX existing behaviour
+                company_prefix = fname.split(" ", 1)[0].strip().upper()
+
             if company_prefix:
                 present_orgs_from_files.add(company_prefix)
 
         missing_orgs = sorted(set(expected_companies) - present_orgs_from_files)
+
         if missing_orgs:
             process_str = str(process_cd).upper() if process_cd else None
             log.warning(
                 "Missing companies from folder for Status=%s, Process_Cd=%s, Submission_Period_Cd=%s: %s",
-                status, process_str, submission_period_cd, ", ".join(missing_orgs)
+                status,
+                process_str,
+                submission_period_cd,
+                ", ".join(missing_orgs),
             )
 
             for org in missing_orgs:
@@ -811,9 +826,10 @@ def build_qa_diff(
                         f"Status={status}, Organisation_Cd={org}."
                     ),
                 }
-                # add extra context columns if they exist for this profile
+
                 for c in context_cols:
                     record.setdefault(c, None)
+
                 diff_records.append(record)
 
     # ------------------------------------------------------------------
