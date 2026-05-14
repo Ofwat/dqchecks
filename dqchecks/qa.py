@@ -306,7 +306,7 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
     if "Organisation_Cd" in df.columns:
         df["Organisation_Cd"] = df["Organisation_Cd"].astype(str).str.strip()
 
-    # Region: treat blank as 'NA' to match semantic model
+    # Region
     if "Region_Cd" in df.columns:
         df["Region_Cd"] = df["Region_Cd"].astype(str).str.strip()
         df["Region_Cd"] = df["Region_Cd"].replace("", "NA")
@@ -314,13 +314,24 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
     # Period columns
     for col in ["Submission_Period_Cd", "Observation_Period_Cd"]:
         if col in df.columns:
-            df[col] = df[col].astype(str).str.strip()
-            df[col] = df[col].str.replace(r"\.0$", "", regex=True)
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.strip()
+                .str.replace(r"\.0$", "", regex=True)
+            )
 
     if measure_col not in df.columns:
         raise ValueError(f"{measure_col} not found when building Measure_Key.")
 
-    df["Measure_Key"] = df[measure_col].astype(str).str.strip()
+    measure_key = df[measure_col].astype(str).str.strip()
+
+    # Remove PR24 suffix from Flat File measure codes
+    if measure_col == "Measure_Cd":
+        measure_key = measure_key.str.replace(r"_PR24$", "", regex=True)
+
+    df["Measure_Key"] = measure_key
+
     return df
 
 
