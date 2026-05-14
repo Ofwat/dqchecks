@@ -47,6 +47,7 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------------------------
 
 COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Template_Version",
@@ -76,6 +77,7 @@ COMPARE_COLS: list[str] = [
 #   - Flat_File: Measure_Cd
 #   - Semantic:  Legacy_Measure_Reference
 KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Submission_Period_Cd",
@@ -85,6 +87,7 @@ KEY_COLS: list[str] = [
 
 # Context columns shown in the diff output (only if present)
 CONTEXT_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Sheet_Cd",
@@ -103,6 +106,8 @@ SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
     "Unit": "Measure_Unit",
     "Decimal_Point": "Measure_Decimals",
     "Measure_Comment": "Comment",
+    "FileName": "Filename",
+    "file_name": "Filename",
 }
 
 # --------------------------------------------------------------------------------------
@@ -110,6 +115,7 @@ SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
 # --------------------------------------------------------------------------------------
 
 CCP_COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Assurance_Cd",
     "Observation_Cd",
@@ -135,21 +141,19 @@ CCP_COMPARE_COLS: list[str] = [
 ]
 
 CCP_KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Measure_Cd",
-
     "Observation_Cd",
     "Sensitivity_Cd",
     "Observation_Coverage_Cd",
     "Data_Source_Cd",
     "Assurance_Cd",
-
     "Cost_Change_Category_Cd",
     "Cost_Change_Claim_Cd",
     "Adjustment_Period_Cd",
-
     "Business_Unit_Cd",
     "WTW_Cd",
     "Asset_Class_Cd",
@@ -169,7 +173,6 @@ CCP_KEY_COLS: list[str] = [
     "Gated_Scheme_Item_Cd",
     "WINEP_NR_Scheme_Cd",
     "WINEP_SO_Scheme_Cd",
-
     "Inflation_Observation_Cd",
     "Price_Base_Cd",
     "Price_Index_Cd",
@@ -183,6 +186,7 @@ CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
 # --------------------------------------------------------------------------------------
 
 MEX_COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Assurance_Cd",
     "Measure_Cd",
@@ -196,13 +200,13 @@ MEX_COMPARE_COLS: list[str] = [
     "DMeX_Metric_Cd",
     "Comment",
     "Process_Cd",
-    "Filename",
     "Template_Version",
     "Sheet_Cd",
     "Submission_Date",
 ]
 
 MEX_KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -215,6 +219,7 @@ MEX_KEY_COLS: list[str] = [
 ]
 
 MEX_CONTEXT_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -224,7 +229,6 @@ MEX_CONTEXT_COLS: list[str] = [
     "Data_Source_Cd",
     "Sensitivity_Cd",
     "DMeX_Metric_Cd",
-    "Filename",
     "Sheet_Cd",
 ]
 
