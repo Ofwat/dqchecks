@@ -306,12 +306,20 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
 
     # Organisation
     if "Organisation_Cd" in df.columns:
-        df["Organisation_Cd"] = df["Organisation_Cd"].astype(str).str.strip()
+        df["Organisation_Cd"] = (
+            df["Organisation_Cd"]
+            .astype(str)
+            .str.strip()
+        )
 
     # Region
     if "Region_Cd" in df.columns:
-        df["Region_Cd"] = df["Region_Cd"].astype(str).str.strip()
-        df["Region_Cd"] = df["Region_Cd"].replace("", "NA")
+        df["Region_Cd"] = (
+            df["Region_Cd"]
+            .astype(str)
+            .str.strip()
+            .replace("", "NA")
+        )
 
     # Period columns
     for col in ["Submission_Period_Cd", "Observation_Period_Cd"]:
@@ -323,16 +331,26 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
                 .str.replace(r"\.0$", "", regex=True)
             )
 
+    # Observation fields now part of QD natural key
+    for col in ["Observation_Coverage_Desc", "Observation_Desc"]:
+        if col in df.columns:
+            df[col] = (
+                df[col]
+                .fillna("NA")
+                .astype(str)
+                .str.strip()
+                .replace("", "NA")
+            )
+
+    # Measure key
     if measure_col not in df.columns:
         raise ValueError(f"{measure_col} not found when building Measure_Key.")
 
-    measure_key = df[measure_col].astype(str).str.strip()
-
-    # Remove PR24 suffix from Flat File measure codes
-    if measure_col == "Measure_Cd":
-        measure_key = measure_key.str.replace(r"_PR24$", "", regex=True)
-
-    df["Measure_Key"] = measure_key
+    df["Measure_Key"] = (
+        df[measure_col]
+        .astype(str)
+        .str.strip()
+    )
 
     return df
 
