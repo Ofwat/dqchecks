@@ -77,7 +77,6 @@ COMPARE_COLS: list[str] = [
 #   - Flat_File: Measure_Cd
 #   - Semantic:  Legacy_Measure_Reference
 KEY_COLS: list[str] = [
-    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Submission_Period_Cd",
