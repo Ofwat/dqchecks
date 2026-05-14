@@ -256,6 +256,26 @@ def _get_profile_cols(profile: str | None):
 # --------------------------------------------------------------------------------------
 # HELPER FUNCTIONS (NORMALISATION)
 # --------------------------------------------------------------------------------------
+def _add_measure_cd_to_context(context: dict, row: pd.Series) -> dict:
+    """
+    Ensure Measure_Cd appears in QA output.
+    For QD, Measure_Cd may be represented internally as Measure_Key.
+    """
+    if not context.get("Measure_Cd"):
+        measure_cd = row.get("Measure_Cd", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Cd_raw", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Cd_ingested", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Key", None)
+
+        context["Measure_Cd"] = measure_cd
+
+    return context
 
 def _normalise_period_codes(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -616,6 +636,7 @@ def build_qa_diff(
 
         for _, row in missing_raw_rows.iterrows():
             context = {k: row.get(k) for k in context_cols if k in missing_raw_rows.columns}
+            context = _add_measure_cd_to_context(context, row)
             raw_measure = row.get("Measure_Value")
             measure_desc = row.get("Measure_Desc")  # may be None for CCP/MEX
 
@@ -642,6 +663,7 @@ def build_qa_diff(
 
         for _, row in extra_sem_rows.iterrows():
             context = {k: row.get(k) for k in context_cols if k in extra_sem_rows.columns}
+            context = _add_measure_cd_to_context(context, row)
             ing_measure = row.get("Measure_Value")
             measure_desc = row.get("Measure_Desc")
 
@@ -770,6 +792,8 @@ def build_qa_diff(
                     measure_desc = measure_desc_raw
                 else:
                     measure_desc = measure_desc_ing
+
+                context = _add_measure_cd_to_context(context, row)
 
                 record = {
                     **context,
