@@ -258,6 +258,25 @@ def _get_profile_cols(profile: str | None):
 # --------------------------------------------------------------------------------------
 # HELPER FUNCTIONS (NORMALISATION)
 # --------------------------------------------------------------------------------------
+def _ensure_key_columns(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
+    """
+    Ensure optional/profile key columns exist so QA remains backward compatible
+    with older/minimal Flat File and semantic inputs.
+    """
+    df = df.copy()
+
+    optional_key_cols = {
+        "Filename",
+        "Observation_Coverage_Desc",
+        "Observation_Desc",
+    }
+
+    for col in optional_key_cols:
+        if col in key_cols and col not in df.columns:
+            df[col] = "NA"
+
+    return df
+
 def _add_measure_cd_to_context(context: dict, row: pd.Series) -> dict:
     """
     Ensure Measure_Cd appears in QA output.
@@ -553,10 +572,22 @@ def prepare_qa_frames(
     log.info("Flat_File rows BEFORE key normalisation: %d", len(flat_for_qa))
     log.info("Semantic rows BEFORE key normalisation: %d", len(sem_for_qa))
 
+    # Ensure all expected key columns exist.
+    # This keeps backward compatibility with older/minimal test inputs.
+    flat_for_qa = _ensure_key_columns(flat_for_qa, key_cols)
+    sem_for_qa = _ensure_key_columns(sem_for_qa, key_cols)
+
     # 4) Normalise keys
     if p == "QD":
-        flat_for_qa = _normalise_keys_with_measure(flat_for_qa, measure_col="Measure_Cd")
-        sem_for_qa = _normalise_keys_with_measure(sem_for_qa, measure_col="Legacy_Measure_Reference")
+        flat_for_qa = _normalise_keys_with_measure(
+            flat_for_qa,
+            measure_col="Measure_Cd",
+        )
+
+        sem_for_qa = _normalise_keys_with_measure(
+            sem_for_qa,
+            measure_col="Legacy_Measure_Reference",
+        )
     else:
         flat_for_qa = _normalise_key_cols(flat_for_qa, key_cols)
         sem_for_qa = _normalise_key_cols(sem_for_qa, key_cols)
