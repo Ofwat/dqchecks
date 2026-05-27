@@ -93,7 +93,8 @@ CONTEXT_COLS: list[str] = [
     "Organisation_Cd",
     "Region_Cd",
     "Sheet_Cd",
-    "Measure_Cd",                # original Excel measure code
+    "Measure_Cd",
+    "Measure_Key",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Cell_Cd",
