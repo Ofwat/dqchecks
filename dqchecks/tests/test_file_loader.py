@@ -81,6 +81,41 @@ def test_load_bronze_success(setup_file_structure):
     assert isinstance(metadata.last_modified, datetime)
     assert metadata.template_path.endswith("org1_process_cd=abc_submission_period_cd=202501.xlsx")
 
+def test_load_bronze_with_process_stage_filter(tmp_path):
+    """Bronze lookup should match on Process_Stage_Cd in the path."""
+    templates_dir = tmp_path / "Files" / "templates"
+    bronze_dir = (
+        tmp_path
+        / "Files"
+        / "data collections"
+        / "Status=files_error_fix"
+        / "Process_Cd=apr_finance"
+        / "Submission_Period_Cd=2026-27"
+        / "Process_Stage_Cd=PROC0004"
+    )
+    templates_dir.mkdir(parents=True)
+    bronze_dir.mkdir(parents=True)
+
+    template_path = templates_dir / "org1_process_cd=apr_finance_submission_period_cd=2026-27.xlsx"
+    bronze_path = bronze_dir / "org1_status=files_error_fix.xlsx"
+    create_file(template_path)
+    create_file(bronze_path)
+
+    loader = FileLoader(
+        source_data_path=str(tmp_path),
+        load_template=False,
+        organisation_cd="org1",
+        process_cd="apr_finance",
+        submission_period_cd="2026-27",
+        status="files_error_fix",
+        process_stage_cd="PROC0004",
+    )
+
+    metadata = loader.run()
+
+    assert metadata.path == str(bronze_path)
+    assert metadata.template_version == template_path.name
+
 def test_strict_validation_error_multiple_templates(tmp_path):
     """Setup with two templates to trigger strict validation error"""
     templates_dir = tmp_path / "Files" / "templates"

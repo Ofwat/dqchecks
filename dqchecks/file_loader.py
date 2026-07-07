@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from collections.abc import Iterable
 
 TEMPLATE_KEYS = {"submission_period_cd", "process_cd"}
-BRONZE_KEYS = {"submission_period_cd", "process_cd", "status"}
+BRONZE_KEYS = {"submission_period_cd", "process_cd", "status", "process_stage_cd"}
 
 @dataclass(frozen=True)
 class FileMetadata:
