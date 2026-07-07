@@ -30,6 +30,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Optional, Tuple
 
+import os
 import pandas as pd
 
 # We intentionally expose orchestration-style functions that take several arguments
@@ -37,7 +38,7 @@ import pandas as pd
 # Also relax line length and superfluous-parens for readability in f-strings.
 # pylint: disable=too-many-arguments,too-many-positional-arguments
 # pylint: disable=too-many-locals,too-many-branches,too-many-statements
-# pylint: disable=line-too-long,superfluous-parens
+# pylint: disable=line-too-long,superfluous-parens,too-many-lines
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ logger = logging.getLogger(__name__)
 # --------------------------------------------------------------------------------------
 
 COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Template_Version",
@@ -75,21 +77,24 @@ COMPARE_COLS: list[str] = [
 #   - Flat_File: Measure_Cd
 #   - Semantic:  Legacy_Measure_Reference
 KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
+    "Observation_Coverage_Desc",
+    "Observation_Desc",
     "Measure_Key",
 ]
 
 # Context columns shown in the diff output (only if present)
 CONTEXT_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Region_Cd",
     "Sheet_Cd",
-    "Measure_Cd",                # original Excel measure code
-    "Legacy_Measure_Reference",  # semantic legacy code
-    "Measure_Key",               # join key
+    "Measure_Cd",
+    "Measure_Key",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Cell_Cd",
@@ -104,6 +109,8 @@ SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
     "Unit": "Measure_Unit",
     "Decimal_Point": "Measure_Decimals",
     "Measure_Comment": "Comment",
+    "FileName": "Filename",
+    "file_name": "Filename",
 }
 
 # --------------------------------------------------------------------------------------
@@ -111,6 +118,7 @@ SEMANTIC_TO_FLAT_COL_MAP: dict[str, str] = {
 # --------------------------------------------------------------------------------------
 
 CCP_COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Assurance_Cd",
     "Observation_Cd",
@@ -131,23 +139,47 @@ CCP_COMPARE_COLS: list[str] = [
     "Inflation_Observation_Cd",
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
-    "Cost_Claim_Change_Cd",
+    "Cost_Change_Claim_Cd",
     "Business_Unit_Cd",
 ]
 
 CCP_KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
     "Measure_Cd",
     "Observation_Cd",
+    "Sensitivity_Cd",
+    "Observation_Coverage_Cd",
     "Data_Source_Cd",
-    "Adjustment_Period_Cd",
-    "Gated_Scheme_Cd",
-    "Major_Project_Cd",
+    "Assurance_Cd",
     "Cost_Change_Category_Cd",
-    "Cost_Claim_Change_Cd",
+    "Cost_Change_Claim_Cd",
+    "Adjustment_Period_Cd",
     "Business_Unit_Cd",
+    "WTW_Cd",
+    "Asset_Class_Cd",
+    "Gated_Scheme_Cd",
+    "Growth_Subcategory_Cd",
+    "WWTW_Cd",
+    "WWTW_Scheme_Cd",
+    "WRZ_Cd",
+    "WRMP_Planning_Scenario_Cd",
+    "WRMP_Scheme_Cd",
+    "WRMP_Scheme_Status_Cd",
+    "WRMP_Scheme_Classification_Cd",
+    "WRMP_Scheme_Option_Cd",
+    "STC_Cd",
+    "Network_Reinforcement_Scheme_Cd",
+    "Major_Project_Cd",
+    "Gated_Scheme_Item_Cd",
+    "WINEP_NR_Scheme_Cd",
+    "WINEP_SO_Scheme_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
 ]
 
 CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
@@ -157,6 +189,7 @@ CCP_CONTEXT_COLS: list[str] = CCP_KEY_COLS[:]  # context == key for CCP
 # --------------------------------------------------------------------------------------
 
 MEX_COMPARE_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Assurance_Cd",
     "Measure_Cd",
@@ -170,13 +203,13 @@ MEX_COMPARE_COLS: list[str] = [
     "DMeX_Metric_Cd",
     "Comment",
     "Process_Cd",
-    "Filename",
     "Template_Version",
     "Sheet_Cd",
     "Submission_Date",
 ]
 
 MEX_KEY_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -189,6 +222,7 @@ MEX_KEY_COLS: list[str] = [
 ]
 
 MEX_CONTEXT_COLS: list[str] = [
+    "Filename",
     "Organisation_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -198,7 +232,6 @@ MEX_CONTEXT_COLS: list[str] = [
     "Data_Source_Cd",
     "Sensitivity_Cd",
     "DMeX_Metric_Cd",
-    "Filename",
     "Sheet_Cd",
 ]
 
@@ -226,6 +259,45 @@ def _get_profile_cols(profile: str | None):
 # --------------------------------------------------------------------------------------
 # HELPER FUNCTIONS (NORMALISATION)
 # --------------------------------------------------------------------------------------
+def _ensure_key_columns(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
+    """
+    Ensure optional/profile key columns exist so QA remains backward compatible
+    with older/minimal Flat File and semantic inputs.
+    """
+    df = df.copy()
+
+    optional_key_cols = {
+        "Filename",
+        "Observation_Coverage_Desc",
+        "Observation_Desc",
+    }
+
+    for col in optional_key_cols:
+        if col in key_cols and col not in df.columns:
+            df[col] = "NA"
+
+    return df
+
+def _add_measure_cd_to_context(context: dict, row: pd.Series) -> dict:
+    """
+    Ensure Measure_Cd appears in QA output.
+    For QD, Measure_Cd may be represented internally as Measure_Key.
+    """
+    if not context.get("Measure_Cd"):
+        measure_cd = row.get("Measure_Cd", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Cd_raw", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Cd_ingested", None)
+
+        if measure_cd is None:
+            measure_cd = row.get("Measure_Key", None)
+
+        context["Measure_Cd"] = measure_cd
+
+    return context
 
 def _normalise_period_codes(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -254,39 +326,79 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
 
     # Organisation
     if "Organisation_Cd" in df.columns:
-        df["Organisation_Cd"] = df["Organisation_Cd"].astype(str).str.strip()
+        df["Organisation_Cd"] = (
+            df["Organisation_Cd"]
+            .astype(str)
+            .str.strip()
+        )
 
-    # Region: treat blank as 'NA' to match semantic model
+    # Region
     if "Region_Cd" in df.columns:
-        df["Region_Cd"] = df["Region_Cd"].astype(str).str.strip()
-        df["Region_Cd"] = df["Region_Cd"].replace("", "NA")
+        df["Region_Cd"] = (
+            df["Region_Cd"]
+            .astype(str)
+            .str.strip()
+            .replace("", "NA")
+        )
 
     # Period columns
     for col in ["Submission_Period_Cd", "Observation_Period_Cd"]:
         if col in df.columns:
-            df[col] = df[col].astype(str).str.strip()
-            df[col] = df[col].str.replace(r"\.0$", "", regex=True)
+            df[col] = (
+                df[col]
+                .astype(str)
+                .str.strip()
+                .str.replace(r"\.0$", "", regex=True)
+            )
 
+    # Observation fields now part of QD natural key
+    for col in ["Observation_Coverage_Desc", "Observation_Desc"]:
+        if col in df.columns:
+            df[col] = (
+                df[col]
+                .fillna("NA")
+                .astype(str)
+                .str.strip()
+                .replace("", "NA")
+            )
+
+    # Measure key
     if measure_col not in df.columns:
         raise ValueError(f"{measure_col} not found when building Measure_Key.")
 
-    df["Measure_Key"] = df[measure_col].astype(str).str.strip()
+    df["Measure_Key"] = (
+        df[measure_col]
+        .astype(str)
+        .str.strip()
+    )
+
     return df
 
 
 def _normalise_key_cols(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
     """
-    CCP/MEX-style: Normalise key columns only (string trim), no Measure_Key building.
+    CCP/MEX-style: Normalise key columns only (no Measure_Key building).
+
+    Normalisation applied:
+    - fill nulls with 'NA'
+    - cast to string
+    - trim whitespace
+    - remove trailing '.0'
+    - replace blank strings with 'NA'
     """
     df = df.copy()
+
     for c in key_cols:
         if c in df.columns:
             df[c] = (
                 df[c]
+                .fillna("NA")
                 .astype(str)
                 .str.strip()
                 .str.replace(r"\.0$", "", regex=True)
+                .replace("", "NA")
             )
+
     return df
 
 
@@ -358,7 +470,6 @@ def _apply_ccp_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     rename_map = {
         "measure_value": "Measure_Value",
-        "Cost_Change_Claim_Cd": "Cost_Claim_Change_Cd",
         "Audit_Comment": "Comment",
     }
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
@@ -462,10 +573,22 @@ def prepare_qa_frames(
     log.info("Flat_File rows BEFORE key normalisation: %d", len(flat_for_qa))
     log.info("Semantic rows BEFORE key normalisation: %d", len(sem_for_qa))
 
+    # Ensure all expected key columns exist.
+    # This keeps backward compatibility with older/minimal test inputs.
+    flat_for_qa = _ensure_key_columns(flat_for_qa, key_cols)
+    sem_for_qa = _ensure_key_columns(sem_for_qa, key_cols)
+
     # 4) Normalise keys
     if p == "QD":
-        flat_for_qa = _normalise_keys_with_measure(flat_for_qa, measure_col="Measure_Cd")
-        sem_for_qa = _normalise_keys_with_measure(sem_for_qa, measure_col="Legacy_Measure_Reference")
+        flat_for_qa = _normalise_keys_with_measure(
+            flat_for_qa,
+            measure_col="Measure_Cd",
+        )
+
+        sem_for_qa = _normalise_keys_with_measure(
+            sem_for_qa,
+            measure_col="Legacy_Measure_Reference",
+        )
     else:
         flat_for_qa = _normalise_key_cols(flat_for_qa, key_cols)
         sem_for_qa = _normalise_key_cols(sem_for_qa, key_cols)
@@ -576,6 +699,7 @@ def build_qa_diff(
 
         for _, row in missing_raw_rows.iterrows():
             context = {k: row.get(k) for k in context_cols if k in missing_raw_rows.columns}
+            context = _add_measure_cd_to_context(context, row)
             raw_measure = row.get("Measure_Value")
             measure_desc = row.get("Measure_Desc")  # may be None for CCP/MEX
 
@@ -602,6 +726,7 @@ def build_qa_diff(
 
         for _, row in extra_sem_rows.iterrows():
             context = {k: row.get(k) for k in context_cols if k in extra_sem_rows.columns}
+            context = _add_measure_cd_to_context(context, row)
             ing_measure = row.get("Measure_Value")
             measure_desc = row.get("Measure_Desc")
 
@@ -731,6 +856,8 @@ def build_qa_diff(
                 else:
                     measure_desc = measure_desc_ing
 
+                context = _add_measure_cd_to_context(context, row)
+
                 record = {
                     **context,
                     "Error_Type": err_type,
@@ -747,18 +874,32 @@ def build_qa_diff(
     # ------------------------------------------------------------------
     if filtered_excel_files is not None and expected_companies is not None:
         present_orgs_from_files: set[str] = set()
+
         for path in filtered_excel_files:
-            fname = path.split("/")[-1]
-            company_prefix = fname.split(" ", 1)[0].strip().upper()
+            fname = os.path.basename(path)
+
+            if process_cd and process_cd.upper() == "CCP":
+                # CCP format:
+                # ANH_001 Flat File S1 V1.xlsx
+                first_token = fname.split(" ", 1)[0].strip().upper()
+                company_prefix = first_token.split("_", 1)[0].strip()
+            else:
+                # QD / MEX existing behaviour
+                company_prefix = fname.split(" ", 1)[0].strip().upper()
+
             if company_prefix:
                 present_orgs_from_files.add(company_prefix)
 
         missing_orgs = sorted(set(expected_companies) - present_orgs_from_files)
+
         if missing_orgs:
             process_str = str(process_cd).upper() if process_cd else None
             log.warning(
                 "Missing companies from folder for Status=%s, Process_Cd=%s, Submission_Period_Cd=%s: %s",
-                status, process_str, submission_period_cd, ", ".join(missing_orgs)
+                status,
+                process_str,
+                submission_period_cd,
+                ", ".join(missing_orgs),
             )
 
             for org in missing_orgs:
@@ -776,9 +917,10 @@ def build_qa_diff(
                         f"Status={status}, Organisation_Cd={org}."
                     ),
                 }
-                # add extra context columns if they exist for this profile
+
                 for c in context_cols:
                     record.setdefault(c, None)
+
                 diff_records.append(record)
 
     # ------------------------------------------------------------------
