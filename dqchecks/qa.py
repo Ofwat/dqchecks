@@ -567,7 +567,7 @@ def _apply_apr_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
 def prepare_qa_frames(
     combined_df: pd.DataFrame,
     ingested_df_flat: pd.DataFrame,
-    target_submission_period: str,
+    target_submission_period: str | list[str],
     target_org: Optional[str] = None,
     semantic_to_flat_map: Optional[dict[str, str]] = None,
     logger_: Optional[logging.Logger] = None,
@@ -632,8 +632,26 @@ def prepare_qa_frames(
     if "Submission_Period_Cd" not in sem_for_qa.columns:
         raise ValueError("Submission_Period_Cd missing from semantic input.")
 
-    flat_for_qa = flat_for_qa[flat_for_qa["Submission_Period_Cd"] == target_submission_period]
-    sem_for_qa = sem_for_qa[sem_for_qa["Submission_Period_Cd"] == target_submission_period]
+    if isinstance(target_submission_period, (list, tuple, set)):
+        target_periods = [str(x).strip() for x in target_submission_period]
+
+        flat_for_qa = flat_for_qa[
+            flat_for_qa["Submission_Period_Cd"].astype(str).str.strip().isin(target_periods)
+        ]
+
+        sem_for_qa = sem_for_qa[
+            sem_for_qa["Submission_Period_Cd"].astype(str).str.strip().isin(target_periods)
+        ]
+    else:
+        target_period = str(target_submission_period).strip()
+
+        flat_for_qa = flat_for_qa[
+            flat_for_qa["Submission_Period_Cd"].astype(str).str.strip() == target_period
+        ]
+
+        sem_for_qa = sem_for_qa[
+            sem_for_qa["Submission_Period_Cd"].astype(str).str.strip() == target_period
+        ]
 
     if target_org is not None:
         if "Organisation_Cd" in flat_for_qa.columns:
