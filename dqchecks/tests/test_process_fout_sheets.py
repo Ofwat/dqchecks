@@ -213,7 +213,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Filename": ["myfile"],
             "Batch_Id": ["someid"],
             "file_hash_md5": ["file_hash_md5"],
-            "status": ["complete"],
+            "Status": ["complete"],
             "Template_Version": ["1.0"],
             "Sheet_Cd": ["fOut_Sheet1"],
             "Measure_Cd": [""],
