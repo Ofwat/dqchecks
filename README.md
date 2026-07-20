@@ -210,6 +210,7 @@ context = dqchecks.transforms.ProcessingContext(
     org_cd="ABC",
     submission_period_cd="2020-12",
     process_cd="EFG",
+    process_stage_cd="STAGE01",
     template_version="v1",
     last_modified=datetime.datetime.now()
 )
