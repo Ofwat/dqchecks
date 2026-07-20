@@ -35,6 +35,7 @@ def valid_context():
         org_cd="ORG001",
         submission_period_cd="2025Q1",
         process_cd="PROCESS01",
+        process_stage_cd="STAGE01",
         filename="myfile",
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",
@@ -154,6 +155,7 @@ def test_process_fout_sheets_valid(workbook_with_data, valid_context):
         "Submission_Period_Cd",
         "Observation_Period_Cd",
         "Process_Cd",
+        "Process_Stage_Cd",
         "Template_Version",
         "Sheet_Cd",
         "Measure_Cd",
@@ -207,6 +209,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
             "Organisation_Cd": ["ORG001"],
             "Submission_Period_Cd": ["2025Q1"],
             "Process_Cd": ["PROCESS01"],
+            "Process_Stage_Cd": ["STAGE01"],
             "Filename": ["myfile"],
             "Batch_Id": ["someid"],
             "file_hash_md5": ["file_hash_md5"],
@@ -228,6 +231,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
         "Organisation_Cd",
         "Submission_Period_Cd",
         "Process_Cd",
+        "Process_Stage_Cd",
         "Filename",
         "Batch_Id",
         "Template_Version",
@@ -249,7 +253,7 @@ def test_process_fout_sheets_valid_no_reshape(workbook_with_data_cell_cd, valid_
     assert isinstance(result_df, pd.DataFrame)
     assert not result_df.empty
     assert top_row.equals(expected_top_row)
-    assert top_row.shape == (17, )
+    assert top_row.shape == (18, )
 
     # Patch the logging to capture the warning message
     with patch("logging.warning") as mock_warning:
@@ -1118,7 +1122,7 @@ def test_get_qd_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 30
+    expected_length = 31
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1136,7 +1140,7 @@ def test_get_mex_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 32
+    expected_length = 33
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1154,7 +1158,7 @@ def test_get_ccp_column_rename_map_types_and_length():
         assert isinstance(value, str), f"Value for key {key} is not a string"
 
     # Check expected number of keys (should match the number of entries)
-    expected_length = 51
+    expected_length = 52
     assert len(rename_map) == expected_length, (
         f"Dictionary should have {expected_length} items got {len(rename_map)}"
     )
@@ -1166,6 +1170,7 @@ def context():
         org_cd="ORG1",
         submission_period_cd="2024Q4",
         process_cd="PROC123",
+        process_stage_cd="STAGE01",
         filename="myfile",
         Batch_Id="someid",
         file_hash_md5="file_hash_md5",

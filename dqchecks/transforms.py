@@ -22,8 +22,9 @@ logging.basicConfig(level=logging.INFO)
 # Define namedtuple for context
 ProcessingContext = namedtuple(
     'ProcessingContext', ['org_cd', 'submission_period_cd', 'process_cd',
-                          'filename','template_version', 'last_modified',
-                          'file_hash_md5', 'Batch_Id', "status"]
+                          'filename', 'template_version', 'last_modified',
+                          'file_hash_md5', 'Batch_Id', 'status', 'process_stage_cd'],
+    defaults=[None]
 )
 
 @dataclass
@@ -82,6 +83,13 @@ def validate_context(context: ProcessingContext):
 
     if not isinstance(context.process_cd, str) or not context.process_cd:
         raise ValueError("The 'process_cd' argument must be a non-empty string.")
+
+    if context.process_stage_cd is not None and (
+        not isinstance(context.process_stage_cd, str) or not context.process_stage_cd
+    ):
+        raise ValueError(
+            "The 'process_stage_cd' argument must be a non-empty string when provided."
+        )
 
     if not isinstance(context.filename, str) or not context.filename:
         raise ValueError("The 'filename' argument must be a non-empty string.")
@@ -414,6 +422,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
 
         'Submission_Period_Cd': 'Submission_Period_Cd',
         'Process_Cd': 'Process_Cd',
+        'Process_Stage_Cd': 'Process_Stage_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
@@ -460,6 +469,7 @@ def get_mex_column_rename_map() -> dict[str, str]:
         "Comment": "Comment",
 
         'Process_Cd': 'Process_Cd',
+        'Process_Stage_Cd': 'Process_Stage_Cd',
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
@@ -487,6 +497,7 @@ def get_ccp_column_rename_map() -> dict[str, str]:
         "Observation_Cd": "Observation_Cd",
         "Sensitivity_Cd": "Sensitivity_Cd",
         'Process_Cd': 'Process_Cd',
+        'Process_Stage_Cd': 'Process_Stage_Cd',
         "Data_Source_Cd": "Data_Source_Cd",
         "Measure_Cd": "Measure_Cd",
         "Measure_Name": "Measure_Name",
@@ -565,6 +576,7 @@ def finalize_dataframe(
     df["Organisation_Cd"] = context.org_cd
     df["Submission_Period_Cd"] = context.submission_period_cd
     df["Process_Cd"] = context.process_cd
+    df["Process_Stage_Cd"] = context.process_stage_cd
     df["Filename"] = context.filename
     df["Batch_Id"] = context.Batch_Id
     df["file_hash_md5"] = context.file_hash_md5
@@ -608,6 +620,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Submission_Period_Cd': 'Submission_Period_Cd',
         'Observation_Period_Cd': 'Observation_Period_Cd',
         'Process_Cd': 'Process_Cd',
+        'Process_Stage_Cd': 'Process_Stage_Cd',
         'Filename': 'Filename',
         'Batch_Id': 'Batch_Id',
         'file_hash_md5': 'file_hash_md5',
@@ -738,6 +751,7 @@ def process_df(
     pivoted_df["Organisation_Cd"] = context.org_cd
     pivoted_df["Submission_Period_Cd"] = context.submission_period_cd
     pivoted_df["Process_Cd"] = context.process_cd
+    pivoted_df["Process_Stage_Cd"] = context.process_stage_cd
     pivoted_df["Filename"] = context.filename
     pivoted_df["Batch_Id"] = context.Batch_Id
     pivoted_df["file_hash_md5"] = context.file_hash_md5
