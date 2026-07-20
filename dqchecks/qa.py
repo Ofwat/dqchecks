@@ -236,6 +236,54 @@ MEX_CONTEXT_COLS: list[str] = [
 ]
 
 # --------------------------------------------------------------------------------------
+# APR FINANCE COLUMN CONSTANTS
+# --------------------------------------------------------------------------------------
+
+APR_FINANCE_KEY_COLS: list[str] = [
+    "Organisation_Cd",
+    "Observation_Period_Cd",
+    "Submission_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Data_Source_Cd",
+    "Observation_Coverage_Cd",
+    "Assurance_Cd",
+    "Business_Type_Cd",
+    "Rate_Type_Cd",
+    "Returns_Equity_Cd",
+    "Business_Unit_Cd",
+    "Grants_Contributions_Treatment_Cd",
+    "Credit_Protection_Cd",
+    "Currency_Pair_Cd",
+    "MTM_Analysis_Assumption_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Process_Stage_Cd",
+    "Legacy_Metadata_Cd",
+]
+
+APR_FINANCE_COMPARE_COLS: list[str] = APR_FINANCE_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_FINANCE_CONTEXT_COLS: list[str] = [
+    "Organisation_Cd",
+    "Submission_Period_Cd",
+    "Observation_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Assurance_Cd",
+    "Business_Type_Cd",
+    "Business_Unit_Cd",
+    "Process_Stage_Cd",
+    "Legacy_Metadata_Cd",
+]
+
+# --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
 # --------------------------------------------------------------------------------------
 
@@ -252,7 +300,8 @@ def _get_profile_cols(profile: str | None):
         return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
     if p == "MEX":
         return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
-    # default: QD
+    if p == "APR_FINANCE":
+        return APR_FINANCE_COMPARE_COLS, APR_FINANCE_KEY_COLS, APR_FINANCE_CONTEXT_COLS
     return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
 
 
@@ -491,6 +540,24 @@ def _apply_mex_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
 
+def _apply_apr_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make APR semantic output align with APR raw naming conventions.
+    Safe: only renames columns if present.
+    """
+    df = df.copy()
+    rename_map = {
+        "measure_value": "Measure_Value",
+        "Measure_Comment": "Comment",
+        "measure_comment": "Comment",
+        "Audit_Comment": "Comment",
+        "FileName": "Filename",
+        "file_name": "Filename",
+        "Boncode": "Boncode",
+    }
+    return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+
+
 # --------------------------------------------------------------------------------------
 # 1) PREPARE DATAFRAMES FOR QA
 # --------------------------------------------------------------------------------------
@@ -498,7 +565,7 @@ def _apply_mex_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
 def prepare_qa_frames(
     combined_df: pd.DataFrame,
     ingested_df_flat: pd.DataFrame,
-    target_submission_period: str,
+    target_submission_period: str | list[str],
     target_org: Optional[str] = None,
     semantic_to_flat_map: Optional[dict[str, str]] = None,
     logger_: Optional[logging.Logger] = None,
@@ -546,6 +613,8 @@ def prepare_qa_frames(
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
     elif p == "MEX":
         sem_for_qa = _apply_mex_semantic_renames(ingested_df_flat)
+    elif p == "APR_FINANCE":
+        sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
         raise ValueError(f"Unsupported profile: {p}")
 
@@ -561,8 +630,26 @@ def prepare_qa_frames(
     if "Submission_Period_Cd" not in sem_for_qa.columns:
         raise ValueError("Submission_Period_Cd missing from semantic input.")
 
-    flat_for_qa = flat_for_qa[flat_for_qa["Submission_Period_Cd"] == target_submission_period]
-    sem_for_qa = sem_for_qa[sem_for_qa["Submission_Period_Cd"] == target_submission_period]
+    if isinstance(target_submission_period, (list, tuple, set)):
+        target_periods = [str(x).strip() for x in target_submission_period]
+
+        flat_for_qa = flat_for_qa[
+            flat_for_qa["Submission_Period_Cd"].astype(str).str.strip().isin(target_periods)
+        ]
+
+        sem_for_qa = sem_for_qa[
+            sem_for_qa["Submission_Period_Cd"].astype(str).str.strip().isin(target_periods)
+        ]
+    else:
+        target_period = str(target_submission_period).strip()
+
+        flat_for_qa = flat_for_qa[
+            flat_for_qa["Submission_Period_Cd"].astype(str).str.strip() == target_period
+        ]
+
+        sem_for_qa = sem_for_qa[
+            sem_for_qa["Submission_Period_Cd"].astype(str).str.strip() == target_period
+        ]
 
     if target_org is not None:
         if "Organisation_Cd" in flat_for_qa.columns:
@@ -760,10 +847,26 @@ def build_qa_diff(
 
         log.info("Rows present in BOTH (after full join): %d", len(both))
 
-        common_cols = [
+        ignore_cols = {
+            "Insert_Date",
+            "Batch_Id",
+            "QA_Run_Datetime",
+        }
+
+        configured_common_cols = [
             c for c in compare_cols
             if f"{c}_raw" in both.columns and f"{c}_ingested" in both.columns
         ]
+
+        dynamic_common_cols = [
+            c for c in set(left_rows.columns).intersection(set(right_rows.columns))
+            if c not in key_cols
+            and c not in ignore_cols
+            and f"{c}_raw" in both.columns
+            and f"{c}_ingested" in both.columns
+        ]
+
+        common_cols = sorted(set(configured_common_cols).union(dynamic_common_cols))
 
         def _measure_value_diff_mask_qd(df: pd.DataFrame) -> pd.Series:
             col_raw = "Measure_Value_raw"

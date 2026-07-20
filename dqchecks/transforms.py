@@ -426,7 +426,7 @@ def get_qd_column_rename_map() -> dict[str, str]:
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
-        'status': 'status',
+        'Status': 'Status',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Run_Date': 'Run_Date',
@@ -473,7 +473,7 @@ def get_mex_column_rename_map() -> dict[str, str]:
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
         'Submission_Date': 'Submission_Date',
-        'status': 'status',
+        'Status': 'Status',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Run_Date': 'Run_Date',
@@ -540,7 +540,7 @@ def get_ccp_column_rename_map() -> dict[str, str]:
 
         'Filename': 'Filename',
         'file_hash_md5': 'file_hash_md5',
-        'status': 'status',
+        'Status': 'Status',
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Submission_Date': 'Submission_Date',
@@ -580,7 +580,7 @@ def finalize_dataframe(
     df["Filename"] = context.filename
     df["Batch_Id"] = context.Batch_Id
     df["file_hash_md5"] = context.file_hash_md5
-    df["status"] = context.status
+    df["Status"] = context.status
     df["Template_Version"] = context.template_version
     df["Submission_Date"] = context.last_modified
     df["Run_Date"] = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
@@ -624,7 +624,7 @@ def get_default_column_rename_map() -> dict[str, str]:
         'Filename': 'Filename',
         'Batch_Id': 'Batch_Id',
         'file_hash_md5': 'file_hash_md5',
-        "status": "status",
+        "Status": "Status",
         'Template_Version': 'Template_Version',
         'Sheet_Cd': 'Sheet_Cd',
         'Reference': 'Measure_Cd',
@@ -755,7 +755,7 @@ def process_df(
     pivoted_df["Filename"] = context.filename
     pivoted_df["Batch_Id"] = context.Batch_Id
     pivoted_df["file_hash_md5"] = context.file_hash_md5
-    pivoted_df["status"] = context.status
+    pivoted_df["Status"] = context.status
     pivoted_df["Template_Version"] = context.template_version
     pivoted_df["Submission_Date"] = context.last_modified
     if "Section_Cd" not in pivoted_df.columns:
