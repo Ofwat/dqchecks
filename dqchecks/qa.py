@@ -313,20 +313,20 @@ def _get_profile_cols(profile: str | None):
 
     if p == "CCP":
         return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
-    
+
     if p == "MEX":
         return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
-    
+
     if p == "APR_FINANCE":
         return APR_FINANCE_COMPARE_COLS, APR_FINANCE_KEY_COLS, APR_FINANCE_CONTEXT_COLS
-    
+
     if p == "APR_FINANCE_LEGACY":
         return (
             APR_FINANCE_LEGACY_COMPARE_COLS,
             APR_FINANCE_LEGACY_KEY_COLS,
             APR_FINANCE_LEGACY_CONTEXT_COLS,
         )
-    
+
     return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
 
 
