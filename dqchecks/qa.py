@@ -260,13 +260,24 @@ APR_FINANCE_KEY_COLS: list[str] = [
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
     "Process_Stage_Cd",
+]
+
+
+APR_FINANCE_LEGACY_KEY_COLS: list[str] = APR_FINANCE_KEY_COLS + [
     "Legacy_Metadata_Cd",
 ]
+
 
 APR_FINANCE_COMPARE_COLS: list[str] = APR_FINANCE_KEY_COLS + [
     "Measure_Value",
     "Comment",
 ]
+
+APR_FINANCE_LEGACY_COMPARE_COLS: list[str] = APR_FINANCE_LEGACY_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
 
 APR_FINANCE_CONTEXT_COLS: list[str] = [
     "Organisation_Cd",
@@ -280,6 +291,9 @@ APR_FINANCE_CONTEXT_COLS: list[str] = [
     "Business_Type_Cd",
     "Business_Unit_Cd",
     "Process_Stage_Cd",
+]
+
+APR_FINANCE_LEGACY_CONTEXT_COLS: list[str] = APR_FINANCE_CONTEXT_COLS + [
     "Legacy_Metadata_Cd",
 ]
 
@@ -296,12 +310,23 @@ def _get_profile_cols(profile: str | None):
     Returns (compare_cols, key_cols, context_cols) for the selected profile.
     """
     p = _profile_name(profile)
+
     if p == "CCP":
         return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
+    
     if p == "MEX":
         return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
+    
     if p == "APR_FINANCE":
         return APR_FINANCE_COMPARE_COLS, APR_FINANCE_KEY_COLS, APR_FINANCE_CONTEXT_COLS
+    
+    if p == "APR_FINANCE_LEGACY":
+        return (
+            APR_FINANCE_LEGACY_COMPARE_COLS,
+            APR_FINANCE_LEGACY_KEY_COLS,
+            APR_FINANCE_LEGACY_CONTEXT_COLS,
+        )
+    
     return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
 
 
@@ -613,7 +638,7 @@ def prepare_qa_frames(
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
     elif p == "MEX":
         sem_for_qa = _apply_mex_semantic_renames(ingested_df_flat)
-    elif p == "APR_FINANCE":
+    elif p in ["APR_FINANCE", "APR_FINANCE_LEGACY"]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
         raise ValueError(f"Unsupported profile: {p}")
