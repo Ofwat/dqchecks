@@ -413,43 +413,47 @@ def _get_profile_cols(profile: str | None):
     """
     p = _profile_name(profile)
 
-    if p == "CCP":
-        return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
-
-    if p == "MEX":
-        return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
-
-    if p == "APR_FINANCE":
-        return APR_FINANCE_COMPARE_COLS, APR_FINANCE_KEY_COLS, APR_FINANCE_CONTEXT_COLS
-
-    if p == "APR_FINANCE_LEGACY":
-        return (
+    profile_map = {
+        "CCP": (CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS),
+        "MEX": (MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS),
+        "APR_FINANCE": (
+            APR_FINANCE_COMPARE_COLS,
+            APR_FINANCE_KEY_COLS,
+            APR_FINANCE_CONTEXT_COLS,
+        ),
+        "APR_FINANCE_LEGACY": (
             APR_FINANCE_LEGACY_COMPARE_COLS,
             APR_FINANCE_LEGACY_KEY_COLS,
             APR_FINANCE_LEGACY_CONTEXT_COLS,
-        )
-
-    if p == "APR_OUTCOMES":
-        return APR_OUTCOMES_COMPARE_COLS, APR_OUTCOMES_KEY_COLS, APR_OUTCOMES_CONTEXT_COLS
-
-    if p == "APR_CHARGES":
-        return APR_CHARGES_COMPARE_COLS, APR_CHARGES_KEY_COLS, APR_CHARGES_CONTEXT_COLS
-
-    if p == "APR_ENVIRONMENT":
-        return APR_ENVIRONMENT_COMPARE_COLS, APR_ENVIRONMENT_KEY_COLS, APR_ENVIRONMENT_CONTEXT_COLS
-
-    if p == "APR_INNOVATION":
-        return APR_INNOVATION_COMPARE_COLS, APR_INNOVATION_KEY_COLS, APR_INNOVATION_CONTEXT_COLS
-
-    if p == "APR_CUSTOMER_POLICY":
-        return (
+        ),
+        "APR_OUTCOMES": (
+            APR_OUTCOMES_COMPARE_COLS,
+            APR_OUTCOMES_KEY_COLS,
+            APR_OUTCOMES_CONTEXT_COLS,
+        ),
+        "APR_CHARGES": (
+            APR_CHARGES_COMPARE_COLS,
+            APR_CHARGES_KEY_COLS,
+            APR_CHARGES_CONTEXT_COLS,
+        ),
+        "APR_ENVIRONMENT": (
+            APR_ENVIRONMENT_COMPARE_COLS,
+            APR_ENVIRONMENT_KEY_COLS,
+            APR_ENVIRONMENT_CONTEXT_COLS,
+        ),
+        "APR_INNOVATION": (
+            APR_INNOVATION_COMPARE_COLS,
+            APR_INNOVATION_KEY_COLS,
+            APR_INNOVATION_CONTEXT_COLS,
+        ),
+        "APR_CUSTOMER_POLICY": (
             APR_CUSTOMER_POLICY_COMPARE_COLS,
             APR_CUSTOMER_POLICY_KEY_COLS,
             APR_CUSTOMER_POLICY_CONTEXT_COLS,
-        )
+        ),
+    }
 
-    return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
-
+    return profile_map.get(p, (COMPARE_COLS, KEY_COLS, CONTEXT_COLS))
 
 # --------------------------------------------------------------------------------------
 # HELPER FUNCTIONS (NORMALISATION)
