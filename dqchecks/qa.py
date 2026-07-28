@@ -297,6 +297,108 @@ APR_FINANCE_LEGACY_CONTEXT_COLS: list[str] = APR_FINANCE_CONTEXT_COLS + [
     "Legacy_Metadata_Cd",
 ]
 
+
+# --------------------------------------------------------------------------------------
+# APR DOMAIN COLUMN CONSTANTS
+# --------------------------------------------------------------------------------------
+
+APR_BASE_KEY_COLS: list[str] = [
+    "Organisation_Cd",
+    "Observation_Period_Cd",
+    "Submission_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Assurance_Cd",
+    "Sensitivity_Cd",
+    "Process_Stage_Cd",
+]
+
+
+APR_OUTCOMES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Nze_scheme_Cd",
+    "Ghg_Scope_Cd",
+    "PC_Cd",
+    "Region_Cd",
+    "WINEP_SO_Scheme_Cd",
+]
+
+
+APR_CHARGES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Nze_scheme_Cd",
+    "Ghg_Scope_Cd",
+    "PC_Cd",
+    "Region_Cd",
+    "WINEP_SO_Scheme_Cd",
+]
+
+
+APR_ENVIRONMENT_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Nze_scheme_Cd",
+    "Ghg_Scope_Cd",
+]
+
+
+APR_INNOVATION_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Innovation_Project_Cd",
+]
+
+
+APR_CUSTOMER_POLICY_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "PC_Cd",
+    "Region_Cd",
+]
+
+
+APR_OUTCOMES_COMPARE_COLS: list[str] = APR_OUTCOMES_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_CHARGES_COMPARE_COLS: list[str] = APR_CHARGES_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_ENVIRONMENT_COMPARE_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_INNOVATION_COMPARE_COLS: list[str] = APR_INNOVATION_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_CUSTOMER_POLICY_COMPARE_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+
+APR_OUTCOMES_CONTEXT_COLS: list[str] = APR_OUTCOMES_KEY_COLS[:]
+APR_CHARGES_CONTEXT_COLS: list[str] = APR_CHARGES_KEY_COLS[:]
+APR_ENVIRONMENT_CONTEXT_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS[:]
+APR_INNOVATION_CONTEXT_COLS: list[str] = APR_INNOVATION_KEY_COLS[:]
+APR_CUSTOMER_POLICY_CONTEXT_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS[:]
+
 # --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
 # --------------------------------------------------------------------------------------
@@ -325,6 +427,25 @@ def _get_profile_cols(profile: str | None):
             APR_FINANCE_LEGACY_COMPARE_COLS,
             APR_FINANCE_LEGACY_KEY_COLS,
             APR_FINANCE_LEGACY_CONTEXT_COLS,
+        )
+
+    if p == "APR_OUTCOMES":
+        return APR_OUTCOMES_COMPARE_COLS, APR_OUTCOMES_KEY_COLS, APR_OUTCOMES_CONTEXT_COLS
+
+    if p == "APR_CHARGES":
+        return APR_CHARGES_COMPARE_COLS, APR_CHARGES_KEY_COLS, APR_CHARGES_CONTEXT_COLS
+
+    if p == "APR_ENVIRONMENT":
+        return APR_ENVIRONMENT_COMPARE_COLS, APR_ENVIRONMENT_KEY_COLS, APR_ENVIRONMENT_CONTEXT_COLS
+
+    if p == "APR_INNOVATION":
+        return APR_INNOVATION_COMPARE_COLS, APR_INNOVATION_KEY_COLS, APR_INNOVATION_CONTEXT_COLS
+
+    if p == "APR_CUSTOMER_POLICY":
+        return (
+            APR_CUSTOMER_POLICY_COMPARE_COLS,
+            APR_CUSTOMER_POLICY_KEY_COLS,
+            APR_CUSTOMER_POLICY_CONTEXT_COLS,
         )
 
     return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
@@ -638,7 +759,15 @@ def prepare_qa_frames(
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
     elif p == "MEX":
         sem_for_qa = _apply_mex_semantic_renames(ingested_df_flat)
-    elif p in ["APR_FINANCE", "APR_FINANCE_LEGACY"]:
+    elif p in [
+        "APR_FINANCE",
+        "APR_FINANCE_LEGACY",
+        "APR_OUTCOMES",
+        "APR_CHARGES",
+        "APR_ENVIRONMENT",
+        "APR_INNOVATION",
+        "APR_CUSTOMER_POLICY",
+    ]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
         raise ValueError(f"Unsupported profile: {p}")
