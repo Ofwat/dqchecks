@@ -1139,14 +1139,12 @@ def build_qa_diff(
         for path in filtered_excel_files:
             fname = os.path.basename(path)
 
-            if process_cd and process_cd.upper() == "CCP":
-                # CCP format:
-                # ANH_001 Flat File S1 V1.xlsx
-                first_token = fname.split(" ", 1)[0].strip().upper()
-                company_prefix = first_token.split("_", 1)[0].strip()
-            else:
-                # QD / MEX existing behaviour
-                company_prefix = fname.split(" ", 1)[0].strip().upper()
+            # Company files should start with the 3-letter Organisation_Cd.
+            # Examples:
+            # AFW-2025-26-APR_FINANCE_s1_v2.xlsx -> AFW
+            # ANH 2025-26-APR_FINANCE_s1_v2.xlsx -> ANH
+            # BRL_2025-26 APR_FINANCE_s1_v2.xlsx -> BRL
+            company_prefix = fname[:3].strip().upper()
 
             if company_prefix:
                 present_orgs_from_files.add(company_prefix)
