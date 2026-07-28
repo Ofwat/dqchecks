@@ -259,6 +259,7 @@ APR_FINANCE_KEY_COLS: list[str] = [
     "Inflation_Observation_Cd",
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
+    "Pension_Scheme_Cd",
     "Process_Stage_Cd",
 ]
 
@@ -290,8 +291,10 @@ APR_FINANCE_CONTEXT_COLS: list[str] = [
     "Assurance_Cd",
     "Business_Type_Cd",
     "Business_Unit_Cd",
+    "Pension_Scheme_Cd",
     "Process_Stage_Cd",
 ]
+
 
 APR_FINANCE_LEGACY_CONTEXT_COLS: list[str] = APR_FINANCE_CONTEXT_COLS + [
     "Legacy_Metadata_Cd",
