@@ -320,7 +320,6 @@ APR_BASE_KEY_COLS: list[str] = [
 
 
 APR_OUTCOMES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
-    "Business_Unit_Cd",
     "Inflation_Observation_Cd",
     "Price_Base_Cd",
     "Price_Index_Cd",
