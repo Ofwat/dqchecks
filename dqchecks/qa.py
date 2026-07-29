@@ -1138,20 +1138,26 @@ def build_qa_diff(
     if filtered_excel_files is not None and expected_companies is not None:
         present_orgs_from_files: set[str] = set()
 
+        expected_orgs_upper = {str(org).strip().upper() for org in expected_companies}
+
         for path in filtered_excel_files:
-            fname = os.path.basename(path)
+            fname = os.path.basename(path).strip().upper()
 
-            # Company files should start with the 3-letter Organisation_Cd.
-            # Examples:
-            # AFW-2025-26-APR_FINANCE_s1_v2.xlsx -> AFW
-            # ANH 2025-26-APR_FINANCE_s1_v2.xlsx -> ANH
-            # BRL_2025-26 APR_FINANCE_s1_v2.xlsx -> BRL
-            company_prefix = fname[:3].strip().upper()
+            for org in expected_orgs_upper:
+                if (
+                    fname == org
+                    or fname.startswith(f"{org} ")
+                    or fname.startswith(f"{org}-")
+                    or fname.startswith(f"{org}_")
+                ):
+                    present_orgs_from_files.add(org)
+                    break
 
-            if company_prefix:
-                present_orgs_from_files.add(company_prefix)
-
-        missing_orgs = sorted(set(expected_companies) - present_orgs_from_files)
+        missing_orgs = sorted(
+            org
+            for org in expected_companies
+            if str(org).strip().upper() not in present_orgs_from_files
+        )
 
         if missing_orgs:
             process_str = str(process_cd).upper() if process_cd else None
