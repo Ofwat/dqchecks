@@ -327,7 +327,7 @@ APR_OUTCOMES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
     "Price_Index_Coverage_Cd",
     "Nze_scheme_Cd",
     "Ghg_Scope_Cd",
-    "PC_cd",
+    "PC_Cd",
     "Region_Cd",
     "WINEP_SO_Scheme_Cd",
 ]
@@ -364,7 +364,7 @@ APR_INNOVATION_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
 
 APR_CUSTOMER_POLICY_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
     "Business_Unit_Cd",
-    "PC_cd",
+    "PC_Cd",
     "Region_Cd",
 ]
 
