@@ -356,12 +356,12 @@ APR_INNOVATION_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
 
 
 APR_CUSTOMER_POLICY_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
-    "Arrears_Status_Instance_Id",
-    "Connected_Service_Instance_Id",
-    "Customer_Group_Instance_Id",
-    "Payment_Status_Instance_Id",
-    "Payment_Type_Instance_Id",
-    "Household_affordability_sc_Instance_Id ",
+    "Arrears_Status_Cd",
+    "Connected_Service_Cd",
+    "Customer_Group_Cd",
+    "Payment_Status_Cd",
+    "Payment_Type_Cd",
+    "Household_affordability_sc_Cd ",
 ]
 
 
