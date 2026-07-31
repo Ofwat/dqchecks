@@ -361,7 +361,7 @@ APR_CUSTOMER_POLICY_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
     "Customer_Group_Cd",
     "Payment_Status_Cd",
     "Payment_Type_Cd",
-    "Household_affordability_sc_Cd ",
+    "Household_affordability_sc_Cd",
 ]
 
 
