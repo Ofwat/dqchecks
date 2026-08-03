@@ -259,7 +259,6 @@ APR_FINANCE_KEY_COLS: list[str] = [
     "Inflation_Observation_Cd",
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
-    "Pension_Scheme_Cd",
     "Process_Stage_Cd",
 ]
 
