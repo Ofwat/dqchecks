@@ -60,8 +60,8 @@ COMPARE_COLS: list[str] = [
     "Measure_Name",
     "Measure_Desc",
     "Measure_Area",
-    "Observation_Coverage_Desc",
-    "Observation_Desc",
+    "Observation_Coverage_Cd",
+    "Observation_Cd",
     "Year_Type",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -82,8 +82,8 @@ KEY_COLS: list[str] = [
     "Region_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
-    "Observation_Coverage_Desc",
-    "Observation_Desc",
+    "Observation_Coverage_Cd",
+    "Observation_Cd",
     "Measure_Key",
 ]
 
@@ -548,7 +548,7 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
             )
 
     # Observation fields now part of QD natural key
-    for col in ["Observation_Coverage_Desc", "Observation_Desc"]:
+    for col in ["Observation_Coverage_Cd", "Observation_Cd"]:
         if col in df.columns:
             df[col] = (
                 df[col]
