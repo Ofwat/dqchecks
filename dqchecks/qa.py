@@ -52,7 +52,6 @@ COMPARE_COLS: list[str] = [
     "Region_Cd",
     "Template_Version",
     "Sheet_Cd",
-    "Submission_Date",
     "Assured",
     "Security_Mark",
     "Process_Cd",
