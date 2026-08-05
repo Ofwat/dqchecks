@@ -705,6 +705,34 @@ def _apply_apr_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
 
+def _prepare_qd_semantic_measure_reference(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure QD semantic data has Legacy_Measure_Reference for Measure_Key building.
+
+    Preference order:
+    1) Existing Legacy_Measure_Reference if present and meaningful
+    2) Legacy_BonCode if present and meaningful
+    3) Measure_Cd as fallback for newer QD views
+    """
+    df = df.copy()
+
+    if "Legacy_Measure_Reference" in df.columns:
+        ref = df["Legacy_Measure_Reference"].astype(str).str.strip()
+        if ref.ne("").any() and ref.str.upper().ne("NA").any():
+            return df
+
+    if "Legacy_BonCode" in df.columns:
+        legacy = df["Legacy_BonCode"].astype(str).str.strip()
+        if legacy.ne("").any() and legacy.str.upper().ne("NA").any():
+            df["Legacy_Measure_Reference"] = df["Legacy_BonCode"]
+            return df
+
+    if "Measure_Cd" in df.columns:
+        df["Legacy_Measure_Reference"] = df["Measure_Cd"]
+
+    return df
+
+
 # --------------------------------------------------------------------------------------
 # 1) PREPARE DATAFRAMES FOR QA
 # --------------------------------------------------------------------------------------
@@ -756,6 +784,7 @@ def prepare_qa_frames(
     if p == "QD":
         col_map = semantic_to_flat_map or SEMANTIC_TO_FLAT_COL_MAP
         sem_for_qa = ingested_df_flat.rename(columns=col_map).copy()
+        sem_for_qa = _prepare_qd_semantic_measure_reference(sem_for_qa)
     elif p == "CCP":
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
     elif p == "MEX":
