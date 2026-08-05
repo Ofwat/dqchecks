@@ -504,6 +504,8 @@ def _ensure_key_columns(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
         "Filename",
         "Observation_Coverage_Desc",
         "Observation_Desc",
+        "Observation_Coverage_Cd",
+        "Observation_Cd",
     }
 
     for col in optional_key_cols:
