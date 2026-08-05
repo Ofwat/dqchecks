@@ -389,12 +389,45 @@ APR_CUSTOMER_POLICY_COMPARE_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS + [
     "Comment",
 ]
 
+APR_COST_ASSESSMENT_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Sub_Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Price_Base_Cd",
+    "Default_Tariff_Type_Cd",
+    "Atypical_Expenditure_Cd",
+    "Customer_Group_Cd",
+    "Charge_Basis_Cd",
+    "Additional_Enhancement_Cd",
+    "Connected_Service_Cd",
+    "New_Connection_Cd",
+    "Meter_Type_Cd",
+    "Allowance_Cat_Cd",
+    "STW_Size_Band_Cd",
+    "Third_Party_Services_Cd",
+    "Income_Attribute_Cd",
+    "Region_Cd",
+    "Treatment_Cat_Cd",
+    "STW_Size_Cd",
+    "Treatment_work_Consent_Cd",
+    "Energy_Source_Cd",
+    "Treatment_Disposal_Cd",
+    "Asset_Renewals_Cd",
+]
+
+APR_COST_ASSESSMENT_COMPARE_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
 
 APR_OUTCOMES_CONTEXT_COLS: list[str] = APR_OUTCOMES_KEY_COLS[:]
 APR_CHARGES_CONTEXT_COLS: list[str] = APR_CHARGES_KEY_COLS[:]
 APR_ENVIRONMENT_CONTEXT_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS[:]
 APR_INNOVATION_CONTEXT_COLS: list[str] = APR_INNOVATION_KEY_COLS[:]
 APR_CUSTOMER_POLICY_CONTEXT_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS[:]
+APR_COST_ASSESSMENT_CONTEXT_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS[:]
 
 # --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
@@ -447,6 +480,11 @@ def _get_profile_cols(profile: str | None):
             APR_CUSTOMER_POLICY_COMPARE_COLS,
             APR_CUSTOMER_POLICY_KEY_COLS,
             APR_CUSTOMER_POLICY_CONTEXT_COLS,
+        ),
+        "APR_COST_ASSESSMENT": (
+            APR_COST_ASSESSMENT_COMPARE_COLS,
+            APR_COST_ASSESSMENT_KEY_COLS,
+            APR_COST_ASSESSMENT_CONTEXT_COLS,
         ),
     }
 
@@ -797,6 +835,7 @@ def prepare_qa_frames(
         "APR_ENVIRONMENT",
         "APR_INNOVATION",
         "APR_CUSTOMER_POLICY",
+        "APR_COST_ASSESSMENT",
     ]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
