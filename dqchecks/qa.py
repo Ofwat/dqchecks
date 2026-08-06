@@ -420,6 +420,21 @@ APR_COST_ASSESSMENT_COMPARE_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS + [
     "Comment",
 ]
 
+APR_RAPID_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Bulk_Supply_Cd",
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+]
+
+APR_RAPID_COMPARE_COLS: list[str] = APR_RAPID_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_RAPID_CONTEXT_COLS: list[str] = APR_RAPID_KEY_COLS[:]
 APR_OUTCOMES_CONTEXT_COLS: list[str] = APR_OUTCOMES_KEY_COLS[:]
 APR_CHARGES_CONTEXT_COLS: list[str] = APR_CHARGES_KEY_COLS[:]
 APR_ENVIRONMENT_CONTEXT_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS[:]
@@ -483,6 +498,11 @@ def _get_profile_cols(profile: str | None):
             APR_COST_ASSESSMENT_COMPARE_COLS,
             APR_COST_ASSESSMENT_KEY_COLS,
             APR_COST_ASSESSMENT_CONTEXT_COLS,
+        ),
+        "APR_RAPID": (
+            APR_RAPID_COMPARE_COLS,
+            APR_RAPID_KEY_COLS,
+            APR_RAPID_CONTEXT_COLS,
         ),
     }
 
@@ -836,6 +856,7 @@ def prepare_qa_frames(
         "APR_INNOVATION",
         "APR_CUSTOMER_POLICY",
         "APR_COST_ASSESSMENT",
+        "APR_RAPID",
     ]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
