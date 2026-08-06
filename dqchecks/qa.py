@@ -404,7 +404,6 @@ APR_COST_ASSESSMENT_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
     "New_Connection_Cd",
     "Meter_Type_Cd",
     "Allowance_Cat_Cd",
-    "STW_Size_Band_Cd",
     "Third_Party_Services_Cd",
     "Income_Attribute_Cd",
     "Region_Cd",
