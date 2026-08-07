@@ -52,7 +52,6 @@ COMPARE_COLS: list[str] = [
     "Region_Cd",
     "Template_Version",
     "Sheet_Cd",
-    "Submission_Date",
     "Assured",
     "Security_Mark",
     "Process_Cd",
@@ -60,8 +59,8 @@ COMPARE_COLS: list[str] = [
     "Measure_Name",
     "Measure_Desc",
     "Measure_Area",
-    "Observation_Coverage_Desc",
-    "Observation_Desc",
+    "Observation_Coverage_Cd",
+    "Observation_Cd",
     "Year_Type",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
@@ -82,8 +81,8 @@ KEY_COLS: list[str] = [
     "Region_Cd",
     "Submission_Period_Cd",
     "Observation_Period_Cd",
-    "Observation_Coverage_Desc",
-    "Observation_Desc",
+    "Observation_Coverage_Cd",
+    "Observation_Cd",
     "Measure_Key",
 ]
 
@@ -260,13 +259,24 @@ APR_FINANCE_KEY_COLS: list[str] = [
     "Price_Index_Cd",
     "Price_Index_Coverage_Cd",
     "Process_Stage_Cd",
+]
+
+
+APR_FINANCE_LEGACY_KEY_COLS: list[str] = APR_FINANCE_KEY_COLS + [
     "Legacy_Metadata_Cd",
 ]
+
 
 APR_FINANCE_COMPARE_COLS: list[str] = APR_FINANCE_KEY_COLS + [
     "Measure_Value",
     "Comment",
 ]
+
+APR_FINANCE_LEGACY_COMPARE_COLS: list[str] = APR_FINANCE_LEGACY_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
 
 APR_FINANCE_CONTEXT_COLS: list[str] = [
     "Organisation_Cd",
@@ -279,9 +289,158 @@ APR_FINANCE_CONTEXT_COLS: list[str] = [
     "Assurance_Cd",
     "Business_Type_Cd",
     "Business_Unit_Cd",
+    "Pension_Scheme_Cd",
     "Process_Stage_Cd",
+]
+
+
+APR_FINANCE_LEGACY_CONTEXT_COLS: list[str] = APR_FINANCE_CONTEXT_COLS + [
     "Legacy_Metadata_Cd",
 ]
+
+
+# --------------------------------------------------------------------------------------
+# APR DOMAIN COLUMN CONSTANTS
+# --------------------------------------------------------------------------------------
+
+APR_BASE_KEY_COLS: list[str] = [
+    "Organisation_Cd",
+    "Observation_Period_Cd",
+    "Submission_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Assurance_Cd",
+    "Sensitivity_Cd",
+    "Process_Stage_Cd",
+]
+
+
+APR_OUTCOMES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "PC_Cd",
+    "Region_Cd",
+    "WINEP_SO_Scheme_Cd",
+]
+
+
+APR_CHARGES_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+]
+
+
+APR_ENVIRONMENT_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Nze_scheme_Cd",
+    "Ghg_Scope_Cd",
+]
+
+
+APR_INNOVATION_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Innovation_Project_Cd",
+]
+
+
+APR_CUSTOMER_POLICY_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Arrears_Status_Cd",
+    "Connected_Service_Cd",
+    "Customer_Group_Cd",
+    "Payment_Status_Cd",
+    "Payment_Type_Cd",
+    "Household_affordability_sc_Cd",
+]
+
+
+APR_OUTCOMES_COMPARE_COLS: list[str] = APR_OUTCOMES_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_CHARGES_COMPARE_COLS: list[str] = APR_CHARGES_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_ENVIRONMENT_COMPARE_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_INNOVATION_COMPARE_COLS: list[str] = APR_INNOVATION_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_CUSTOMER_POLICY_COMPARE_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_COST_ASSESSMENT_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Business_Unit_Cd",
+    "Sub_Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Price_Base_Cd",
+    "Default_Tariff_Type_Cd",
+    "Atypical_Expenditure_Cd",
+    "Customer_Group_Cd",
+    "Charge_Basis_Cd",
+    "Additional_Enhancement_Cd",
+    "Connected_Service_Cd",
+    "New_Connection_Cd",
+    "Meter_Type_Cd",
+    "Allowance_Cat_Cd",
+    "Third_Party_Services_Cd",
+    "Income_Attribute_Cd",
+    "Region_Cd",
+    "Treatment_Cat_Cd",
+    "STW_Size_Cd",
+    "Treatment_work_Consent_Cd",
+    "Energy_Source_Cd",
+    "Treatment_Disposal_Cd",
+    "Asset_Renewals_Cd",
+]
+
+APR_COST_ASSESSMENT_COMPARE_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_RAPID_KEY_COLS: list[str] = APR_BASE_KEY_COLS + [
+    "Bulk_Supply_Cd",
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+]
+
+APR_RAPID_COMPARE_COLS: list[str] = APR_RAPID_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+APR_RAPID_CONTEXT_COLS: list[str] = APR_RAPID_KEY_COLS[:]
+APR_OUTCOMES_CONTEXT_COLS: list[str] = APR_OUTCOMES_KEY_COLS[:]
+APR_CHARGES_CONTEXT_COLS: list[str] = APR_CHARGES_KEY_COLS[:]
+APR_ENVIRONMENT_CONTEXT_COLS: list[str] = APR_ENVIRONMENT_KEY_COLS[:]
+APR_INNOVATION_CONTEXT_COLS: list[str] = APR_INNOVATION_KEY_COLS[:]
+APR_CUSTOMER_POLICY_CONTEXT_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS[:]
+APR_COST_ASSESSMENT_CONTEXT_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS[:]
 
 # --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
@@ -296,14 +455,58 @@ def _get_profile_cols(profile: str | None):
     Returns (compare_cols, key_cols, context_cols) for the selected profile.
     """
     p = _profile_name(profile)
-    if p == "CCP":
-        return CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS
-    if p == "MEX":
-        return MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS
-    if p == "APR_FINANCE":
-        return APR_FINANCE_COMPARE_COLS, APR_FINANCE_KEY_COLS, APR_FINANCE_CONTEXT_COLS
-    return COMPARE_COLS, KEY_COLS, CONTEXT_COLS
 
+    profile_map = {
+        "CCP": (CCP_COMPARE_COLS, CCP_KEY_COLS, CCP_CONTEXT_COLS),
+        "MEX": (MEX_COMPARE_COLS, MEX_KEY_COLS, MEX_CONTEXT_COLS),
+        "APR_FINANCE": (
+            APR_FINANCE_COMPARE_COLS,
+            APR_FINANCE_KEY_COLS,
+            APR_FINANCE_CONTEXT_COLS,
+        ),
+        "APR_FINANCE_LEGACY": (
+            APR_FINANCE_LEGACY_COMPARE_COLS,
+            APR_FINANCE_LEGACY_KEY_COLS,
+            APR_FINANCE_LEGACY_CONTEXT_COLS,
+        ),
+        "APR_OUTCOMES": (
+            APR_OUTCOMES_COMPARE_COLS,
+            APR_OUTCOMES_KEY_COLS,
+            APR_OUTCOMES_CONTEXT_COLS,
+        ),
+        "APR_CHARGES": (
+            APR_CHARGES_COMPARE_COLS,
+            APR_CHARGES_KEY_COLS,
+            APR_CHARGES_CONTEXT_COLS,
+        ),
+        "APR_ENVIRONMENT": (
+            APR_ENVIRONMENT_COMPARE_COLS,
+            APR_ENVIRONMENT_KEY_COLS,
+            APR_ENVIRONMENT_CONTEXT_COLS,
+        ),
+        "APR_INNOVATION": (
+            APR_INNOVATION_COMPARE_COLS,
+            APR_INNOVATION_KEY_COLS,
+            APR_INNOVATION_CONTEXT_COLS,
+        ),
+        "APR_CUSTOMER_POLICY": (
+            APR_CUSTOMER_POLICY_COMPARE_COLS,
+            APR_CUSTOMER_POLICY_KEY_COLS,
+            APR_CUSTOMER_POLICY_CONTEXT_COLS,
+        ),
+        "APR_COST_ASSESSMENT": (
+            APR_COST_ASSESSMENT_COMPARE_COLS,
+            APR_COST_ASSESSMENT_KEY_COLS,
+            APR_COST_ASSESSMENT_CONTEXT_COLS,
+        ),
+        "APR_RAPID": (
+            APR_RAPID_COMPARE_COLS,
+            APR_RAPID_KEY_COLS,
+            APR_RAPID_CONTEXT_COLS,
+        ),
+    }
+
+    return profile_map.get(p, (COMPARE_COLS, KEY_COLS, CONTEXT_COLS))
 
 # --------------------------------------------------------------------------------------
 # HELPER FUNCTIONS (NORMALISATION)
@@ -319,6 +522,8 @@ def _ensure_key_columns(df: pd.DataFrame, key_cols: list[str]) -> pd.DataFrame:
         "Filename",
         "Observation_Coverage_Desc",
         "Observation_Desc",
+        "Observation_Coverage_Cd",
+        "Observation_Cd",
     }
 
     for col in optional_key_cols:
@@ -401,7 +606,7 @@ def _normalise_keys_with_measure(df: pd.DataFrame, measure_col: str) -> pd.DataF
             )
 
     # Observation fields now part of QD natural key
-    for col in ["Observation_Coverage_Desc", "Observation_Desc"]:
+    for col in ["Observation_Coverage_Cd", "Observation_Cd"]:
         if col in df.columns:
             df[col] = (
                 df[col]
@@ -558,6 +763,34 @@ def _apply_apr_semantic_renames(df: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
 
 
+def _prepare_qd_semantic_measure_reference(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Ensure QD semantic data has Legacy_Measure_Reference for Measure_Key building.
+
+    Preference order:
+    1) Existing Legacy_Measure_Reference if present and meaningful
+    2) Legacy_BonCode if present and meaningful
+    3) Measure_Cd as fallback for newer QD views
+    """
+    df = df.copy()
+
+    if "Legacy_Measure_Reference" in df.columns:
+        ref = df["Legacy_Measure_Reference"].astype(str).str.strip()
+        if ref.ne("").any() and ref.str.upper().ne("NA").any():
+            return df
+
+    if "Legacy_BonCode" in df.columns:
+        legacy = df["Legacy_BonCode"].astype(str).str.strip()
+        if legacy.ne("").any() and legacy.str.upper().ne("NA").any():
+            df["Legacy_Measure_Reference"] = df["Legacy_BonCode"]
+            return df
+
+    if "Measure_Cd" in df.columns:
+        df["Legacy_Measure_Reference"] = df["Measure_Cd"]
+
+    return df
+
+
 # --------------------------------------------------------------------------------------
 # 1) PREPARE DATAFRAMES FOR QA
 # --------------------------------------------------------------------------------------
@@ -609,11 +842,22 @@ def prepare_qa_frames(
     if p == "QD":
         col_map = semantic_to_flat_map or SEMANTIC_TO_FLAT_COL_MAP
         sem_for_qa = ingested_df_flat.rename(columns=col_map).copy()
+        sem_for_qa = _prepare_qd_semantic_measure_reference(sem_for_qa)
     elif p == "CCP":
         sem_for_qa = _apply_ccp_semantic_renames(ingested_df_flat)
     elif p == "MEX":
         sem_for_qa = _apply_mex_semantic_renames(ingested_df_flat)
-    elif p == "APR_FINANCE":
+    elif p in [
+        "APR_FINANCE",
+        "APR_FINANCE_LEGACY",
+        "APR_OUTCOMES",
+        "APR_CHARGES",
+        "APR_ENVIRONMENT",
+        "APR_INNOVATION",
+        "APR_CUSTOMER_POLICY",
+        "APR_COST_ASSESSMENT",
+        "APR_RAPID",
+    ]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
         raise ValueError(f"Unsupported profile: {p}")
@@ -978,22 +1222,26 @@ def build_qa_diff(
     if filtered_excel_files is not None and expected_companies is not None:
         present_orgs_from_files: set[str] = set()
 
+        expected_orgs_upper = {str(org).strip().upper() for org in expected_companies}
+
         for path in filtered_excel_files:
-            fname = os.path.basename(path)
+            fname = os.path.basename(path).strip().upper()
 
-            if process_cd and process_cd.upper() == "CCP":
-                # CCP format:
-                # ANH_001 Flat File S1 V1.xlsx
-                first_token = fname.split(" ", 1)[0].strip().upper()
-                company_prefix = first_token.split("_", 1)[0].strip()
-            else:
-                # QD / MEX existing behaviour
-                company_prefix = fname.split(" ", 1)[0].strip().upper()
+            for org in expected_orgs_upper:
+                if (
+                    fname == org
+                    or fname.startswith(f"{org} ")
+                    or fname.startswith(f"{org}-")
+                    or fname.startswith(f"{org}_")
+                ):
+                    present_orgs_from_files.add(org)
+                    break
 
-            if company_prefix:
-                present_orgs_from_files.add(company_prefix)
-
-        missing_orgs = sorted(set(expected_companies) - present_orgs_from_files)
+        missing_orgs = sorted(
+            org
+            for org in expected_companies
+            if str(org).strip().upper() not in present_orgs_from_files
+        )
 
         if missing_orgs:
             process_str = str(process_cd).upper() if process_cd else None

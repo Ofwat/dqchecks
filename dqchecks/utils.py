@@ -26,7 +26,7 @@ def simple_hdfs_ls(path: str) -> list:
         >>> for file in file_info:
                 print(f"File: {file['name']}, Last Modified: {file['last_modified']}")
     """
-    spark = SparkSession.builder.appName("spark_entry_job").getOrCreate()
+    spark = SparkSession.builder.appName("spark_entry_job").getOrCreate()  # pylint: disable=no-member
     # pylint: disable=W0212
     jvm = spark.sparkContext._jvm
     fs_root = jvm.java.net.URI.create("")
