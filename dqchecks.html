@@ -1431,7 +1431,7 @@ empty rows and columns trailing at the bottom and right of the sheet, respective
 </dd>
 </dl>
 <p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">openpyxl</span><span class="o">.</span><span class="n">load_workbook</span><span class="p">(</span><span class="s2">&quot;example.xlsx&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">active</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">ws</span> <span class="o">=</span> <span class="n">openpyxl</span><span class="o">.</span><span class="n">load_workbook</span><span class="p">(</span><span class="s2">"example.xlsx"</span><span class="p">)</span><span class="o">.</span><span class="n">active</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">area</span> <span class="o">=</span> <span class="n">get_used_area</span><span class="p">(</span><span class="n">ws</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">area</span><span class="o">.</span><span class="n">last_used_row</span><span class="p">,</span> <span class="n">area</span><span class="o">.</span><span class="n">last_used_column</span><span class="p">)</span>
 </pre></div>
@@ -2124,9 +2124,9 @@ directory. The ‘last_modified’ time is converted to a human-readable datetim
 </dd>
 </dl>
 <p class="rubric">Example</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">file_info</span> <span class="o">=</span> <span class="n">simple_hdfs_ls</span><span class="p">(</span><span class="s2">&quot;hdfs://path/to/directory&quot;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">file_info</span> <span class="o">=</span> <span class="n">simple_hdfs_ls</span><span class="p">(</span><span class="s2">"hdfs://path/to/directory"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">file_info</span><span class="p">:</span>
-<span class="go">        print(f&quot;File: {file[&#39;name&#39;]}, Last Modified: {file[&#39;last_modified&#39;]}&quot;)</span>
+<span class="go">        print(f"File: {file['name']}, Last Modified: {file['last_modified']}")</span>
 </pre></div>
 </div>
 </dd></dl>
