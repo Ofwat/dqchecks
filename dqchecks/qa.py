@@ -448,6 +448,38 @@ APR_INNOVATION_CONTEXT_COLS: list[str] = APR_INNOVATION_KEY_COLS[:]
 APR_CUSTOMER_POLICY_CONTEXT_COLS: list[str] = APR_CUSTOMER_POLICY_KEY_COLS[:]
 APR_COST_ASSESSMENT_CONTEXT_COLS: list[str] = APR_COST_ASSESSMENT_KEY_COLS[:]
 
+
+# --------------------------------------------------------------------------------------
+# BR MEX COLUMN CONSTANTS
+# --------------------------------------------------------------------------------------
+
+BR_MEX_KEY_COLS: list[str] = [
+    "Organisation_Cd",
+    "Observation_Period_Cd",
+    "Submission_Period_Cd",
+    "Measure_Cd",
+    "Observation_Cd",
+    "Observation_Coverage_Cd",
+    "Data_Source_Cd",
+    "Assurance_Cd",
+    "Sensitivity_Cd",
+    "Price_Base_Cd",
+    "Price_Index_Cd",
+    "Price_Index_Coverage_Cd",
+    "Business_Unit_Cd",
+    "Inflation_Observation_Cd",
+    "ASM_Cd",
+]
+
+BR_MEX_COMPARE_COLS: list[str] = BR_MEX_KEY_COLS + [
+    "Measure_Value",
+    "Comment",
+]
+
+BR_MEX_CONTEXT_COLS: list[str] = BR_MEX_KEY_COLS + [
+    "Measure_Name",
+]
+
 # --------------------------------------------------------------------------------------
 # PROFILE SELECTOR
 # --------------------------------------------------------------------------------------
@@ -509,6 +541,11 @@ def _get_profile_cols(profile: str | None):
             APR_RAPID_COMPARE_COLS,
             APR_RAPID_KEY_COLS,
             APR_RAPID_CONTEXT_COLS,
+        ),
+        "BR_MEX": (
+            BR_MEX_COMPARE_COLS,
+            BR_MEX_KEY_COLS,
+            BR_MEX_CONTEXT_COLS,
         ),
     }
 
@@ -863,6 +900,7 @@ def prepare_qa_frames(
         "APR_CUSTOMER_POLICY",
         "APR_COST_ASSESSMENT",
         "APR_RAPID",
+        "BR_MEX",
     ]:
         sem_for_qa = _apply_apr_semantic_renames(ingested_df_flat)
     else:
