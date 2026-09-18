@@ -1329,6 +1329,169 @@ def build_qa_diff(
 
     return qa_diff_df
 
+def build_duplicate_key_errors(
+    df: pd.DataFrame,
+    batch_id: str,
+    qa_run_datetime: str,
+    source_name: str,
+    target_submission_period: str | list[str],
+    target_org: Optional[str] = None,
+    profile: str = "QD",
+    logger_: Optional[logging.Logger] = None,
+) -> pd.DataFrame:
+    """
+    Build QA error rows for duplicate QA keys within one side of the comparison.
+
+    source_name:
+      - "Flat_File"
+      - "Ingested"
+
+    Duplicate detection uses the configured profile key columns.
+    Technical row ids such as pk are not part of the duplicate key.
+    """
+    log = logger_ or logger
+    p = _profile_name(profile)
+    _compare_cols, key_cols, context_cols = _get_profile_cols(p)
+
+    work = df.copy()
+
+    # Align ingested/view column names to QA naming conventions.
+    if source_name.strip().lower() in {"ingested", "semantic", "view"}:
+        if p == "QD":
+            work = work.rename(columns=SEMANTIC_TO_FLAT_COL_MAP)
+            work = _prepare_qd_semantic_measure_reference(work)
+        elif p == "CCP":
+            work = _apply_ccp_semantic_renames(work)
+        elif p == "MEX":
+            work = _apply_mex_semantic_renames(work)
+        else:
+            work = _apply_apr_semantic_renames(work)
+
+    work = _normalise_period_codes(work)
+
+    if "Submission_Period_Cd" not in work.columns:
+        raise ValueError("Submission_Period_Cd missing when checking duplicate keys.")
+
+    if isinstance(target_submission_period, (list, tuple, set)):
+        target_periods = [str(x).strip() for x in target_submission_period]
+        work = work[
+            work["Submission_Period_Cd"].astype(str).str.strip().isin(target_periods)
+        ]
+    else:
+        target_period = str(target_submission_period).strip()
+        work = work[
+            work["Submission_Period_Cd"].astype(str).str.strip() == target_period
+        ]
+
+    if target_org is not None and "Organisation_Cd" in work.columns:
+        work = work[work["Organisation_Cd"] == target_org]
+
+    work = _ensure_key_columns(work, key_cols)
+
+    if p == "QD":
+        if source_name.strip().lower() in {"ingested", "semantic", "view"}:
+            work = _normalise_keys_with_measure(
+                work,
+                measure_col="Legacy_Measure_Reference",
+            )
+        else:
+            work = _normalise_keys_with_measure(
+                work,
+                measure_col="Measure_Cd",
+            )
+    else:
+        work = _normalise_key_cols(work, key_cols)
+
+    missing_key_cols = [c for c in key_cols if c not in work.columns]
+    if missing_key_cols:
+        raise ValueError(f"Missing key columns for duplicate check: {missing_key_cols}")
+
+    if work.empty:
+        return pd.DataFrame()
+
+    duplicate_key_counts = (
+        work.groupby(key_cols, dropna=False)
+        .size()
+        .reset_index(name="Duplicate_Count")
+    )
+
+    duplicate_keys = duplicate_key_counts[
+        duplicate_key_counts["Duplicate_Count"] > 1
+    ].copy()
+
+    if duplicate_keys.empty:
+        log.info("No duplicate keys found in %s for profile %s", source_name, p)
+        return pd.DataFrame()
+
+    duplicate_rows = work.merge(duplicate_keys, on=key_cols, how="inner")
+
+    source_lower = source_name.strip().lower()
+    error_type = (
+        "DUPLICATE_IN_INGESTED"
+        if source_lower in {"ingested", "semantic", "view"}
+        else "DUPLICATE_IN_FLAT_FILE"
+    )
+
+    records: list[dict] = []
+
+    for _, duplicate_key in duplicate_keys.iterrows():
+        mask = pd.Series(True, index=duplicate_rows.index)
+
+        for col in key_cols:
+            mask &= duplicate_rows[col].astype(str).eq(str(duplicate_key[col]))
+
+        group = duplicate_rows[mask].copy()
+        first = group.iloc[0]
+
+        key_dict = {col: first.get(col) for col in key_cols}
+
+        context = {
+            c: first.get(c)
+            for c in context_cols
+            if c in group.columns
+        }
+        context = _add_measure_cd_to_context(context, first)
+
+        duplicate_count = int(duplicate_key["Duplicate_Count"])
+
+        pk_values = []
+        if "pk" in group.columns:
+            pk_values = group["pk"].dropna().astype(str).unique().tolist()
+
+        measure_values = []
+        if "Measure_Value" in group.columns:
+            measure_values = group["Measure_Value"].dropna().astype(str).unique().tolist()
+
+        filenames = []
+        if "Filename" in group.columns:
+            filenames = group["Filename"].dropna().astype(str).unique().tolist()
+
+        archive_filenames = []
+        if "Archive_Filename" in group.columns:
+            archive_filenames = group["Archive_Filename"].dropna().astype(str).unique().tolist()
+
+        record = {
+            **context,
+            "Error_Type": error_type,
+            "Column_Name": "QA_Key",
+            "Raw_Value": duplicate_count if error_type == "DUPLICATE_IN_FLAT_FILE" else None,
+            "Ingested_Value": duplicate_count if error_type == "DUPLICATE_IN_INGESTED" else None,
+            "Measure_Desc": first.get("Measure_Desc", first.get("Measure_Name", None)),
+            "Error_Desc": (
+                f"{source_name} contains {duplicate_count} rows for the same QA key. "
+                f"Key={key_dict}. "
+                f"Distinct pk values={pk_values}. "
+                f"Distinct Measure_Value values={measure_values}. "
+                f"Distinct Filename values={filenames}. "
+                f"Distinct Archive_Filename values={archive_filenames}."
+            ),
+            "Batch_Id": batch_id,
+            "QA_Run_Datetime": qa_run_datetime,
+        }
+
+        records.append(record)
+
+    return pd.DataFrame(records)
 
 # --------------------------------------------------------------------------------------
 # 4) BUILD QA SUMMARY + PER-COMPANY SUMMARY + ERROR COUNTS
