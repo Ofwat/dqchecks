@@ -32,6 +32,7 @@ from typing import Iterable, Optional, Tuple
 
 import os
 import pandas as pd
+import numpy as np
 
 # We intentionally expose orchestration-style functions that take several arguments
 # and have branching logic. Suppress corresponding structural warnings.
@@ -1740,3 +1741,707 @@ def build_qa_summaries(
         error_counts_df.insert(1, "QA_Run_Datetime", qa_run_datetime)
 
     return qa_summary_df, qa_company_summary_df, error_counts_df
+
+# ============================================================
+# LEGACY APR QA - COMMON HELPERS
+# ============================================================
+
+LEGACY_EDIT_COLS = [
+    "Legacy_Edit_Timestamp",
+    "Legacy_Edit_User",
+    "Legacy_User_Edit_Comment",
+]
+
+LEGACY_MISSING_VALUES = {
+    "", "nan", "none", "null", "<null>", "<na>"
+}
+
+FOUNTAIN_ERROR_TYPES = {
+    "POTENTIAL_FOUNTAIN_DUPLICATE",
+    "FOUNTAIN_SAME_EDIT_VALUE_CONFLICT",
+}
+
+
+def _legacy_normalised_text(series: pd.Series) -> pd.Series:
+    """Standardise missing-value representations."""
+
+    text = series.astype("string").str.strip()
+
+    missing = (
+        text.isna()
+        | text.str.casefold()
+        .isin(LEGACY_MISSING_VALUES)
+        .fillna(False)
+    )
+
+    return text.mask(missing, "<NULL>").fillna("<NULL>")
+
+
+def _legacy_measure_equal(
+    raw_values: pd.Series,
+    ingested_values: pd.Series,
+    atol: float = 1e-7,
+) -> np.ndarray:
+    """Compare numeric values with tolerance and other values exactly."""
+
+    raw_text = _legacy_normalised_text(raw_values).reset_index(drop=True)
+    ing_text = _legacy_normalised_text(ingested_values).reset_index(drop=True)
+
+    raw_num = pd.to_numeric(
+        raw_text, errors="coerce"
+    ).to_numpy(dtype="float64", na_value=np.nan)
+
+    ing_num = pd.to_numeric(
+        ing_text, errors="coerce"
+    ).to_numpy(dtype="float64", na_value=np.nan)
+
+    numeric_equal = np.isclose(
+        raw_num,
+        ing_num,
+        rtol=0,
+        atol=atol,
+        equal_nan=False,
+    )
+
+    text_equal = raw_text.eq(ing_text).fillna(False).to_numpy(dtype=bool)
+
+    return numeric_equal | text_equal
+
+
+def _legacy_group_values_equal(
+    values: pd.Series,
+    atol: float = 1e-7,
+) -> bool:
+    """Check whether every value in a Fountain candidate group is equivalent."""
+
+    text = _legacy_normalised_text(values)
+
+    if text.eq("<NULL>").all():
+        return True
+
+    if text.eq("<NULL>").any():
+        return False
+
+    numeric = pd.to_numeric(text, errors="coerce")
+
+    if numeric.notna().all():
+        numbers = numeric.to_numpy(dtype="float64", na_value=np.nan)
+        return bool(np.max(numbers) - np.min(numbers) <= atol)
+
+    return bool(text.eq(text.iloc[0]).all())
+
+
+def _legacy_key_columns(base_key_cols: list[str]) -> list[str]:
+    """Extend the standard APR key with the historical record identifier."""
+
+    return list(
+        dict.fromkeys(
+            [*base_key_cols, "Legacy_Metadata_Cd"]
+        )
+    )
+
+
+# ============================================================
+# LEGACY APR QA - FRAME PREPARATION
+# ============================================================
+def prepare_legacy_qa_frames(
+    raw_df: pd.DataFrame,
+    ingested_df: pd.DataFrame,
+    base_key_cols: list[str],
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """
+    Prepare historical records without selecting only the latest row.
+
+    Legacy key = standard APR business key + Legacy_Metadata_Cd.
+    """
+
+    key_cols = _legacy_key_columns(base_key_cols)
+
+    for source_name, df in [
+        ("Raw", raw_df),
+        ("Ingested", ingested_df),
+    ]:
+        required_cols = key_cols + ["Measure_Value"]
+
+        missing = [
+            col for col in required_cols
+            if col not in df.columns
+        ]
+
+        if missing:
+            raise ValueError(
+                f"{source_name} legacy QA missing columns: {missing}"
+            )
+
+        metadata = (
+            _legacy_normalised_text(df["Legacy_Metadata_Cd"])
+            .str.upper()
+        )
+
+        invalid = metadata.isin({
+            "<NULL>", "NA", "UNKNOWN", "-1", "-2"
+        })
+
+        if invalid.any():
+            raise ValueError(
+                f"{source_name} contains {invalid.sum()} records "
+                "without a valid Legacy_Metadata_Cd."
+            )
+
+    prepared = []
+
+    for df in [raw_df, ingested_df]:
+        result = df.copy()
+
+        for col in key_cols:
+            result[col] = (
+                result[col]
+                .fillna("NA")
+                .astype(str)
+                .str.strip()
+                .str.replace(r"\.0$", "", regex=True)
+                .replace("", "NA")
+            )
+
+        prepared.append(result)
+
+    return prepared[0], prepared[1], key_cols
+
+
+# ============================================================
+# LEGACY APR QA - KEY OVERLAP
+# ============================================================
+def compute_legacy_key_overlap(
+    raw_df: pd.DataFrame,
+    ingested_df: pd.DataFrame,
+    key_cols: list[str],
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
+    raw_keys = raw_df[key_cols].drop_duplicates()
+    ingested_keys = ingested_df[key_cols].drop_duplicates()
+
+    merged = raw_keys.merge(
+        ingested_keys,
+        on=key_cols,
+        how="outer",
+        indicator=True,
+    )
+
+    return (
+        merged.loc[
+            merged["_merge"].eq("left_only"), key_cols
+        ].copy(),
+
+        merged.loc[
+            merged["_merge"].eq("right_only"), key_cols
+        ].copy(),
+
+        merged.loc[
+            merged["_merge"].eq("both"), key_cols
+        ].copy(),
+    )
+
+
+# ============================================================
+# LEGACY APR QA - HISTORICAL RECORD COMPARISON
+# ============================================================
+def build_legacy_migration_errors(
+    raw_df: pd.DataFrame,
+    ingested_df: pd.DataFrame,
+    key_cols: list[str],
+    batch_id: str,
+    qa_run_datetime: str,
+    atol: float = 1e-7,
+) -> pd.DataFrame:
+
+    errors = []
+    duplicate_keys = []
+
+    # 1. Check genuine duplicates of the extended legacy key
+    for source_name, df in [
+        ("FLAT_FILE", raw_df),
+        ("INGESTED", ingested_df),
+    ]:
+
+        counts = (
+            df.groupby(key_cols, dropna=False)
+            .size()
+            .reset_index(name="Record_Count")
+        )
+
+        duplicates = counts[counts["Record_Count"] > 1]
+
+        if not duplicates.empty:
+            duplicate_keys.append(duplicates[key_cols])
+
+        for _, row in duplicates.iterrows():
+            context = {col: row[col] for col in key_cols}
+
+            errors.append({
+                **context,
+                "Error_Type": f"DUPLICATE_IN_{source_name}",
+                "Column_Name": "QA_Key",
+                "Raw_Value": None,
+                "Ingested_Value": None,
+                "Error_Desc": (
+                    f"Extended legacy key repeated "
+                    f"{row['Record_Count']} times. Key={context}"
+                ),
+            })
+
+    # 2. Exclude ambiguous extended keys from one-to-one comparison
+    if duplicate_keys:
+        ambiguous = pd.concat(
+            duplicate_keys, ignore_index=True
+        ).drop_duplicates()
+
+        raw = raw_df.merge(
+            ambiguous.assign(_duplicate=True),
+            on=key_cols,
+            how="left",
+        )
+
+        ingested = ingested_df.merge(
+            ambiguous.assign(_duplicate=True),
+            on=key_cols,
+            how="left",
+        )
+
+        raw = raw[raw["_duplicate"].isna()].drop(
+            columns="_duplicate"
+        )
+
+        ingested = ingested[ingested["_duplicate"].isna()].drop(
+            columns="_duplicate"
+        )
+
+    else:
+        raw = raw_df
+        ingested = ingested_df
+
+    # 3. Compare the corresponding historical records
+    compare_cols = ["Measure_Value"]
+
+    if "Comment" in raw.columns and "Comment" in ingested.columns:
+        compare_cols.append("Comment")
+
+    comparison = raw[
+        key_cols + compare_cols
+    ].merge(
+        ingested[key_cols + compare_cols],
+        on=key_cols,
+        how="outer",
+        suffixes=("_raw", "_ingested"),
+        indicator=True,
+        validate="one_to_one",
+    )
+
+    # 4. Missing / extra records
+    for _, row in comparison[
+        comparison["_merge"].ne("both")
+    ].iterrows():
+
+        context = {col: row[col] for col in key_cols}
+        missing = row["_merge"] == "left_only"
+
+        errors.append({
+            **context,
+            "Error_Type": (
+                "MISSING_IN_INGESTED"
+                if missing else "EXTRA_IN_INGESTED"
+            ),
+            "Column_Name": "Measure_Value",
+            "Raw_Value": (
+                row.get("Measure_Value_raw") if missing else None
+            ),
+            "Ingested_Value": (
+                row.get("Measure_Value_ingested")
+                if not missing else None
+            ),
+            "Error_Desc": (
+                f"Legacy record missing from "
+                f"{'ingested data' if missing else 'raw data'}. "
+                f"Key={context}"
+            ),
+        })
+
+    # 5. Compare values for matching extended keys
+    matched = comparison[
+        comparison["_merge"].eq("both")
+    ].copy()
+
+    if not matched.empty:
+
+        equal = _legacy_measure_equal(
+            matched["Measure_Value_raw"],
+            matched["Measure_Value_ingested"],
+            atol=atol,
+        )
+
+        for _, row in matched.loc[~equal].iterrows():
+
+            context = {col: row[col] for col in key_cols}
+
+            errors.append({
+                **context,
+                "Error_Type": "MEASURE_VALUE_MISMATCH",
+                "Column_Name": "Measure_Value",
+                "Raw_Value": row["Measure_Value_raw"],
+                "Ingested_Value": row["Measure_Value_ingested"],
+                "Error_Desc": (
+                    f"Legacy Measure_Value mismatch beyond "
+                    f"tolerance {atol}. Key={context}"
+                ),
+            })
+
+        # Preserve existing Comment QA where both sides contain it
+        if "Comment" in compare_cols:
+
+            raw_comment = (
+                _legacy_normalised_text(matched["Comment_raw"])
+                .str.casefold()
+            )
+
+            ingested_comment = (
+                _legacy_normalised_text(matched["Comment_ingested"])
+                .str.casefold()
+            )
+
+            different = ~raw_comment.eq(
+                ingested_comment
+            ).fillna(False)
+
+            for _, row in matched.loc[different].iterrows():
+
+                context = {col: row[col] for col in key_cols}
+
+                errors.append({
+                    **context,
+                    "Error_Type": "COMMENT_MISMATCH",
+                    "Column_Name": "Comment",
+                    "Raw_Value": row["Comment_raw"],
+                    "Ingested_Value": row["Comment_ingested"],
+                    "Error_Desc": (
+                        f"Legacy comment mismatch. Key={context}"
+                    ),
+                })
+
+    result = pd.DataFrame(errors)
+
+    if not result.empty:
+        result["Batch_Id"] = batch_id
+        result["QA_Run_Datetime"] = qa_run_datetime
+
+    return result
+
+
+# ============================================================
+# LEGACY APR QA - FOUNTAIN DUPLICATE DETECTION
+# ============================================================
+def build_fountain_edit_errors(
+    ingested_df: pd.DataFrame,
+    base_key_cols: list[str],
+    batch_id: str,
+    qa_run_datetime: str,
+    atol: float = 1e-7,
+) -> pd.DataFrame:
+    """
+    Identify potential Fountain duplicates using:
+      - APR business key (excluding Legacy_Metadata_Cd)
+      - Legacy_Edit_Timestamp
+      - Legacy_Edit_User
+      - Legacy_User_Edit_Comment
+
+    Different Legacy_Metadata_Cd values are required.
+
+    Same values -> POTENTIAL_FOUNTAIN_DUPLICATE
+    Different values -> FOUNTAIN_SAME_EDIT_VALUE_CONFLICT
+    """
+
+    # Exclude Legacy_Metadata_Cd even if already in the profile key
+    business_cols = list(dict.fromkeys(
+        col for col in base_key_cols
+        if col != "Legacy_Metadata_Cd"
+    ))
+
+    required = (
+        business_cols
+        + LEGACY_EDIT_COLS
+        + ["Legacy_Metadata_Cd", "Measure_Value"]
+    )
+
+    missing = [
+        col for col in required
+        if col not in ingested_df.columns
+    ]
+
+    if missing:
+        raise ValueError(
+            f"Fountain duplicate check missing view columns: {missing}"
+        )
+
+    work = ingested_df.copy()
+
+    # Normalise business keys
+    work = _normalise_key_cols(work, business_cols)
+
+    # Normalise the edit metadata
+    work["_QA_Edit_TS"] = pd.to_datetime(
+        work["Legacy_Edit_Timestamp"],
+        errors="coerce",
+        utc=True,
+    )
+
+    work["_QA_Edit_User"] = _legacy_normalised_text(
+        work["Legacy_Edit_User"]
+    ).str.casefold()
+
+    work["_QA_Edit_Comment"] = _legacy_normalised_text(
+        work["Legacy_User_Edit_Comment"]
+    ).str.casefold()
+
+    work["_QA_Metadata"] = _legacy_normalised_text(
+        work["Legacy_Metadata_Cd"]
+    )
+
+    # Exclude incomplete edit metadata
+    valid = (
+        work["_QA_Edit_TS"].notna()
+        & work["_QA_Edit_User"].ne("<null>")
+        & work["_QA_Edit_Comment"].ne("<null>")
+        & ~work["_QA_Metadata"].str.upper().isin({
+            "<NULL>", "NA", "UNKNOWN", "-1", "-2"
+        })
+    )
+
+    work = work.loc[valid.fillna(False)].copy()
+
+    # Fountain signature: business key + same editing event
+    signature_cols = business_cols + [
+        "_QA_Edit_TS",
+        "_QA_Edit_User",
+        "_QA_Edit_Comment",
+    ]
+
+    records = []
+
+    for _, group in work.groupby(
+        signature_cols,
+        dropna=False,
+        sort=False,
+    ):
+
+        metadata_codes = (
+            group["_QA_Metadata"]
+            .drop_duplicates()
+            .tolist()
+        )
+
+        # At least two records with different metadata identifiers
+        if len(group) < 2 or len(metadata_codes) < 2:
+            continue
+
+        first = group.iloc[0]
+
+        same_value = _legacy_group_values_equal(
+            group["Measure_Value"],
+            atol=atol,
+        )
+
+        error_type = (
+            "POTENTIAL_FOUNTAIN_DUPLICATE"
+            if same_value
+            else "FOUNTAIN_SAME_EDIT_VALUE_CONFLICT"
+        )
+
+        values = _legacy_normalised_text(
+            group["Measure_Value"]
+        ).tolist()
+
+        context = {
+            col: first[col]
+            for col in business_cols
+        }
+
+        record = {
+            **context,
+            "Legacy_Metadata_Cd": ", ".join(metadata_codes),
+            "Error_Type": error_type,
+            "Column_Name": "Measure_Value",
+            "Raw_Value": None,
+            "Ingested_Value": ", ".join(values),
+            "Measure_Desc": first.get(
+                "Measure_Desc",
+                first.get("Measure_Name"),
+            ),
+            "Error_Desc": (
+                f"Fountain same-edit candidate: {error_type}. "
+                f"Business_Key={context}. "
+                f"Record_Count={len(group)}. "
+                f"Legacy_Metadata_Cd={metadata_codes}. "
+                f"Measure_Values={values}. "
+                f"Legacy_Edit_Timestamp="
+                f"{first['Legacy_Edit_Timestamp']!r}. "
+                f"Legacy_Edit_User="
+                f"{first['Legacy_Edit_User']!r}. "
+                f"Legacy_User_Edit_Comment="
+                f"{first['Legacy_User_Edit_Comment']!r}."
+            ),
+            "Batch_Id": batch_id,
+            "QA_Run_Datetime": qa_run_datetime,
+        }
+
+        if "Filename" in group.columns:
+            record["Filename"] = first["Filename"]
+
+        records.append(record)
+
+    return pd.DataFrame(records)
+
+
+# ============================================================
+# LEGACY APR QA - SUMMARIES
+# ============================================================
+def build_legacy_qa_summaries(
+    raw_df: pd.DataFrame,
+    ingested_df: pd.DataFrame,
+    keys_in_both: pd.DataFrame,
+    migration_errors: pd.DataFrame,
+    fountain_errors: pd.DataFrame,
+    key_cols: list[str],
+    batch_id: str,
+    qa_run_datetime: str,
+):
+
+    all_errors = pd.concat(
+        [migration_errors, fountain_errors],
+        ignore_index=True,
+    )
+
+    # Only migration errors affect successful reconciliation
+    failed_keys = (
+        migration_errors[key_cols].drop_duplicates()
+        if not migration_errors.empty
+        else pd.DataFrame(columns=key_cols)
+    )
+
+    failed_matched_keys = (
+        failed_keys.merge(
+            keys_in_both,
+            on=key_cols,
+            how="inner",
+        )
+        if not failed_keys.empty
+        else failed_keys
+    )
+
+    total_matched = (
+        len(keys_in_both) - len(failed_matched_keys)
+    )
+
+    # Overall summary
+    summary = pd.DataFrame([{
+        "Batch_Id": batch_id,
+        "QA_Run_Datetime": qa_run_datetime,
+        "Total_Raw_Rows": len(raw_df),
+        "Total_Ingested_Rows": len(ingested_df),
+        "Rows_With_Keys_In_Both": len(keys_in_both),
+        "Total_Matched_Rows": total_matched,
+        "Total_Rows_With_Mismatches": len(failed_keys),
+        "Total_Cell_Level_Differences": len(all_errors),
+        "Columns_Affected": (
+            ", ".join(sorted(
+                all_errors["Column_Name"].dropna().unique()
+            ))
+            if not all_errors.empty else ""
+        ),
+        "Error_Types": (
+            ", ".join(sorted(
+                all_errors["Error_Type"].dropna().unique()
+            ))
+            if not all_errors.empty else ""
+        ),
+    }])
+
+    # Company summaries
+    company_rows = []
+
+    organisations = sorted(
+        set(raw_df["Organisation_Cd"])
+        | set(ingested_df["Organisation_Cd"])
+    )
+
+    for org in organisations:
+
+        raw_count = (
+            raw_df["Organisation_Cd"].eq(org).sum()
+        )
+
+        ingested_count = (
+            ingested_df["Organisation_Cd"].eq(org).sum()
+        )
+
+        matched_count = (
+            keys_in_both["Organisation_Cd"].eq(org).sum()
+        )
+
+        failed_count = (
+            failed_keys["Organisation_Cd"].eq(org).sum()
+        )
+
+        failed_matched_count = (
+            failed_matched_keys["Organisation_Cd"].eq(org).sum()
+        )
+
+        org_errors = (
+            all_errors[
+                all_errors["Organisation_Cd"].eq(org)
+            ]
+            if not all_errors.empty
+            else all_errors
+        )
+
+        company_rows.append({
+            "Batch_Id": batch_id,
+            "QA_Run_Datetime": qa_run_datetime,
+            "Organisation_Cd": org,
+            "Total_Raw_Rows": int(raw_count),
+            "Total_Ingested_Rows": int(ingested_count),
+            "Rows_With_Keys_In_Both": int(matched_count),
+            "Total_Matched_Rows": int(
+                matched_count - failed_matched_count
+            ),
+            "Total_Rows_With_Mismatches": int(failed_count),
+            "Total_Cell_Level_Differences": len(org_errors),
+            "Columns_Affected": (
+                ", ".join(sorted(
+                    org_errors["Column_Name"].dropna().unique()
+                ))
+                if not org_errors.empty else ""
+            ),
+            "Error_Types": (
+                ", ".join(sorted(
+                    org_errors["Error_Type"].dropna().unique()
+                ))
+                if not org_errors.empty else ""
+            ),
+        })
+
+    company_summary = pd.DataFrame(company_rows)
+
+    # Error counts include both migration and Fountain findings
+    if all_errors.empty:
+        error_counts = pd.DataFrame(columns=[
+            "Organisation_Cd", "Error_Type", "Error_Count"
+        ])
+    else:
+        error_counts = (
+            all_errors.groupby(["Organisation_Cd", "Error_Type"])
+            .size()
+            .reset_index(name="Error_Count")
+        )
+
+    error_counts.insert(0, "Batch_Id", batch_id)
+    error_counts.insert(1, "QA_Run_Datetime", qa_run_datetime)
+
+    return summary, company_summary, error_counts
